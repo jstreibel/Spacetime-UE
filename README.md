@@ -29,7 +29,7 @@ git clone https://github.com/jstreibel/SpacetimeCLI.git
    ```bash
    ./GenerateProjectFiles.sh -platform=Linux  # or Windows/Mac as appropriate
    ```
-2. Open the solution in Rider (Linux), Visual Studio (Windows), VSCode, XCode, etc.
+2. Open the solution in an external editor, e.g. Rider (Linux), Visual Studio (Windows), VSCode (Multi-platform), XCode (MacOS), etc.
 3. Build the solution.
 4. In the Unreal Editor, go to **Edit → Plugins**, locate **SpacetimeCLI**, and enable it.
 5. Restart the editor.
