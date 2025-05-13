@@ -14,14 +14,14 @@ A lightweight Unreal Engine 5.5 plugin that wraps the SpacetimeDB CLI (`spacetim
 
 ```bash
 cd <YourUEProjectRoot>
-git submodule add https://github.com/you/SpacetimeCLI.git Plugins/SpacetimeCLI
+git submodule add https://github.com/jstreibel/SpacetimeCLI.git Plugins/SpacetimeCLI
 ```
 
 ### Option B: Clone Directly
 
 ```bash
 cd <YourUEProjectRoot>/Plugins
-git clone https://github.com/you/SpacetimeCLI.git
+git clone https://github.com/jstreibel/SpacetimeCLI.git
 ```
 
 1. From your project root, regenerate project files:
@@ -53,7 +53,7 @@ PrintString(OutInfo.Name);
 PrintString(OutInfo.Status);
 ```
 
-## Versioning & Releases
+<!-- ## Versioning & Releases
 
 We use [Semantic Versioning](https://semver.org/):
 
@@ -61,7 +61,7 @@ We use [Semantic Versioning](https://semver.org/):
 * **Minor** versions add functionality in a backward-compatible manner
 * **Patch** versions make backward-compatible bug fixes
 
-Tag releases on GitHub as `v<MAJOR>.<MINOR>.<PATCH>` and include a changelog in the release notes.
+Tag releases on GitHub as `v<MAJOR>.<MINOR>.<PATCH>` and include a changelog in the release notes.-->
 
 ## Contributing
 
