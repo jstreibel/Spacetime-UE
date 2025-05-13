@@ -4,7 +4,7 @@ A lightweight Unreal Engine 5.5 plugin that wraps the SpacetimeDB CLI (`spacetim
 
 <figure>
     <img src="Resources/Spacetime-DescribeDatabase-Unreal-Node.png">
-    <figcaption>"Describe Database" Blueprint Node </figcaption>
+    <figcaption> Example "Describe Database" Blueprint Node </figcaption>
 </figure>
 
 ## Prerequisites
