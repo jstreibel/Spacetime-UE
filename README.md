@@ -42,15 +42,16 @@ git clone https://github.com/jstreibel/SpacetimeCLI.git
     * **Input**: Database name (string)
     * **Outputs**:
 
-        * **FSpacetimeDatabaseInfo** struct (Name, SizeInMB, CreatedAt, Status)
+        * **Tables** string array
+        * **Reducers** string array
         * **Error** message (string)
 3. Use **Print String** or your UI to display returned values.
 
 ```blueprint
 // Pseudocode:
-DescribeDatabase("MyDB", OutInfo, OutError);
-PrintString(OutInfo.Name);
-PrintString(OutInfo.Status);
+DescribeDatabase("MyDB", Tables, Reducers, OutError);
+PrintStringArray(Tables);
+PrintStringArray(Reducers);
 ```
 
 <!-- ## Versioning & Releases
