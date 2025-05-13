@@ -1,4 +1,4 @@
-# SpacetimeCLI UE5 Plugin
+# Spacetime UE5 Plugin
 
 A lightweight Unreal Engine 5.5 plugin that wraps the SpacetimeDB CLI (`spacetime`) to provide Blueprint-accessible functions for querying and describing databases.
 
