@@ -19,14 +19,14 @@ A lightweight Unreal Engine 5.5 plugin that wraps the SpacetimeDB CLI (`spacetim
 
 ```bash
 cd <YourUEProjectRoot>
-git submodule add https://github.com/jstreibel/SpacetimeCLI.git Plugins/SpacetimeCLI
+git submodule add https://github.com/jstreibel/Spacetime-UE.git Plugins/Spacetime-UE
 ```
 
 ### Option B: Clone Directly
 
 ```bash
 cd <YourUEProjectRoot>/Plugins
-git clone https://github.com/jstreibel/SpacetimeCLI.git
+git clone https://github.com/jstreibel/Spacetime-UE.git
 ```
 
 1. From your project root, regenerate project files:
