@@ -19,6 +19,13 @@
 			"Name": "SpacetimeDB",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "SpacetimeDBEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": ["Win64","Mac","Linux"]
 		}
+
 	]
 }

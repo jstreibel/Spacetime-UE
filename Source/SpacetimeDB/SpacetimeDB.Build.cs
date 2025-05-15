@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class SpacetimeDB : ModuleRules
@@ -10,6 +11,8 @@ public class SpacetimeDB : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
+				// TODO automatically add this?
+				Path.Combine(ModuleDirectory, "Public/Generated") 
 				// ... add public include paths required here ...
 			}
 			);

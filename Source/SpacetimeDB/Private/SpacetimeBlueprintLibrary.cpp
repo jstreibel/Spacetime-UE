@@ -28,7 +28,7 @@ static bool RunSpacetimeDB(const FString& Args, FString& OutFullOutput, int32& O
 		}
 	}
 
-	if (!StdOut.IsEmpty())
+	if (!StdErr.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Spacetime] CLI output:\n%s"), *StdOut);
 	}
