@@ -1,11 +1,12 @@
 # SpacetimeDB UE5 Integration
 
 A lightweight Unreal Engine 5.5 plugin that wraps the SpacetimeDB CLI (`spacetime`) to provide Blueprint-accessible functions for querying and describing databases.
-
+<!--
 <figure>
     <img src="Resources/Spacetime-DescribeDatabase-Unreal-Node.png">
     <figcaption> Example "Describe Database" Blueprint Node </figcaption>
 </figure>
+-->
 
 ## Prerequisites
 
