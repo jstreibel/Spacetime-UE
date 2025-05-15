@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class SPACETIMECLI_API USpacetimeBlueprintLibrary : public UBlueprintFunctionLibrary
+class SPACETIMEDB_API USpacetimeBlueprintLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 

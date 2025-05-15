@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class SpacetimeCLI : ModuleRules
+public class SpacetimeDB : ModuleRules
 {
-	public SpacetimeCLI(ReadOnlyTargetRules Target) : base(Target)
+	public SpacetimeDB(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		

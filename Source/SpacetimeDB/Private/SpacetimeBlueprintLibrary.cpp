@@ -8,7 +8,7 @@
 #include "Serialization/JsonReader.h"
 #include "Dom/JsonValue.h"
 
-static bool RunSpacetimeCLI(const FString& Args, FString& OutFullOutput, int32& OutReturnCode)
+static bool RunSpacetimeDB(const FString& Args, FString& OutFullOutput, int32& OutReturnCode)
 {
 	FString StdOut, StdErr;
 	if (!FPlatformProcess::ExecProcess(
@@ -38,7 +38,7 @@ bool USpacetimeBlueprintLibrary::DescribeDatabase(
 	
 	int32 ReturnCode;
 	FString FullOutput;
-	if (!RunSpacetimeCLI(TEXT("describe --json ") + DatabaseName, FullOutput, ReturnCode))
+	if (!RunSpacetimeDB(TEXT("describe --json ") + DatabaseName, FullOutput, ReturnCode))
 	{
 		OutError = FullOutput;
 		UE_LOG(LogTemp, Error, TEXT("[Spacetime] %s"), *OutError);
