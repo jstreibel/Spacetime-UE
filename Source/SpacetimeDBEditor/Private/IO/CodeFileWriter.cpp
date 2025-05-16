@@ -12,8 +12,7 @@ bool FCodeFileWriter::WriteFile(
 )
 {
 	// Ensure the directory exists
-	const FString Directory = FPaths::GetPath(FilePath);
-	if (!IFileManager::Get().DirectoryExists(*Directory))
+	if (const FString Directory = FPaths::GetPath(FilePath); !IFileManager::Get().DirectoryExists(*Directory))
 	{
 		if (!IFileManager::Get().MakeDirectory(*Directory, /*Tree=*/ true))
 		{
