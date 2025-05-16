@@ -126,6 +126,8 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
 	FString& OutFullPath,
 	FString& OutError)
 {
+	const FString DatabaseNamePascal = ToPascalCase(DatabaseName);
+	
 	// 0. Fetch raw JSON schema
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Fetching RawModuleDef for '%s'"), *DatabaseName);
     FString RawModuleDefString;
@@ -171,7 +173,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }
-    const FString TablesHeaderName = FString::Printf(TEXT("F%sTables.generated.h"), *DatabaseName);
+    const FString TablesHeaderName = FString::Printf(TEXT("F%sTables.generated.h"), *DatabaseNamePascal);
     const FString TablesHeaderPath = OutputDir / TablesHeaderName;
     if (!Writer.WriteFile(TablesHeaderPath, TablesHeader, OutError))
     {
@@ -189,7 +191,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }
-    const FString ReducersHeaderName = FString::Printf(TEXT("F%sReducers.generated.h"), *DatabaseName);
+    const FString ReducersHeaderName = FString::Printf(TEXT("F%sReducers.generated.h"), *DatabaseNamePascal);
     const FString ReducersHeaderPath = OutputDir / ReducersHeaderName;
     if (!Writer.WriteFile(ReducersHeaderPath, ReducersHeader, OutError))
     {
@@ -198,7 +200,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     }
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersHeaderPath);
 
-    const FString ReducersSourceName = FString::Printf(TEXT("F%sReducers.generated.cpp"), *DatabaseName);
+    const FString ReducersSourceName = FString::Printf(TEXT("F%sReducers.generated.cpp"), *DatabaseNamePascal);
     const FString ReducersSourcePath = OutputDir / ReducersSourceName;
     if (!Writer.WriteFile(ReducersSourcePath, ReducersSource, OutError))
     {
