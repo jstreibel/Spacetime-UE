@@ -128,6 +128,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
 {
 	const FString DatabaseNamePascal = ToPascalCase(DatabaseName);
 	
+
 	// 0. Fetch raw JSON schema
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Fetching RawModuleDef for '%s'"), *DatabaseName);
     FString RawModuleDefString;
@@ -138,7 +139,8 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
         return false;
     }
 
-    // 1. Parse into SATS model
+
+	// 1. Parse into SATS model
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing RawModuleDef JSON"));
     SATS::FRawModuleDef RawModule;
 	if (FModuleDefParser Parser; !Parser.Parse(RawModuleDefString, RawModule, OutError))
@@ -147,34 +149,42 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
         return false;
     }
 
-    // 2. Instantiate code generator
+
+	// 2. Instantiate code generator
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Initializing code generator"));
     TUniquePtr<FSpacetimeDBCodeGen> CodeGen = MakeUnique<FSpacetimeDBCodeGen>();
 
-    // 3. Prepare file writer
+
+	// 3. Prepare file writer
     FCodeFileWriter Writer;
 
-    // 4. Ensure output directory exists
-    const FString OutputDir = FPaths::ProjectDir() / TEXT("Source/SpacetimeDB/Generated");
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Creating output directory '%s'"), *OutputDir);
-    if (!IFileManager::Get().MakeDirectory(*OutputDir, /*Tree=*/ true))
+
+	// 4. Ensure output directory exists
+    // const FString OutputDir = FPaths::ProjectDir() / TEXT("Source/SpacetimeDB/Generated");
+	const FString OutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDB/<Public&Private>/Generated");
+	const FString HeaderOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDB/Public/Generated");
+	const FString SourceOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDB/Private/Generated");
+    UE_LOG(LogTemp, Log, TEXT("[spacetime] Creating output directories '%s' and '%s'"), *HeaderOutputDir, *SourceOutputDir);
+    if (!IFileManager::Get().MakeDirectory(*HeaderOutputDir, /*Tree=*/ true) | !IFileManager::Get().MakeDirectory(*SourceOutputDir, /*Tree=*/ true))
     {
         OutError = TEXT("Failed to create output directory.");
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }
 
+	
     // 5. Generate table structs header
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating table USTRUCTs"));
     FString TablesHeader;
-    if (!CodeGen->GenerateTableStructs(RawModule, TablesHeader))
+	FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
+    if (!CodeGen->GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader))
     {
         OutError = TEXT("Table struct generation failed.");
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }
-    const FString TablesHeaderName = FString::Printf(TEXT("F%sTables.generated.h"), *DatabaseNamePascal);
-    const FString TablesHeaderPath = OutputDir / TablesHeaderName;
+    const FString TablesHeaderName = FString::Printf(TEXT("%sTables.h"), *DatabaseNamePascal);
+    const FString TablesHeaderPath = HeaderOutputDir / TablesHeaderName;
     if (!Writer.WriteFile(TablesHeaderPath, TablesHeader, OutError))
     {
         UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write tables header '%s': %s"), *TablesHeaderPath, *OutError);
@@ -182,17 +192,20 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     }
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *TablesHeaderPath);
 
+	
     // 6. Generate reducer functions (header + source)
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
     FString ReducersHeader, ReducersSource;
-    if (!CodeGen->GenerateReducerFunctions(RawModule, ReducersHeader, ReducersSource))
+	FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
+    if (!CodeGen->GenerateReducerFunctions(RawModule, BaseReducersHeaderName,
+    	ReducersHeader, ReducersSource))
     {
         OutError = TEXT("Reducer function generation failed.");
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }
-    const FString ReducersHeaderName = FString::Printf(TEXT("F%sReducers.generated.h"), *DatabaseNamePascal);
-    const FString ReducersHeaderPath = OutputDir / ReducersHeaderName;
+    const FString ReducersHeaderName = FString::Printf(TEXT("%sReducers.h"), *DatabaseNamePascal);
+    const FString ReducersHeaderPath = HeaderOutputDir / ReducersHeaderName;
     if (!Writer.WriteFile(ReducersHeaderPath, ReducersHeader, OutError))
     {
         UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers header '%s': %s"), *ReducersHeaderPath, *OutError);
@@ -200,8 +213,8 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     }
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersHeaderPath);
 
-    const FString ReducersSourceName = FString::Printf(TEXT("F%sReducers.generated.cpp"), *DatabaseNamePascal);
-    const FString ReducersSourcePath = OutputDir / ReducersSourceName;
+    const FString ReducersSourceName = FString::Printf(TEXT("%sReducers.cpp"), *DatabaseNamePascal);
+    const FString ReducersSourcePath = SourceOutputDir / ReducersSourceName;
     if (!Writer.WriteFile(ReducersSourcePath, ReducersSource, OutError))
     {
         UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers source '%s': %s"), *ReducersSourcePath, *OutError);
@@ -209,6 +222,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     }
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersSourcePath);
 
+	
     // 7. Success
     OutFullPath = OutputDir;
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Code generation completed for database '%s'"), *DatabaseName);
