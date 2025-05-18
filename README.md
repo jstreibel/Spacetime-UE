@@ -21,7 +21,7 @@ With automatic code generation, Blueprint-native reducer calls, SATS-powered typ
 | Feature | Description |
 |--------|-------------|
 | 🔧 Codegen | Generates `USTRUCT`s for tables and `UFUNCTION`s for reducers from SpacetimeDB schemas |
-| 🧠 SATS Semantic Mapping | Treats types as algebraic objects—`Products` with `Terms`, `Sums` with `Variants`, `Optionals`, and `Lists` |
+| 🧠 SATS Semantic Mapping | Treats types as algebraic objects—`Products` with `Elements`, `Sums` with `Variants` and `Optionals`, and `Lists` |
 | 🧩 Blueprint-Ready | Exposes reducer calls and database tables as native Blueprint nodes and types |
 | 🛠️ Editor Integration | Live schema sync, diagnostics, and regeneration tools within the Unreal Editor |
 | 🌐 Protocol Flexibility | Optional REST/gRPC integration for CLI-free deployment and live data wiring |
