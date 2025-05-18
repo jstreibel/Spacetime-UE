@@ -36,7 +36,7 @@ Unlike naive reflection layers, SpacetimeUE++ adopts the **SATS** approach to ty
 
 | SpacetimeDB | SATS Concept | Unreal Output |
 |-------------|---------------|----------------|
-| `Product` | `Terms` of a composite type | `USTRUCT` with named `UPROPERTY`s |
+| `Product` | `Elements` of a composite type | `USTRUCT` with named `UPROPERTY`s |
 | `Sum`     | `Variants` of an option space | Tagged `USTRUCT` or `TVariant` |
 | `Vector`  | `List<T>` | `TArray<T>` |
 | `Option`  | `Optional<T>` | Nullable wrapper, safe-by-construction |
