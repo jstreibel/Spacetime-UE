@@ -45,6 +45,7 @@ SATS enforces a **semantic structure on your types**, aligning code with **inten
 
 ---
 
+<!--
 ## 🧠 Philosophy
 
 > "Building an alternate Verse requires boldness and ambition.  
@@ -56,3 +57,4 @@ It turns reducers into verbs.
 It makes Unreal **speak** your world.
 
 This is not mere codegen. It’s **ontological synchronization**—gameplay logic shaped by algebraic meaning.
+-->
