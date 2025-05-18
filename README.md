@@ -9,6 +9,8 @@
 
 **SpacetimeUE++** is not just a plugin. It’s a paradigm shift.  
 It brings the full semantics of [SpacetimeDB](https://spacetimedb.com) into Unreal Engine—not just as an authoritative server backend, but as a **semantic layer**, an **algebraic model of gameplay logic**, and a **language** for real-time worlds.
+> Building an alternate Verse requires boldness and ambition.
+> One thus needs more than technology and services: one needs to define new language.
 
 With automatic code generation, Blueprint-native reducer calls, SATS-powered type introspection, and optional protocol-level integration, SpacetimeUE++ transforms Unreal into a **declarative, multiplayer-first engine**—without sacrificing control or clarity.
 
