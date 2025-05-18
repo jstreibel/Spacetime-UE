@@ -5,6 +5,13 @@
 
 ---
 
+## 🚧 Prototype Status
+
+> ⚠️ This plugin is in **Prototype** phase and has only been tested against the [`quickstart-chat`](https://spacetimedb.com/docs/modules/c-sharp/quickstart) SpacetimeDB tutorial database.  
+> Expect bugs, missing features, and breaking changes. Contributions and feedback welcome!
+
+---
+
 ## ✨ Overview
 
 **SpacetimeUE++ is not just an integration—it’s a proposition.**  
