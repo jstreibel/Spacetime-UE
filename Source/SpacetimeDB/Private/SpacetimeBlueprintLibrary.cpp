@@ -15,16 +15,26 @@ static bool RunSpacetimeDB(const FString& Args, FString& OutFullOutput, int32& O
 		TEXT("spacetime"), *Args, &OutReturnCode, &StdOut, &StdErr))
 	{
 		OutFullOutput = StdErr.IsEmpty() ? TEXT("Failed to launch CLI.") : StdErr;
+		OutFullOutput += TEXT("\n") + StdOut;
 		return false;
+	}
+
+	if (OutReturnCode != 0)
+	{
+		if (!StdErr.IsEmpty())
+		{
+			OutFullOutput = StdErr + TEXT("\n") + StdOut;
+			return false;			
+		}
 	}
 
 	if (!StdErr.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Spacetime] CLI stderr: %s"), *StdErr);
+		UE_LOG(LogTemp, Warning, TEXT("[Spacetime] CLI output:\n%s"), *StdOut);
 	}
 	
 	OutFullOutput = StdOut;
-	return (OutReturnCode == 0);
+	return true;
 }
 
 bool USpacetimeBlueprintLibrary::DescribeDatabase(
@@ -33,6 +43,14 @@ bool USpacetimeBlueprintLibrary::DescribeDatabase(
 	TArray<FString>& Reducers,
 	FString& OutError)
 {
+	if (DatabaseName.IsEmpty())
+	{
+		OutError = TEXT("Database name is empty");
+		UE_LOG(LogTemp, Error, TEXT("[Spacetime] %s"), *OutError);
+		
+		return false;
+	}
+	
 	// TODO: check if 'spacetime' binary available
 	// TODO: check if server running, logged, etc.	
 	
