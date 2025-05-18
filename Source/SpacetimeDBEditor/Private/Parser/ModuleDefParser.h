@@ -24,19 +24,21 @@ public:
 	);
 
 private:
-
+	static bool ParseTables(
+		const TSharedPtr<FJsonObject>& RawModuleDefJson,
+		TArray<SATS::FTableDef>& TablesOutput,
+		FString& OutError);
+	static bool ParseReducers(
+		const TSharedPtr<FJsonObject>& RawModuleDefJson,
+		TArray<SATS::FReducerDef>& ReducersOutput,
+		FString& OutError);
 	static bool ParseRawModuleDef(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
 		SATS::FRawModuleDef& OutDef,
 		FString& OutError);
 
-	static bool ParseTypespaceProductType(
-		const TArray<TSharedPtr<FJsonValue>> &ProductTermsArray,
-		SATS::FProductType& OutProduct,
-		FString& OutError);
-
 	static bool ParseTypespaceSumType(
 		const TArray<TSharedPtr<FJsonValue>> &SumTerms,
-		SATS::FSumType& OutSum,
+		SATS::FSumKind& OutSum,
 		FString& OutError); 
 };
