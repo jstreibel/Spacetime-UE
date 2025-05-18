@@ -1,5 +1,3 @@
-# SpacetimeDB UE5 Integration
-
 # SpacetimeUE++
 
 *A complete Unreal Engine integration for SpacetimeDB: schema reflection, Blueprint access, direct protocol awareness, and a new semantic layer for game logic.*
