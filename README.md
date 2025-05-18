@@ -1,12 +1,58 @@
 # SpacetimeDB UE5 Integration
 
-A lightweight Unreal Engine 5.5 plugin that wraps the SpacetimeDB CLI (`spacetime`) to provide Blueprint-accessible functions for querying and describing databases.
-<!--
-<figure>
-    <img src="Resources/Spacetime-DescribeDatabase-Unreal-Node.png">
-    <figcaption> Example "Describe Database" Blueprint Node </figcaption>
-</figure>
--->
+# SpacetimeUE++
+
+*A complete Unreal Engine integration for SpacetimeDB: schema reflection, Blueprint access, direct protocol awareness, and a new semantic layer for game logic.*
+
+---
+
+## 🚧 Prototype Status
+
+> ⚠️ This plugin is in **Prototype** phase and has only been tested against the [`quickstart-chat`](https://spacetimedb.com/docs/modules/c-sharp/quickstart) SpacetimeDB tutorial database.
+> Expect bugs, missing features, and breaking changes. Contributions and feedback welcome!
+
+---
+
+## 🧠 Philosophy
+
+SpacetimeDB, by its very name—and through its core currency, **Energy**—invokes the deepest ideas in physics:
+
+- **Dynamics**: Systems evolve through clear rules.
+- **Freedom**: Agents act and choose within those constraints.
+- **Conservation**: Transactions are structured, reliable, and meaningful.
+
+This integration doesn't just treat SpacetimeDB as a server backend. It **blends it into Unreal Engine**, introducing its **semantic worldview** into the engine's very fabric.
+
+> We're not just wiring two technologies together.
+> We're teaching Unreal to **speak the language of the living universe**—inside human-made machines.
+
+---
+
+## 🔤 SATS: The Semantic Algebraic Type System
+
+This plugin adopts and extends SpacetimeDB’s `typespace` with a formal, algebraically grounded naming convention:
+
+| SpacetimeDB Type | SATS Role | Unreal Mapping |
+|------------------|-----------|----------------|
+| `Product`        | `Terms`   | `USTRUCT` with fields |
+| `Sum`            | `Variants`| Tagged union or manual discriminated struct |
+| `Vector<T>`      | `List<T>` | `TArray` with semantic labels (`Children`, `Entries`, etc.) |
+| `Option<T>`      | `Optional`| Nullable type with semantic safety |
+
+With SATS enabled, generated code reflects not just structure—but **intent**.
+
+```cpp
+// Product with Terms
+USTRUCT(BlueprintType)
+struct FPosition {
+  GENERATED_BODY();
+
+  UPROPERTY(BlueprintReadWrite)
+  float X;
+
+  UPROPERTY(BlueprintReadWrite)
+  float Y;
+};
 
 ## Prerequisites
 
