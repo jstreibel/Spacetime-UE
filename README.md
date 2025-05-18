@@ -15,11 +15,11 @@
 
 ## 🧠 Philosophy
 
-SpacetimeDB, by its very name—and through its core currency, **Energy**—invokes the deepest ideas in physics:
+SpacetimeDB, by its very name—and through its core currency, **Energy**—invokes the deepest ideas in **Physics**:
 
 - **Dynamics**: Systems evolve through clear rules.
 - **Freedom**: Agents act and choose within those constraints.
-- **Conservation**: Transactions are structured, reliable, and meaningful.
+- **Conservation laws**: Transactions are structured, reliable, and meaningful.
 
 This integration doesn't just treat SpacetimeDB as a server backend. It **blends it into Unreal Engine**, introducing its **semantic worldview** into the engine's very fabric.
 
