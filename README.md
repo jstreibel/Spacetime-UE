@@ -7,12 +7,19 @@
 
 ## ✨ Overview
 
-**SpacetimeUE++** is not just a plugin. It’s a paradigm shift.  
-It brings the full semantics of [SpacetimeDB](https://spacetimedb.com) into Unreal Engine—SpacetimeDB is the next level of Reflection in Unreal. From a powerful, scalable, authoritative database—directly into your gameplay layer.
-> Building an alternate Verse requires boldness and ambition.
+**SpacetimeUE++** is more than a plugin—it’s a new integration layer between [SpacetimeDB](https://spacetimedb.com) and Unreal Engine.  
+It delivers **schema-driven gameplay**, where a **live, scalable, and authoritative database** becomes part of your runtime logic—not through boilerplate, but through reflection, semantics, and code generation.
+
+> **SpacetimeDB is the next level of Reflection in Unreal.**  
+> Not just metadata—but a living system, directly mapped into Blueprints and C++.
+
+> **Building an alternate Verse requires boldness and ambition.**  
 > One thus needs more than technology and services: **one needs to define new language**.
 
-With automatic code generation, Blueprint-native reducer calls, SATS-powered type introspection, and optional protocol-level integration, SpacetimeUE++ transforms Unreal into a **declarative, multiplayer-first engine**—without sacrificing control or clarity.
+With automatic type generation, native Blueprint reducer bindings, SATS-powered semantic typing, and optional protocol-level connectivity (REST/gRPC), **SpacetimeUE++ turns your game schema into gameplay code**—clean, declarative, and multiplayer-ready.
+
+This is more than a backend connection. It’s a **language of state, action, and structure**, woven directly into the Engine.
+
 
 ---
 
