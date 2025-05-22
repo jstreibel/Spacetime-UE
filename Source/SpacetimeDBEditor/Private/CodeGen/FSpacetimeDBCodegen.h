@@ -32,7 +32,8 @@ public:
 		const SATS::FRawModuleDef& ModuleDef,
 		const FString& HeaderName,
 		FString& OutHeader,
-		FString& OutSource
+		FString& OutSource,
+		FString& OutError
 	);
 
 	/**
@@ -50,7 +51,7 @@ public:
 		FString& OutError);
 
 private:
-	static FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const TSharedPtr<SATS::FAlgebraicKind>& AlgebraicKind);
+	static FString ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind);
 	// Map a SATS builtin (e.g. "Int", "String") to Unreal type ("int32", "FString")
 	static FString MapBuiltinToUnreal(const FString& BuiltinName);
 	// Sanitize identifier and convert to PascalCase

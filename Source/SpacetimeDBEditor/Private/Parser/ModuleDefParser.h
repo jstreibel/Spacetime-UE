@@ -36,9 +36,4 @@ private:
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
 		SATS::FRawModuleDef& OutDef,
 		FString& OutError);
-
-	static bool ParseTypespaceSumType(
-		const TArray<TSharedPtr<FJsonValue>> &SumTerms,
-		SATS::FSumKind& OutSum,
-		FString& OutError); 
 };

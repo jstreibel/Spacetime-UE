@@ -3,7 +3,9 @@
 // Spacetime Algebraic Type System
 namespace SATS
 {
-    enum class EBuiltinKind : uint8
+    using FOptionalString = TOptional<FString>;
+    
+    enum class EBuiltinType : uint8
     {
         Bool,   // { "Bool": [] }
         I8,     // { "I8": [] }
@@ -23,9 +25,8 @@ namespace SATS
         Map,    // { "Map": {"key_ty": AlgebraicType, "ty": AlgebraicType, } 
         Invalid
     };
-
-    
-    enum class EKind : uint8
+   
+    enum class EType : uint8
     {        
         // Don't change this order
         Bool,     // { "Bool": [] }
@@ -51,100 +52,87 @@ namespace SATS
         Product,  // { "Product": {"elements": []}
         Sum,      // { "Sum":     {"variants": []}
         Ref,      // { ? }
-    };
+    };   
     
-    using VBuiltinValue = std::variant<
-    bool,
-    int8,  uint8,
-    int16, uint16,
-    int32, uint32,
-    int64, uint64,
-    std::array<char,7>,    // for I128
-    std::array<char,7>,    // for U128
-    float, double,
-    FString,
-    TArray<struct FAlgebraicKind>>;
-
-
-    inline FString BuiltinKindToString(EBuiltinKind Kind)
+    inline FString BuiltinTypeToString(EBuiltinType Type)
     {
-        switch (Kind)
+        switch (Type)
         {
-            case EBuiltinKind::Bool:   return "Bool";
-            case EBuiltinKind::I8:     return "I8";
-            case EBuiltinKind::U8:     return "U8";
-            case EBuiltinKind::I16:    return "I16";
-            case EBuiltinKind::U16:    return "U16";
-            case EBuiltinKind::I32:    return "I32";
-            case EBuiltinKind::U32:    return "U32";
-            case EBuiltinKind::I64:    return "I64";
-            case EBuiltinKind::U64:    return "U64";
-            case EBuiltinKind::I128:   return "I128";
-            case EBuiltinKind::U128:   return "U128";
-            case EBuiltinKind::F32:    return "F32";
-            case EBuiltinKind::F64:    return "F64";
-            case EBuiltinKind::String: return "String";
-            case EBuiltinKind::Array:  return "Array";
-            case EBuiltinKind::Map:    return "Map";
+            case EBuiltinType::Bool:   return "Bool";
+            case EBuiltinType::I8:     return "I8";
+            case EBuiltinType::U8:     return "U8";
+            case EBuiltinType::I16:    return "I16";
+            case EBuiltinType::U16:    return "U16";
+            case EBuiltinType::I32:    return "I32";
+            case EBuiltinType::U32:    return "U32";
+            case EBuiltinType::I64:    return "I64";
+            case EBuiltinType::U64:    return "U64";
+            case EBuiltinType::I128:   return "I128";
+            case EBuiltinType::U128:   return "U128";
+            case EBuiltinType::F32:    return "F32";
+            case EBuiltinType::F64:    return "F64";
+            case EBuiltinType::String: return "String";
+            case EBuiltinType::Array:  return "Array";
+            case EBuiltinType::Map:    return "Map";
             default:                   return "Invalid";
         }
     };
 
-    inline FString KindToString(EKind Kind)
+    inline FString TypeToString(EType Kind)
     {
         switch (Kind)
         {
-            case EKind::Product:  return "Product";
-            case EKind::Sum:      return "Sum";
-            case EKind::Ref:      return "Ref";
+            case EType::Product:  return "Product";
+            case EType::Sum:      return "Sum";
+            case EType::Ref:      return "Ref";
             
-            case EKind::Bool:     return "Bool";
-            case EKind::I8:       return "I8";
-            case EKind::U8:       return "U8";
-            case EKind::I16:      return "I16";
-            case EKind::U16:      return "U16";
-            case EKind::I32:      return "I32";
-            case EKind::U32:      return "U32";
-            case EKind::I64:      return "I64";
-            case EKind::U64:      return "U64";
-            case EKind::I128:     return "I128";
-            case EKind::U128:     return "U128";
-            case EKind::F32:      return "F32";
-            case EKind::F64:      return "F64";
-            case EKind::String:   return "String";
+            case EType::Bool:     return "Bool";
+            case EType::I8:       return "I8";
+            case EType::U8:       return "U8";
+            case EType::I16:      return "I16";
+            case EType::U16:      return "U16";
+            case EType::I32:      return "I32";
+            case EType::U32:      return "U32";
+            case EType::I64:      return "I64";
+            case EType::U64:      return "U64";
+            case EType::I128:     return "I128";
+            case EType::U128:     return "U128";
+            case EType::F32:      return "F32";
+            case EType::F64:      return "F64";
+            case EType::String:   return "String";
 
-            case EKind::Array:    return "Array";
-            case EKind::Map:      return "Map";
+            case EType::Array:    return "Array";
+            case EType::Map:      return "Map";
             
             default:               return "Invalid";
         }
     }
     
-    inline EKind StringToSatsKind(const FString& Kind)
+    inline EType StringToType(const FString& Kind)
     {
-        if (Kind == "Product")      return EKind::Product;
-        if (Kind == "Sum")          return EKind::Sum;
-        if (Kind == "Ref")          return EKind::Ref;
+        if (Kind == "Product")      return EType::Product;
+        if (Kind == "Sum")          return EType::Sum;
+        if (Kind == "Ref")          return EType::Ref;
         
-        if (Kind == "Bool")         return EKind::Bool;
-        if (Kind == "I8")           return EKind::I8;
-        if (Kind == "U8")           return EKind::U8;
-        if (Kind == "I16")          return EKind::I16;
-        if (Kind == "U16")          return EKind::U16;
-        if (Kind == "I32")          return EKind::I32;
-        if (Kind == "U32")          return EKind::U32;
-        if (Kind == "I64")          return EKind::I64;
-        if (Kind == "U64")          return EKind::U64;
-        if (Kind == "I128")         return EKind::I128;
-        if (Kind == "U128")         return EKind::U128;
-        if (Kind == "F32")          return EKind::F32;
-        if (Kind == "F64")          return EKind::F64;
-        if (Kind == "String")       return EKind::String;
+        if (Kind == "Bool")         return EType::Bool;
+        if (Kind == "I8")           return EType::I8;
+        if (Kind == "U8")           return EType::U8;
+        if (Kind == "I16")          return EType::I16;
+        if (Kind == "U16")          return EType::U16;
+        if (Kind == "I32")          return EType::I32;
+        if (Kind == "U32")          return EType::U32;
+        if (Kind == "I64")          return EType::I64;
+        if (Kind == "U64")          return EType::U64;
+        if (Kind == "I128")         return EType::I128;
+        if (Kind == "U128")         return EType::U128;
+        if (Kind == "F32")          return EType::F32;
+        if (Kind == "F64")          return EType::F64;
+        if (Kind == "String")       return EType::String;
         
-        if (Kind == "Array")        return EKind::Array;
-        if (Kind == "Map")          return EKind::Map;
+        if (Kind == "Array")        return EType::Array;
+        if (Kind == "Map")          return EType::Map;
         
-        return EKind::Invalid;
+        return EType::Invalid;
 
     }
 
@@ -155,62 +143,104 @@ namespace SATS
      * @param Kind 
      * @return 
      */
-    inline EBuiltinKind StringToBuiltinKind(const FString& Kind)
+    inline EBuiltinType StringToBuiltinType(const FString& Kind)
     {
  
-        if (Kind == "Bool")         return EBuiltinKind::Bool;
-        if (Kind == "I8")           return EBuiltinKind::I8;
-        if (Kind == "U8")           return EBuiltinKind::U8;
-        if (Kind == "I16")          return EBuiltinKind::I16;
-        if (Kind == "U16")          return EBuiltinKind::U16;
-        if (Kind == "I32")          return EBuiltinKind::I32;
-        if (Kind == "U32")          return EBuiltinKind::U32;
-        if (Kind == "I64")          return EBuiltinKind::I64;
-        if (Kind == "U64")          return EBuiltinKind::U64;
-        if (Kind == "I128")         return EBuiltinKind::I128;
-        if (Kind == "U128")         return EBuiltinKind::U128;
-        if (Kind == "F32")          return EBuiltinKind::F32;
-        if (Kind == "F64")          return EBuiltinKind::F64;
-        if (Kind == "String")       return EBuiltinKind::String;
-        if (Kind == "Array")        return EBuiltinKind::Array;
-        if (Kind == "Map")          return EBuiltinKind::Map;
+        if (Kind == "Bool")         return EBuiltinType::Bool;
+        if (Kind == "I8")           return EBuiltinType::I8;
+        if (Kind == "U8")           return EBuiltinType::U8;
+        if (Kind == "I16")          return EBuiltinType::I16;
+        if (Kind == "U16")          return EBuiltinType::U16;
+        if (Kind == "I32")          return EBuiltinType::I32;
+        if (Kind == "U32")          return EBuiltinType::U32;
+        if (Kind == "I64")          return EBuiltinType::I64;
+        if (Kind == "U64")          return EBuiltinType::U64;
+        if (Kind == "I128")         return EBuiltinType::I128;
+        if (Kind == "U128")         return EBuiltinType::U128;
+        if (Kind == "F32")          return EBuiltinType::F32;
+        if (Kind == "F64")          return EBuiltinType::F64;
+        if (Kind == "String")       return EBuiltinType::String;
+        if (Kind == "Array")        return EBuiltinType::Array;
+        if (Kind == "Map")          return EBuiltinType::Map;
         
-        return EBuiltinKind::Invalid;
+        return EBuiltinType::Invalid;
 
     }
+
+    struct FAlgebraicType;
     
-    struct FBuiltinKind
+    using VBuiltinType = TVariant<
+        bool,
+        int8,  uint8,
+        int16, uint16,
+        int32, uint32,
+        int64, uint64, 
+        std::array<char,7>,    // I128 and U128?
+        // , int128, uint128
+        float, double,
+        FString
+        // TODO: Resolve below: TMap and TArray need sizeof<FAlgebraicType>,
+        // but here FAlgebraicType is forward declared. 
+        // TArray<struct FAlgebraicType>,
+        // TMap<struct FAlgebraicType, struct FAlgebraicType>
+    >;
+    
+    struct FBuiltinType
     {
-        FBuiltinKind() : Tag(EBuiltinKind::Invalid), Value(0) { }
-        EBuiltinKind Tag;
-        VBuiltinValue Value; // Used in the case of Array or Map
-    };    
+        EBuiltinType Tag = EBuiltinType::Invalid;
+        VBuiltinType Value;
+        
+		/*bool Bool;
+        int8 Int8;
+  		uint8 UInt8;
+        int16 Int16;
+		uint16 UInt16;
+        int32 Int32;
+		uint32 UInt32;
+		int64 Int64;
+        uint64 UInt64;
+        std::array<char,7> I128;
+        std::array<char,7> U128;
+        float F32;
+        double F64;
+        FString String;
+        // TODO: Resolve below: TMap and TArray need sizeof<FAlgebraicType>,
+        // but here FAlgebraicType is forward declared. 
+        // , TArray<struct FAlgebraicType>
+        // , TMap<struct FAlgebraicType, struct FAlgebraicType>
+        */
+    };
     
-    struct FRefKind {
+    struct FRefType {
         FString Path;  // e.g. "other_module.SomeType"
     };
 
-    struct FProductKind {
-        struct FField { FString Name; TSharedPtr<FAlgebraicKind> AlgebraicType; };
+    struct FProductType {
+        
+        struct FField
+        {
+            FOptionalString Name;
+            TSharedPtr<FAlgebraicType> AlgebraicType;
+        };
         TArray<FField> Elements;
     };
 
-    struct FSumKind {
+    struct FSumType {
         FString Tag;
-        TMap<FString, TSharedPtr<FAlgebraicKind>> Options;
+        TMap<FOptionalString, TSharedPtr<FAlgebraicType>> Options;
     };
 
-    struct FAlgebraicKind {
-        EKind    Tag;
-        FProductKind Product;    // valid if kind==Product
-        FSumKind     Sum;        // valid if kind==Sum
-        FBuiltinKind Builtin;    // valid if kind==Builtin: e.g. "Int", "String"
-        FRefKind     Ref;        // valid if kind==Ref
+    struct FAlgebraicType {
+        EType    Tag;
+        FProductType Product;    // valid if kind==Product
+        FSumType     Sum;        // valid if kind==Sum
+        FBuiltinType Builtin;    // valid if kind==Builtin: e.g. "Int", "String"
+        FRefType     Ref;        // valid if kind==Ref
     };
     
     // --- TypeSpace and TypeEntry ---
     struct FTypespace {
-        struct FAlgebraicDef { FString Name; FAlgebraicKind AlgebraicKind; };
+        struct FAlgebraicDef { FString Name; FAlgebraicType AlgebraicType; };
         TArray<FAlgebraicDef> TypeEntries;
     };
     
@@ -228,7 +258,7 @@ namespace SATS
 
     struct FSchedule {
         // represent as a SumType or custom struct
-        FSumKind Lifecycle;
+        FSumType Lifecycle;
     };
 
     // --- Tables ---
@@ -246,11 +276,12 @@ namespace SATS
 
     // --- Reducers ---
     struct FReducerDef {
-        struct FReturnType { FString Tag; TSharedPtr<FJsonValue> Payload; };
+        struct FParam { FOptionalString Name; FAlgebraicType Type; };
+        // struct FReturnType { FString Tag; TSharedPtr<FJsonValue> Payload; };
         FString             Name;
-        FProductKind        Params;
-        FReturnType         ReturnType;
-        FSumKind            Lifecycle;
+        TArray<FParam>      Params;
+        // FReturnType         ReturnType;
+        FSumType            Lifecycle;
     };
 
     struct FIndexDef { FString Name; TArray<FString> Columns; };

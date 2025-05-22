@@ -177,7 +177,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating table USTRUCTs"));
     FString TablesHeader;
 	FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
-    if (!CodeGen->GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader))
+    if (!CodeGen->GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
     {
         OutError = TEXT("Table struct generation failed.");
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
@@ -197,8 +197,11 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
     FString ReducersHeader, ReducersSource;
 	FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
-    if (!CodeGen->GenerateReducerFunctions(RawModule, BaseReducersHeaderName,
-    	ReducersHeader, ReducersSource))
+    if (!CodeGen->GenerateReducerFunctions(
+    	RawModule, BaseReducersHeaderName,
+    	ReducersHeader,
+    	ReducersSource,
+    	OutError))
     {
         OutError = TEXT("Reducer function generation failed.");
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);

@@ -2,6 +2,7 @@
 
 #include "Containers/UnrealString.h"
 #include "Net/RepLayout.h"
+#include "Parser/Common.h"
 
 const FString ApiMacroString = TEXT("SPACETIMEDB_API");  
 
@@ -49,9 +50,9 @@ inline bool IsBuiltinWithNativeRepresentation(const FString& TypeName)
     return BuiltinsWithNativeRepresentations.Contains(TypeName);
 }
 
-inline bool IsBuiltinWithNativeRepresentation(const SATS::EKind& Kind)
+inline bool IsBuiltinWithNativeRepresentation(const SATS::EType& Kind)
 {
-    return IsBuiltinWithNativeRepresentation(SATS::KindToString(Kind));
+    return IsBuiltinWithNativeRepresentation(SATS::TypeToString(Kind));
 }
 
 // Converts any snake_case, kebab-case, space separated, or camelCase string
@@ -98,21 +99,19 @@ FString FSpacetimeDBCodeGen::ToPascalCase(const FString& InString)
     return Result;
 }
 
-FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const TSharedPtr<SATS::FAlgebraicKind>& AlgebraicKind)
+FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind)
 {
-    switch (AlgebraicKind->Tag)
+    switch (AlgebraicKind.Tag)
     {
-    case SATS::EKind::Product:  return "// Product placeholder";
-    case SATS::EKind::Sum:      return "// Sum placeholder";
-    case SATS::EKind::Ref:      return "// Ref placeholder";
+    case SATS::EType::Product:  return "// Product placeholder";
+    case SATS::EType::Sum:      return "// Sum placeholder";
+    case SATS::EType::Ref:      return "// Ref placeholder";
 
     // case BuiltIn:
-    case SATS::EKind::Array:    return TEXT("// TArray placeholder");
-    case SATS::EKind::Map:      return TEXT("// TMap placeholder");
-    default:        
-    }
-
-    return MapBuiltinToUnreal(SATS::KindToString(AlgebraicKind->Tag));
+    case SATS::EType::Array:    return TEXT("// TArray placeholder");
+    case SATS::EType::Map:      return TEXT("// TMap placeholder");
+    default:   /* BuiltIn */    return MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Tag));
+    }    
 }
 
 bool FSpacetimeDBCodeGen::GenerateTableStructs(
@@ -132,7 +131,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
         // Lookup product definition
         const int ProductTypeRef = Table.ProductTypeRef;
         const auto& ProductType = ModuleDef.Typespace.TypeEntries[ProductTypeRef];
-        if (ProductType.AlgebraicKind.Tag != SATS::EKind::Product)
+        if (ProductType.AlgebraicType.Tag != SATS::EType::Product)
         {
             OutError = TEXT("Table type is expected to be a SATS Product type.");
             return false;
@@ -171,7 +170,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
     // OutHeader = MoveTemp(OutHeaderText);
     // return true;
     
-    OutError = TEXT("Not implemented");
+    OutError = TEXT("Tables codegen not implemented");
     return false;
 }
 
@@ -179,7 +178,8 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     const SATS::FRawModuleDef& ModuleDef,
     const FString& HeaderName,
     FString& OutHeader,
-    FString& OutSource
+    FString& OutSource,
+    FString& OutError
 )
 {
     
@@ -201,12 +201,21 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     {
         // Function signature
         TArray<FString> Params;
-        for (const auto& Field : ReducerDef.Params.Elements)
-        {
-            FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Field.TypeRef].Builtin);
-            FString ArgName = ToPascalCase(Field.Name);
+        for (const auto& [Name, AlgebraicType] : ReducerDef.Params)
+        {            
+            // FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Argument.TypeRef].Builtin);
+            FString ArgName = Name.IsSet() ? ToPascalCase(*Name) : FCommon::CreateUniqueName();
+
+            if (!IsBuiltinWithNativeRepresentation(AlgebraicType.Tag))
+            {
+                OutError = TEXT("[prototype errror] reducer argument is expected to be a SATS BuiltIn type in prototype.");
+            }
+
+            FString UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
+            
             Params.Add(FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName));
         }
+        
         FString Sig = FString::Printf(
             TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB\")\n    static void %s(%s);\n\n"),
             *ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", "))
@@ -247,18 +256,20 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         OutHeaderText += TEXT("\nstruct ") + ApiMacroString + " " + StructName + TEXT(" {\n\n"
                 "    GENERATED_BODY()\n\n");
         
-        if (TypeEntry.AlgebraicKind.Tag == SATS::EKind::Product)
+        if (TypeEntry.AlgebraicType.Tag == SATS::EType::Product)
         {
             
         }
         //for (Ty)
-        
+
+        /*
         FString Prop = FString::Printf(
             TEXT("    UPROPERTY(BlueprintReadWrite) %s %s;\n"),
             *CxxTypeString, *ToPascalCase(Name)
-        );
+        ); 
         
         OutHeaderText += Prop;
+        */
         
 
         OutHeaderText += TEXT("};\n\n\n");
