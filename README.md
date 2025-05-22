@@ -1,130 +1,137 @@
-# SpacetimeDB UE5 Integration
-
 # SpacetimeUE++
 
-*A complete Unreal Engine integration for SpacetimeDB: schema reflection, Blueprint access, direct protocol awareness, and a new semantic layer for game logic.*
+**Schema-powered multiplayer for Unreal Engine.**  
+*Live logic, reflective state, and algebraic structure—from SpacetimeDB into Blueprints.*
 
 ---
 
 ## 🚧 Prototype Status
 
-> ⚠️ This plugin is in **Prototype** phase and has only been tested against the [`quickstart-chat`](https://spacetimedb.com/docs/modules/c-sharp/quickstart) SpacetimeDB tutorial database.
+> ⚠️ This plugin is in **Prototype** phase and has only been tested against the [`quickstart-chat`](https://spacetimedb.com/docs/modules/c-sharp/quickstart) SpacetimeDB tutorial database.  
 > Expect bugs, missing features, and breaking changes. Contributions and feedback welcome!
 
 ---
 
-## 🧠 Philosophy
+## ✨ Overview
 
-SpacetimeDB, by its very name—and through its core currency, **Energy**—invokes the deepest ideas in physics:
+**SpacetimeUE++ is not just an integration—it’s a proposition.**  
+What if your game logic wasn’t duct-taped across RPCs, state machines, and database calls—but declared once, semantically, and made fully available inside the Engine?
 
-- **Dynamics**: Systems evolve through clear rules.
-- **Freedom**: Agents act and choose within those constraints.
-- **Conservation**: Transactions are structured, reliable, and meaningful.
+SpacetimeUE++ connects Unreal Engine with [SpacetimeDB](https://spacetimedb.com), delivering **real-time schema reflection**, **Blueprint-ready reducer bindings**, and **semantic typing** via SATS (Semantic Algebraic Type System).
 
-This integration doesn't just treat SpacetimeDB as a server backend. It **blends it into Unreal Engine**, introducing its **semantic worldview** into the engine's very fabric.
+> **SpacetimeDB is the next level of Reflection in Unreal.**  
+> Not just metadata—but a living, authoritative system woven into your gameplay layer.
 
-> We're not just wiring two technologies together.
-> We're teaching Unreal to **speak the language of the living universe**—inside human-made machines.
+> **Building an alternate Verse requires boldness and ambition.**  
+> One thus needs more than technology and services: **one needs to define new language**.
+
+With automatic type generation, native Blueprint access, and optional REST/gRPC protocol support, **SpacetimeUE++ transforms your SpacetimeDB schema into gameplay code**—clean, declarative, multiplayer-ready, and deeply Unreal-native.
+
+This is more than middleware. It’s a **philosophy of simulation**—made ergonomic.
 
 ---
 
-## 🔤 SATS: The Semantic Algebraic Type System
+> _This plugin is part of my personal prototype to explore and extend SpacetimeDB’s Unreal integration.  
+If you're from the team: I’m already building with you in mind._
 
-This plugin adopts and extends SpacetimeDB’s `typespace` with a formal, algebraically grounded naming convention:
+---
 
-| SpacetimeDB Type | SATS Role | Unreal Mapping |
-|------------------|-----------|----------------|
-| `Product`        | `Terms`   | `USTRUCT` with fields |
-| `Sum`            | `Variants`| Tagged union or manual discriminated struct |
-| `Vector<T>`      | `List<T>` | `TArray` with semantic labels (`Children`, `Entries`, etc.) |
-| `Option<T>`      | `Optional`| Nullable type with semantic safety |
+### 🧠 Beyond Integration: Co-Authoring Logic
 
-With SATS enabled, generated code reflects not just structure—but **intent**.
+While SpacetimeDB is designed for seamless integration, its true power is unlocked through **intentional reducer design**.
 
-```cpp
-// Product with Terms
-USTRUCT(BlueprintType)
-struct FPosition {
-  GENERATED_BODY();
+SpacetimeUE++ is not just a way to expose reducers in Blueprint—it’s a prototype for understanding how Unreal Engine and SpacetimeDB can **co-author gameplay logic**.
 
-  UPROPERTY(BlueprintReadWrite)
-  float X;
+Is the best path emitting reducer code from Blueprints, compiling to WebAssembly, and deploying to the DB?  
+Or is it designing gameplay systems that **converse fluently** with SpacetimeDB's reducer architecture—*speaking its language*, not just invoking its methods?
 
-  UPROPERTY(BlueprintReadWrite)
-  float Y;
-};
+We’re here to explore both.
 
-## Prerequisites
+> Because client-side logic doesn’t breathe a unified world.  
+> The world’s logic **belongs to the world**—not to its agents.
 
-* **Unreal Engine 5.5** (or later) installed
-* **SpacetimeDB CLI** (`spacetime`) available on your system PATH, or bundled alongside your game
-* **C++ development environment** (Rider, Visual Studio, etc.)
+When logic is fragmented across clients, **reality splinters**. There is no consistent causality, no shared truth. The result? Desyncs, exploits, chaos.
 
-## Installation
+If the logic of the world is to feel **coherent, authoritative, and scalable**, it must live in a system designed to host it. That’s SpacetimeDB’s domain.
 
-### Option A: Git Submodule
+And if you're wondering why that matters—ask the Metaverse.  
+Zuckerberg spent **$10 billion** trying to simulate a shared world.  
+He didn’t get close.
 
-```bash
-cd <YourUEProjectRoot>
-git submodule add https://github.com/jstreibel/Spacetime-UE.git Plugins/Spacetime-UE
-```
+---
 
-### Option B: Clone Directly
+### 🌍 Why the Hassle?
 
-```bash
-cd <YourUEProjectRoot>/Plugins
-git clone https://github.com/jstreibel/Spacetime-UE.git
-```
+Because this isn’t about patching replication.  
+It’s not about smoothing over UE networking quirks.  
+It’s not even about fast prototyping.
 
-1. From your project root, regenerate project files:
+It’s about building a **Verse**.
 
-   ```bash
-   ./GenerateProjectFiles.sh -platform=Linux  # or Windows/Mac as appropriate
-   ```
-2. Open the solution in an external editor, e.g. Rider (Linux), Visual Studio (Windows), VSCode (Multi-platform), XCode (MacOS), etc.
-3. Build the solution.
-4. In the Unreal Editor, go to **Edit → Plugins**, locate **SpacetimeCLI**, and enable it.
-5. Restart the editor.
+A persistent, consistent, scalable world demands more than replicated variables and client-authoritative hacks. It requires:
 
-## Usage in Blueprints
+- **One logic**  
+- **One timeline**  
+- **One source of truth**
 
-1. In your Blueprint, add a **Call Function** node from **SpacetimeDB** category.
-2. Example: **DescribeDatabase**
+And it lives **server-side**.
 
-    * **Input**: Database name (string)
-    * **Outputs**:
+> Client-side logic doesn’t breathe a coherent world.  
+> The world’s logic belongs to the world—not to its agents.
 
-        * **Tables** string array
-        * **Reducers** string array
-        * **Error** message (string)
-3. Use **Print String** or your UI to display returned values.
+When logic is fragmented across clients, causality breaks.  
+State becomes subjective. Synchronization becomes guesswork.  
+And if you think that’s enough to simulate 100,000 players—or a million—good luck.
 
-```blueprint
-// Pseudocode:
-DescribeDatabase("MyDB", Tables, Reducers, OutError);
-PrintStringArray(Tables);
-PrintStringArray(Reducers);
-```
+Zuckerberg spent **$10 billion** chasing that dream.  
+He didn’t get close.
 
-<!-- ## Versioning & Releases
+We go through the hassle because we want to.  
+Because it's the **only honest path** to large-scale shared reality.
 
-We use [Semantic Versioning](https://semver.org/):
+Because **this is the work required** to make the Verse *real*.
 
-* **Major** versions introduce breaking changes
-* **Minor** versions add functionality in a backward-compatible manner
-* **Patch** versions make backward-compatible bug fixes
+---
 
-Tag releases on GitHub as `v<MAJOR>.<MINOR>.<PATCH>` and include a changelog in the release notes.-->
+## 🔁 What It Does
 
-## Contributing
+| Feature | Description |
+|--------|-------------|
+| 🔧 Codegen | Generates `USTRUCT`s for tables and `UFUNCTION`s for reducers from SpacetimeDB schemas |
+| 🧠 SATS Semantic Mapping | Respects SpacetimeDB’s notion of types fundamentally as algebraic objects—Products with Terms, Sums with Variants, Optionals, and Lists.
+| 🧩 Blueprint-Ready | Exposes reducer calls and database tables as native Blueprint nodes and types |
+| 🛠️ Editor Integration | Live schema sync, diagnostics, and regeneration tools within the Unreal Editor |
+| 🌐 Protocol Flexibility | Optional REST/gRPC integration for CLI-free deployment and live data wiring |
+| 🔐 Auth Support | JWT-based authentication for secure, multi-tenant projects |
+| 🧪 CI/CD Friendly | Dockerized build support, CLI automation (`stdb-ue`), and testable codegen pipelines |
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature-name`)
-3. Commit your changes (`git commit -m "Add feature"\`) and push (`git push origin feature-name`)
-4. Open a Pull Request
+---
 
-Please follow the existing [code style](https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine) and add tests where applicable.
+## 🧬 SATS: Semantic Algebraic Type System
 
-## License
+Unlike naive reflection layers, SpacetimeUE++ adopts the **SATS** approach to types:
 
-This project is licensed under the [MIT License](LICENSE).
+| SpacetimeDB | SATS Concept | Unreal Output |
+|-------------|---------------|----------------|
+| `Product` | `Elements` of a composite type | `USTRUCT` with named `UPROPERTY`s |
+| `Sum`     | `Variants` of an option space | Tagged `USTRUCT` or `TVariant` |
+| `Vector`  | `List<T>` | `TArray<T>` |
+| `Option`  | `Optional<T>` | Nullable wrapper, safe-by-construction |
+
+SATS enforces a **semantic structure on your types**, aligning code with **intended meaning**, not just technical compatibility. This gives your game state the **expressive rigor of a language**.
+
+---
+
+<!--
+## 🧠 Philosophy
+
+> "Building an alternate Verse requires boldness and ambition.  
+> One thus needs more than technology and services: one needs language."
+
+SpacetimeUE++ is that language.
+It turns schema into ontology.
+It turns reducers into verbs.
+It makes Unreal **speak** your world.
+
+This is not mere codegen. It’s **ontological synchronization**—gameplay logic shaped by algebraic meaning.
+-->
