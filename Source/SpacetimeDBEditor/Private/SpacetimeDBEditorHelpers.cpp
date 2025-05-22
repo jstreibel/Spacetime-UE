@@ -145,7 +145,7 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
     SATS::FRawModuleDef RawModule;
 	if (FModuleDefParser Parser; !Parser.Parse(RawModuleDefString, RawModule, OutError))
     {
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] Schema parse failed: %s"), *OutError);
+        UE_LOG(LogTemp, Error, TEXT("[spacetime] RawModuleDef parse failed: %s"), *OutError);
         return false;
     }
 

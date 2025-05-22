@@ -154,7 +154,7 @@ bool FModuleDefParser::ParseRawModuleDef(
     // --- typespace ---
     if (!FTypespaceParser::ParseTypespace(RawModuleDefJson, OutDef.Typespace, OutError))
     {
-        OutError = TEXT("Failed to parse typespace: ") + OutError;
+        OutError = TEXT("On 'typespace' parsing: ") + OutError;
         return false;
     }
 
