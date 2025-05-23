@@ -208,7 +208,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
 
             if (!IsBuiltinWithNativeRepresentation(AlgebraicType.Tag))
             {
-                OutError = TEXT("[prototype errror] reducer argument is expected to be a SATS BuiltIn type in prototype.");
+                OutError = TEXT("[prototype error] reducer argument is expected to be a SATS BuiltIn type in prototype.");
             }
 
             FString UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);

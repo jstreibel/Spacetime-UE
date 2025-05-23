@@ -57,7 +57,8 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             // The list of Algebraic Types in typespace is described by a bunch of SATS Algebraic Values.
             if (!FCommon::ParseProduct(*ProductTerms, TypeEntry.AlgebraicType.Product, OutError))
             {
-                OutError = TEXT("Failed to parse Product Type: ") + OutError;
+                int TypeIndex = TypespaceOutput.TypeEntries.Num();
+                OutError = FString::Printf(TEXT("Failed to parse Product Type %i: "), TypeIndex) + OutError;
                 return false;
             }
         }    

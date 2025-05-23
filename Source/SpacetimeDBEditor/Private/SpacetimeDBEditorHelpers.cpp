@@ -121,7 +121,7 @@ auto ToPascalCase = [](const FString& InString) -> FString
 	return Result;
 };
 
-bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
+bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	const FString& DatabaseName,
 	FString& OutFullPath,
 	FString& OutError)
@@ -174,23 +174,29 @@ bool USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
 
 	
     // 5. Generate table structs header
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating table USTRUCTs"));
-    FString TablesHeader;
-	FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
-    if (!CodeGen->GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
-    {
-        OutError = TEXT("Table struct generation failed.");
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
-        return false;
-    }
-    const FString TablesHeaderName = FString::Printf(TEXT("%sTables.h"), *DatabaseNamePascal);
-    const FString TablesHeaderPath = HeaderOutputDir / TablesHeaderName;
-    if (!Writer.WriteFile(TablesHeaderPath, TablesHeader, OutError))
-    {
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write tables header '%s': %s"), *TablesHeaderPath, *OutError);
-        return false;
-    }
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *TablesHeaderPath);
+	if (0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating table USTRUCTs"));
+		FString TablesHeader;
+		FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
+		if (!CodeGen->GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
+		{
+			OutError = TEXT("Table struct generation failed: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+			return false;
+		}
+		const FString TablesHeaderName = FString::Printf(TEXT("%sTables.h"), *DatabaseNamePascal);
+		const FString TablesHeaderPath = HeaderOutputDir / TablesHeaderName;
+		if (!Writer.WriteFile(TablesHeaderPath, TablesHeader, OutError))
+		{
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write tables header '%s': %s"), *TablesHeaderPath, *OutError);
+			return false;
+		}
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *TablesHeaderPath);
+	} else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[spacetime] Table code generation not implemented"));
+	}
 
 	
     // 6. Generate reducer functions (header + source)

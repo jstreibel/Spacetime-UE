@@ -40,6 +40,8 @@ namespace SATS
         U64,      // { "U64": [] }
         I128,     // { "I128": [] }
         U128,     // { "U128": [] }
+        I256,     // { "I256": [] }
+        U256,     // { "U256": [] }
         F32,      // { "F32": [] }
         F64,      // { "F64": [] }
         String,   // { "String": [] }
@@ -125,6 +127,8 @@ namespace SATS
         if (Kind == "U64")          return EType::U64;
         if (Kind == "I128")         return EType::I128;
         if (Kind == "U128")         return EType::U128;
+        if (Kind == "I256")         return EType::I256;
+        if (Kind == "U256")         return EType::U256;
         if (Kind == "F32")          return EType::F32;
         if (Kind == "F64")          return EType::F64;
         if (Kind == "String")       return EType::String;

@@ -61,7 +61,7 @@ public:
 	 * @param OutError 
 	 * @return 
 	 */
-	static bool ParseAlgebraic(
+	static bool ResolveAlgebraicType(
 		const TSharedPtr<FJsonObject>& SatsJsonObject,
 		SATS::FAlgebraicType& AlgebraicOut,
 		FString& OutError);

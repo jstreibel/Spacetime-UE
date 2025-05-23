@@ -21,7 +21,7 @@ public:
 	 * and writes USTRUCT headers under Public/Generated/.
 	 */
 	UFUNCTION(CallInEditor, Category="SpacetimeDB|Generators")
-	static bool GenerateUSTRUCTsFromSchema(
+	static bool GenerateCxxUnrealCodeFromSpacetimeDB(
 		const FString& DatabaseName,
 		FString& OutFullPath,
 		FString& OutError);

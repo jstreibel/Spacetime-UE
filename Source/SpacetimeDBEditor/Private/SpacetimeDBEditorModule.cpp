@@ -81,7 +81,7 @@ TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTab
                 const FString DBName = DatabaseNameTextBox->GetText().ToString();
                 FString OutDir, ErrorMsg;
 
-                const bool bOK = USpacetimeDBEditorHelpers::GenerateUSTRUCTsFromSchema(
+                const bool bOK = USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
                     DBName, OutDir, ErrorMsg
                 );
 

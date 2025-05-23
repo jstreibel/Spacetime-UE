@@ -86,7 +86,7 @@ bool FModuleDefParser::ParseReducers(
         TSharedPtr<FJsonObject> ReducerObj = ReducerValue->AsObject();
         if (!ReducerObj.IsValid())
         {
-            OutError = TEXT("Invalid reducer entry; expected JSON object");
+            OutError = TEXT("Invalid reducer element; expected JSON object");
             return false;
         }
 
@@ -97,6 +97,7 @@ bool FModuleDefParser::ParseReducers(
             FString NameField;
             if (!FCommon::ParseRequiredString(ReducerObj, TEXT("name"), NameField, OutError))
             {
+                OutError = TEXT("Failed to parse required string in reducer: ") + OutError;
                 return false;
             }
             ReducerDef.Name =  NameField;
@@ -105,11 +106,20 @@ bool FModuleDefParser::ParseReducers(
         // Params (inline Product)
         {
             TSharedPtr<FJsonObject> ParamsObj = FCommon::ParseRequiredObject(ReducerObj, TEXT("params"), OutError);
-            if (!ParamsObj) return false;
+            if (!ParamsObj)
+            {
+                OutError = FString::Printf(
+                    TEXT("Could not find required 'params' field in definition of Reducer '%s': "), *ReducerDef.Name)
+                    + OutError;
+                return false;
+            }
 
             TArray<TSharedPtr<FJsonValue>> ParamsValueArray;
             if (!FCommon::ParseRequiredArray(ParamsObj, TEXT("elements"), ParamsValueArray, OutError))
             {
+                OutError = FString::Printf(
+                    TEXT("Could not find required inline 'elements' field under 'params' Product field in definition "
+                         "of Reducer '%s': "), *ReducerDef.Name) + OutError;
                 return false;
             }
             
@@ -127,6 +137,8 @@ bool FModuleDefParser::ParseReducers(
                 SATS::FAlgebraicType AlgebraicType;
                 if (!FCommon::ParseNameAndAlgebraicType(ParamObj, ParamName, AlgebraicType, OutError))
                 {
+                    OutError = FString::Printf(TEXT("While parsing 'name' and 'algebraic_type' for reducer '%i': "),
+                        ReducersOutput.Num()) + OutError;
                     return false;
                 }
 

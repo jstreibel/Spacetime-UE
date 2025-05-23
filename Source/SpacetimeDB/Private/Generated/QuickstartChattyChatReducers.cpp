@@ -14,13 +14,13 @@ void USpacetimeDBReducers::ClientDisconnected()
 }
 
 
-void USpacetimeDBReducers::SendMessage(const FString& Text)
+void USpacetimeDBReducers::SendMessage(const float& Text)
 {
     // TODO: call SpacetimeDB client reducer 'SendMessage'
 }
 
 
-void USpacetimeDBReducers::SetName(const FString& Name)
+void USpacetimeDBReducers::SetName(const float& Name)
 {
     // TODO: call SpacetimeDB client reducer 'SetName'
 }

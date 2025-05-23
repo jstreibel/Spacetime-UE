@@ -126,7 +126,7 @@ bool FCommon::ParseRequiredString(const TSharedPtr<FJsonObject>& Parent,
 	}
 	OutString = Parent->GetStringField(Field);
         
-	return false;
+	return true;
 }
 
 bool FCommon::ParseNameAndAlgebraicType(
@@ -137,7 +137,7 @@ bool FCommon::ParseNameAndAlgebraicType(
 {
 	if (!NameAndAlgTypePair.IsValid() || NameAndAlgTypePair->Values.Num() != 2)
 	{
-		OutError = TEXT("Invalid entry in 'types' TypeDef array, expected JSON objects with two fields: 'name' and 'algebraic_type'");
+		OutError = TEXT("Expected JSON object with two fields: 'name' and 'algebraic_type'");
 		return false;
 	}
     
@@ -155,19 +155,41 @@ bool FCommon::ParseNameAndAlgebraicType(
 	// Parse field 'algebraic_type'
 	if (!NameAndAlgTypePair->HasTypedField<EJson::Object>(TEXT("algebraic_type")))
 	{
-		OutError = TEXT("Missing 'algebraic_type' key in JSON object");
+		OutError = TEXT("Missing 'algebraic_type' key in SATS-JSON object");
+		if (OptionalName.IsSet())
+		{
+			OutError += FString::Printf(TEXT(", found name '%s'"), *OptionalName.GetValue());
+		}
 		return false;
 	}
 	const TSharedPtr<FJsonObject>& AlgebraicTypeObject = NameAndAlgTypePair->GetObjectField(TEXT("algebraic_type"));
+
+	if (!AlgebraicTypeObject.IsValid())
+	{
+		auto Name = OptionalName.IsSet() ? OptionalName.GetValue() : TEXT("unnamed");
+		OutError = FString::Printf(
+			TEXT("Either not present or invalid 'algebraic_type' in TypeDef element (%s)"), *Name);
+		return false;
+	}
 
 	if (AlgebraicTypeObject->Values.Num() != 1)
 	{
 		OutError = TEXT("Invalid 'algebraic_type' in TypeDef element");
 		return false;
 	}
-       
-	if (!ParseAlgebraic(AlgebraicTypeObject, AlgebraicOut, OutError))
+	
+	if (!ResolveAlgebraicType(AlgebraicTypeObject, AlgebraicOut, OutError))
 	{
+		auto OutErrorTemp = FString::Printf(TEXT("Failed to resolve Algebraic Type"));
+		if (OptionalName.IsSet())
+		{
+			OutErrorTemp += FString::Printf(TEXT(" of named SATS-JSON object '%s'"), *OptionalName.GetValue());
+		}
+		else
+		{
+			OutErrorTemp += TEXT(" of unnamed SATS-JSON object");
+		}
+		OutError = OutErrorTemp + ": " + OutError; 
 		return false;
 	}
 
@@ -176,12 +198,7 @@ bool FCommon::ParseNameAndAlgebraicType(
 
 bool FCommon::ValidateAndGetSatsKindInTypespaceEntry(const TSharedPtr<FJsonObject>& TypeObj,
 		SATS::EType &SatsKind, FString& OutError)
-{
-	if (!TypeObj.IsValid()) {
-		OutError = TEXT("Invalid entry in 'types' array, expected JSON objects");
-		return false;
-	}
-        
+{        
 	TArray<FString> Keys;
 	TypeObj->Values.GetKeys(Keys);
 	if (Keys.Num() != 1)
@@ -194,7 +211,8 @@ bool FCommon::ValidateAndGetSatsKindInTypespaceEntry(const TSharedPtr<FJsonObjec
 
 	if (SatsKind == SATS::EType::Invalid)
 	{
-		OutError = FString::Printf(TEXT("Invalid entry in 'types' array, expected 'Product' or 'Sum', found '%s'"), *Keys[0]);
+		OutError = FString::Printf(
+			TEXT("Invalid entry in 'types' array, expected 'Product' or 'Sum', found '%s'"), *Keys[0]);
 		return false;
 	}
 
@@ -253,7 +271,7 @@ bool FCommon::ParseBuiltin(const TSharedPtr<FJsonObject>& BuiltinObj,
 }
 
 
-bool FCommon::ParseAlgebraic(
+bool FCommon::ResolveAlgebraicType(
 	const TSharedPtr<FJsonObject>& SatsJsonObject,
     SATS::FAlgebraicType& AlgebraicOut,
     FString& OutError)
@@ -261,14 +279,24 @@ bool FCommon::ParseAlgebraic(
     SATS::EType SatsKind;
     if (!ValidateAndGetSatsKindInTypespaceEntry(SatsJsonObject, SatsKind, OutError))
     {
+    	OutError = TEXT("While resolving Algebraic Type of a SATS-JSON TypeDef: ") + OutError;
         return false;
     }
     
     if (SatsKind == SATS::EType::Product)
     {
+    	auto ProductObject = SatsJsonObject->GetObjectField(TEXT("Product"));
+    	if (!ProductObject.IsValid())
+    	{
+    		OutError = TEXT("Internal inconsistency in parsing SATS-JSON Product Algebraic Type. "
+					  "Expected validated 'Product' object field, found none");
+    		return false;
+    	}
+    	
         const TArray<TSharedPtr<FJsonValue>> *Elements;
-        if (!SatsJsonObject->TryGetArrayField(TEXT("elements"), Elements))
+        if (!ProductObject->TryGetArrayField(TEXT("elements"), Elements))
         {
+        	
             OutError = TEXT("Invalid entry in SATS-JSON Product Algebraic Type. Expected 'elements' array field");
             return false;
         }
@@ -285,9 +313,17 @@ bool FCommon::ParseAlgebraic(
 
     if (SatsKind == SATS::EType::Sum)
     {
+    	auto SumObject = SatsJsonObject->GetObjectField(TEXT("Sum"));
+    	if (!SumObject.IsValid())
+    	{
+    		OutError = TEXT("Internal inconsistency in parsing SATS-JSON Sum Algebraic Type. "
+					  "Expected validated 'Sum' object field, found none");
+    		return false;
+    	}
+    	
+    	
         const TArray<TSharedPtr<FJsonValue>> *Variants;
-        
-        if (!SatsJsonObject->TryGetArrayField(TEXT("variants"), Variants))
+        if (!SumObject->TryGetArrayField(TEXT("variants"), Variants))
         {
             OutError = TEXT("Invalid entry in SATS-JSON Sum Algebraic Type. Expected 'variants' array field");
             return false;
@@ -306,7 +342,7 @@ bool FCommon::ParseAlgebraic(
 
     if (SatsKind == SATS::EType::Ref)
     {
-        OutError = TEXT("SATS parsing of Ref types not implemented");
+        OutError = TEXT("Parsing of Ref SATS-JSON types not implemented");
         return false;
     }
 
@@ -317,6 +353,7 @@ bool FCommon::ParseAlgebraic(
         SATS::FBuiltinType Builtin;
         if (!ParseBuiltin(BuiltinObj, Builtin, OutError))
         {
+        	OutError = TEXT("While resolving Algebraic Type of a SATS-JSON BuiltIn: ") + OutError;
             return false;
         }
 
@@ -330,6 +367,7 @@ bool FCommon::ParseAlgebraic(
 bool FCommon::ParseProduct(const TArray<TSharedPtr<FJsonValue>>& Elements,
     SATS::FProductType& ProductOut, FString& OutError)
 {
+	
     for (const auto& Element : Elements)
     {
         const TSharedPtr<FJsonObject> ElementObj = Element->AsObject();
@@ -344,7 +382,9 @@ bool FCommon::ParseProduct(const TArray<TSharedPtr<FJsonValue>>& Elements,
         SATS::FOptionalString NameString;
         if (!ParseNameAndAlgebraicType(ElementObj, NameString, *AlgebraicType, OutError))
         {
-        	OutError = TEXT("While parsing 'name' and 'algebraic_type' fields: ") + OutError;
+        	int ElementIdx = ProductOut.Elements.Num();
+        	OutError = FString::Printf(
+        		TEXT("While parsing 'name' and 'algebraic_type' fields of Product's element %i: "), ElementIdx) + OutError;
 	        return false;
         }
     	
