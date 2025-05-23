@@ -55,11 +55,11 @@ public:
 		FString& OutError);
 
 	/**
-	 * 
-	 * @param SatsJsonObject 
-	 * @param AlgebraicOut 
-	 * @param OutError 
-	 * @return 
+	 * This function validates and resolves the SATS Algebraic Type of a given JSON object
+	 * @param SatsJsonObject the 'algebraic_type' JSON object  
+	 * @param AlgebraicOut	 the fully parsed-out SATS algebraic type 	
+	 * @param OutError		 error message, in case of error
+	 * @return false, in case of error
 	 */
 	static bool ResolveAlgebraicType(
 		const TSharedPtr<FJsonObject>& SatsJsonObject,
@@ -67,6 +67,6 @@ public:
 		FString& OutError);
 
 private:
-	static bool ValidateAndGetSatsKindInTypespaceEntry(const TSharedPtr<FJsonObject>& TypeObj,
+	static bool ValidateAlgebraicTypeAndGetSatsKind(const TSharedPtr<FJsonObject>& TypeObj,
 		SATS::EType &SatsKind, FString& OutError);
 };

@@ -209,7 +209,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
     	ReducersSource,
     	OutError))
     {
-        OutError = TEXT("Reducer function generation failed.");
+        OutError = TEXT("Reducer function generation failed: ") + OutError;
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }

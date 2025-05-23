@@ -19,9 +19,9 @@ public:
     static void ClientDisconnected();
 
     UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-    static void SendMessage(const float& Text);
+    static void SendMessage(const FString& Text);
 
     UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-    static void SetName(const float& Name);
+    static void SetName(const FString& Name);
 
 };

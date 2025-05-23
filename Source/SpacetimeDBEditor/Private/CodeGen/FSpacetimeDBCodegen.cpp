@@ -213,7 +213,9 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
 
             FString UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
             
-            Params.Add(FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName));
+            const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
+            
+            Params.Add(ParamArgString);
         }
         
         FString Sig = FString::Printf(

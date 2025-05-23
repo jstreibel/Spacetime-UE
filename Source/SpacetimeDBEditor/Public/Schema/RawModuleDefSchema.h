@@ -18,6 +18,8 @@ namespace SATS
         U64,    // { "U64": [] }
         I128,   // { "I128": [] }
         U128,   // { "U128": [] }
+        I256,   // { "I256": [] }
+        U256,   // { "U256": [] }
         F32,    // { "F32": [] }
         F64,    // { "F64": [] }
         String, // { "String": [] }
@@ -71,6 +73,8 @@ namespace SATS
             case EBuiltinType::U64:    return "U64";
             case EBuiltinType::I128:   return "I128";
             case EBuiltinType::U128:   return "U128";
+            case EBuiltinType::I256:   return "I256";
+            case EBuiltinType::U256:   return "U256";
             case EBuiltinType::F32:    return "F32";
             case EBuiltinType::F64:    return "F64";
             case EBuiltinType::String: return "String";
@@ -99,6 +103,8 @@ namespace SATS
             case EType::U64:      return "U64";
             case EType::I128:     return "I128";
             case EType::U128:     return "U128";
+            case EType::I256:     return "I256";
+            case EType::U256:     return "U256";
             case EType::F32:      return "F32";
             case EType::F64:      return "F64";
             case EType::String:   return "String";
@@ -161,6 +167,8 @@ namespace SATS
         if (Kind == "U64")          return EBuiltinType::U64;
         if (Kind == "I128")         return EBuiltinType::I128;
         if (Kind == "U128")         return EBuiltinType::U128;
+        if (Kind == "I256")         return EBuiltinType::I256;
+        if (Kind == "U256")         return EBuiltinType::U256;
         if (Kind == "F32")          return EBuiltinType::F32;
         if (Kind == "F64")          return EBuiltinType::F64;
         if (Kind == "String")       return EBuiltinType::String;

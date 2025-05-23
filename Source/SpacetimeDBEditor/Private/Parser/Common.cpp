@@ -193,26 +193,32 @@ bool FCommon::ParseNameAndAlgebraicType(
 		return false;
 	}
 
+	const FString Name = OptionalName.IsSet() ? ("'" + OptionalName.GetValue() + "'") : "<unnamed>";
+
 	return true;
 }
 
-bool FCommon::ValidateAndGetSatsKindInTypespaceEntry(const TSharedPtr<FJsonObject>& TypeObj,
-		SATS::EType &SatsKind, FString& OutError)
+bool FCommon::ValidateAlgebraicTypeAndGetSatsKind(
+	const TSharedPtr<FJsonObject>& TypeObj,
+	SATS::EType &SatsKind, FString& OutError)
 {        
 	TArray<FString> Keys;
 	TypeObj->Values.GetKeys(Keys);
 	if (Keys.Num() != 1)
 	{
-		OutError = TEXT("Invalid entry in 'types' array, expected single key 'elements' for type kind");
+		OutError =
+			TEXT("Invalid SATS-JSON 'algebraic_type' object; "
+			     "expected single key with SATS-JSON Type (e.g. String, U32, Product, etc.)");
 		return false;
 	}
-
+	
 	SatsKind = SATS::StringToType(Keys[0]);
 
 	if (SatsKind == SATS::EType::Invalid)
 	{
 		OutError = FString::Printf(
-			TEXT("Invalid entry in 'types' array, expected 'Product' or 'Sum', found '%s'"), *Keys[0]);
+			TEXT("Invalid entry in SATS-JSON 'algebraic_type' object; expected SATS Algebraic Type, found '%s'"),
+			*Keys[0]);
 		return false;
 	}
 
@@ -277,11 +283,18 @@ bool FCommon::ResolveAlgebraicType(
     FString& OutError)
 {
     SATS::EType SatsKind;
-    if (!ValidateAndGetSatsKindInTypespaceEntry(SatsJsonObject, SatsKind, OutError))
+    if (!ValidateAlgebraicTypeAndGetSatsKind(SatsJsonObject, SatsKind, OutError))
     {
     	OutError = TEXT("While resolving Algebraic Type of a SATS-JSON TypeDef: ") + OutError;
         return false;
     }
+
+	if (SatsKind == SATS::EType::Invalid)
+	{
+		OutError = TEXT("Internal inconsistency found while parsing SATS-JSON TypeDef; "
+					  "expected validated SATS-JSON Type, found invalid type");
+		return false;
+	}
     
     if (SatsKind == SATS::EType::Product)
     {
@@ -296,7 +309,6 @@ bool FCommon::ResolveAlgebraicType(
         const TArray<TSharedPtr<FJsonValue>> *Elements;
         if (!ProductObject->TryGetArrayField(TEXT("elements"), Elements))
         {
-        	
             OutError = TEXT("Invalid entry in SATS-JSON Product Algebraic Type. Expected 'elements' array field");
             return false;
         }
@@ -345,7 +357,7 @@ bool FCommon::ResolveAlgebraicType(
         OutError = TEXT("Parsing of Ref SATS-JSON types not implemented");
         return false;
     }
-
+		
     // else it is SATS Builtin 
     // "if SatsKind \in {SATS Builtin}
     {
