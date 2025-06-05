@@ -40,7 +40,7 @@ public class SpacetimeDBEditor : ModuleRules
         //    so “ModuleDirectory” is:
         //      <MyUnrealProject>/Plugins/MyPlugin/Source/MyPlugin
         string PluginRoot       = ModuleDirectory;
-        string SDKRoot          = Path.Combine(PluginRoot, "../../ExternalDependencies/SpacetimeSDK");
+        string SDKRoot          = Path.Combine(PluginRoot, "../ExternalDependencies/SpacetimeSDK");
         string SDKIncludeDir    = Path.Combine(SDKRoot, "include");
 
         PublicIncludePaths.Add(SDKIncludeDir);
