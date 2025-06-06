@@ -1,3 +1,0 @@
-[submodule "Source/ExternalDependencies/SpacetimeSDK"]
-	path = Source/ExternalDependencies/SpacetimeSDK
-	url = git@github.com:jstreibel/SpacetimeDB-Cpp.git
