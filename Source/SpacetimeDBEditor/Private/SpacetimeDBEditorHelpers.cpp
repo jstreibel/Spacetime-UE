@@ -10,71 +10,22 @@
 #include "Parser/ModuleDefParser.h"
 #include "Schema/SchemaModels.h"
 
+#include <SpacetimeDB/SpacetimeDB.hpp>
+
+bool RawModuleDefFromCLI(
+	const FString &DatabaseName,
+	FString &Output);
+
+bool RawModuleDefFromHttp(
+	const FString& DatabaseName,
+	FString& OutRawModuleDef);
+
 static bool FetchRawData(
 		const FString& DatabaseName,
 		FString& OutRawModuleDef)
-{
-	// Build the CLI command and parameters
-	const FString Executable = TEXT("spacetime");
-	const FString Arguments  = FString::Printf(TEXT("describe --json %s"), *DatabaseName);
-
-	UE_LOG(LogTemp, Log, TEXT("[spacetime] Running command: %s %s"), *Executable, *Arguments);  // :contentReference[oaicite:0]{index=0}
-
-	int32 ReturnCode = -1;
-	FString StdOut;
-	FString StdErr;
-
-	// Execute synchronously, capturing stdout and stderr
-	const bool bLaunched = FPlatformProcess::ExecProcess(
-		*Executable,
-		*Arguments,
-		&ReturnCode,
-		&StdOut,
-		&StdErr,
-		nullptr,
-		/*bShouldEndWithParentProcess=*/ false
-	);  // :contentReference[oaicite:1]{index=1}
-
-	if (!bLaunched)
-	{
-		UE_LOG(LogTemp, Error,
-			TEXT("[spacetime] Failed to launch SpacetimeDB CLI executable '%s'"),
-			*Executable
-		);
-		return false;
-	}
-
-	// Check exit code
-	if (ReturnCode != 0)
-	{
-		UE_LOG(LogTemp, Error,
-			TEXT("[spacetime] SpacetimeDB CLI exited with code %d"), ReturnCode
-		);
-		if (!StdErr.IsEmpty())
-		{
-			UE_LOG(LogTemp, Error,
-				TEXT("[spacetime] SpacetimeDB CLI stderr: %s"), *StdErr
-			);
-		}
-		return false;
-	}
-
-	// Warn if there was any stderr output despite success
-	if (!StdErr.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("[spacetime] SpacetimeDB CLI reported warnings: %s"), *StdErr
-		);
-	}
-
-	// Log a bit of context for debugging
-	UE_LOG(LogTemp, Log,
-		TEXT("[spacetime] SpacetimeDB CLI returned %d bytes of JSON"), StdOut.Len()
-	);
-
-	// Return the raw JSON
-	OutRawModuleDef = MoveTemp(StdOut);
-	return true;
+{	
+	// return RawModuleDefFromCLI(DatabaseName, OutRawModuleDef);
+	return RawModuleDefFromHttp(DatabaseName, OutRawModuleDef);
 }
 
 // Converts any snake_case, kebab-case, space separated, or camelCase string
@@ -237,4 +188,93 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Code generation completed for database '%s'"), *DatabaseName);
     return true;
     
+}
+
+bool RawModuleDefFromCli(const FString &DatabaseName)
+{
+	// Build the CLI command and parameters
+	const FString Executable = TEXT("spacetime");
+	const FString Arguments  = FString::Printf(TEXT("describe --json %s"), *DatabaseName);
+
+	UE_LOG(LogTemp, Log, TEXT("[spacetime] Running command: %s %s"), *Executable, *Arguments);  // :contentReference[oaicite:0]{index=0}
+
+	int32 ReturnCode = -1;
+	FString StdOut;
+	FString StdErr;
+
+	// Execute synchronously, capturing stdout and stderr
+	const bool bLaunched = FPlatformProcess::ExecProcess(
+		*Executable,
+		*Arguments,
+		&ReturnCode,
+		&StdOut,
+		&StdErr,
+		nullptr,
+		/*bShouldEndWithParentProcess=*/ false
+	);  // :contentReference[oaicite:1]{index=1}
+
+	if (!bLaunched)
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("[spacetime] Failed to launch SpacetimeDB CLI executable '%s'"),
+			*Executable
+		);
+		return false;
+	}
+
+	// Check exit code
+	if (ReturnCode != 0)
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("[spacetime] SpacetimeDB CLI exited with code %d"), ReturnCode
+		);
+		if (!StdErr.IsEmpty())
+		{
+			UE_LOG(LogTemp, Error,
+				TEXT("[spacetime] SpacetimeDB CLI stderr: %s"), *StdErr
+			);
+		}
+		return false;
+	}
+
+	// Warn if there was any stderr output despite success
+	if (!StdErr.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("[spacetime] SpacetimeDB CLI reported warnings: %s"), *StdErr
+		);
+	}
+
+	// Log a bit of context for debugging
+	UE_LOG(LogTemp, Log,
+		TEXT("[spacetime] SpacetimeDB CLI returned %d bytes of JSON"), StdOut.Len()
+	);
+
+	// Return SUCCESS
+	return true;
+}
+
+bool RawModuleDefFromHttp(
+	const FString& DatabaseName,
+	FString& OutRawModuleDef)
+{
+	SpacetimeDB::String DBName = TCHAR_TO_UTF8(*DatabaseName);
+	SpacetimeDB::Database::Client Client =
+		SpacetimeDB::Database::Client(DBName, "http://localhost:3000");
+
+	const auto Response = Client.GetSchema();
+	if (!SpacetimeDB::IsValid(Response))
+	{
+		auto StdbError = SpacetimeDB::GetErrorMessage(Response);
+		FString UEError(UTF8_TO_TCHAR(StdbError.c_str())); 
+		UE_LOG(LogTemp, Error, TEXT("Invalid call to Spacetime GET schema: %s"), *UEError);
+
+		return false;
+	}
+
+	const auto Schema = SpacetimeDB::GetResult(Response);
+
+	OutRawModuleDef = UTF8_TO_TCHAR(Schema.Body.c_str());
+	
+	return true;
 }
