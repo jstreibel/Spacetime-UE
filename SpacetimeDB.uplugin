@@ -16,6 +16,11 @@
 	"Installed": false,
 	"Modules": [
 		{
+			"Name": "SpacetimeSDK",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "SpacetimeDB",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
