@@ -6,7 +6,7 @@
 
 
 USTRUCT(BlueprintType)
-struct SPACETIMEDB_API FMessageRow {
+struct SPACETIMEDBRUNTIME_API FMessageRow {
 
     GENERATED_BODY()
 
@@ -14,7 +14,7 @@ struct SPACETIMEDB_API FMessageRow {
 
 
 USTRUCT(BlueprintType)
-struct SPACETIMEDB_API FUserRow {
+struct SPACETIMEDBRUNTIME_API FUserRow {
 
     GENERATED_BODY()
 

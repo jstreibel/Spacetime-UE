@@ -6,7 +6,7 @@
 
 
 UCLASS()
-class SPACETIMEDB_API USpacetimeDBReducers : public UBlueprintFunctionLibrary {
+class SPACETIMEDBRUNTIME_API USpacetimeDBReducers : public UBlueprintFunctionLibrary {
 
    GENERATED_BODY()
 

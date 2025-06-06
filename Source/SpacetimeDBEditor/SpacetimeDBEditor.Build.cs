@@ -13,7 +13,7 @@ public class SpacetimeDBEditor : ModuleRules
             
             "Json", "JsonUtilities",
             
-            "SpacetimeDB", "Blutility"
+            "SpacetimeDBRuntime", "Blutility"
         });
         
         PrivateDependencyModuleNames.AddRange(new string[]

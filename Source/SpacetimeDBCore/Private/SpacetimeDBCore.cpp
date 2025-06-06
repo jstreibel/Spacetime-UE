@@ -1,15 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "SpacetimeSDK.h"
+#include "SpacetimeDBCore.h"
 
-#define LOCTEXT_NAMESPACE "FSpacetimeSDKModule"
+#define LOCTEXT_NAMESPACE "FSpacetimeDBCoreModule"
 
-void FSpacetimeSDKModule::StartupModule()
+void FSpacetimeDBCoreModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 }
 
-void FSpacetimeSDKModule::ShutdownModule()
+void FSpacetimeDBCoreModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -17,4 +17,4 @@ void FSpacetimeSDKModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FSpacetimeSDKModule, SpacetimeSDK)
+IMPLEMENT_MODULE(FSpacetimeDBCoreModule, SpacetimeDBCore)

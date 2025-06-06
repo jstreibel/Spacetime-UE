@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "0.2",
-	"FriendlyName": "SpacetimeDB runtime",
+	"FriendlyName": "SpacetimeDB Unreal SDK",
 	"Description": "",
 	"Category": "Other",
 	"CreatedBy": "jstreibel",
@@ -16,12 +16,12 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "SpacetimeSDK",
+			"Name": "SpacetimeDBCore",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
 		},
 		{
-			"Name": "SpacetimeDB",
+			"Name": "SpacetimeDBRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		},

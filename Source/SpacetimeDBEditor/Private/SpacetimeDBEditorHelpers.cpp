@@ -10,7 +10,7 @@
 #include "Parser/ModuleDefParser.h"
 #include "Schema/SchemaModels.h"
 
-#include <SpacetimeDB/SpacetimeDB.hpp>
+#include <SpacetimeDBEditorHelpers.h>
 
 bool RawModuleDefFromCLI(
 	const FString &DatabaseName,
@@ -258,6 +258,7 @@ bool RawModuleDefFromHttp(
 	const FString& DatabaseName,
 	FString& OutRawModuleDef)
 {
+	/*
 	SpacetimeDB::String DBName = TCHAR_TO_UTF8(*DatabaseName);
 	SpacetimeDB::Database::Client Client =
 		SpacetimeDB::Database::Client(DBName, "http://localhost:3000");
@@ -277,4 +278,9 @@ bool RawModuleDefFromHttp(
 	OutRawModuleDef = UTF8_TO_TCHAR(Schema.Body.c_str());
 	
 	return true;
+	*/
+
+	UE_LOG(LogTemp, Error, TEXT("RawModuleDefFromHttp not implemented"))
+	
+	return false;
 }

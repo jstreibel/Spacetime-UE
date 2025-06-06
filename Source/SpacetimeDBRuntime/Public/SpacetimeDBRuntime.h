@@ -4,7 +4,7 @@
 
 #include "Modules/ModuleManager.h"
 
-class FSpacetimeDBModule : public IModuleInterface
+class FSpacetimeDBRuntimeModule : public IModuleInterface
 {
 public:
 
