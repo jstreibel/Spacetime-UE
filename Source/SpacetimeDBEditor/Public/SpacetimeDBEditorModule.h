@@ -11,6 +11,6 @@ public:
     virtual void ShutdownModule() override;
 
 private:
-    TSharedRef<SDockTab> SpawnGeneratorTab(const class FSpawnTabArgs& Args);
+    TSharedRef<SDockTab> SpawnGeneralTab(const class FSpawnTabArgs& Args);
     
 };

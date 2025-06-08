@@ -15,7 +15,7 @@ void FSpacetimeDBEditorModule::StartupModule()
 {
     // 1. Register the tab
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GeneratorTabName,
-        FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneratorTab))
+        FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneralTab))
         .SetDisplayName(LOCTEXT("GeneratorTabTitle", "SpacetimeDB"))
         .SetMenuType(ETabSpawnerMenuType::Hidden);
 
@@ -24,12 +24,18 @@ void FSpacetimeDBEditorModule::StartupModule()
         FSimpleMulticastDelegate::FDelegate::CreateLambda([this]()
         {
             UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-            FToolMenuSection& Section = Menu->FindOrAddSection("Developer");
-            Section.AddMenuEntry(
+            // FToolMenuSection& Section = Menu->FindOrAddSection("Developer");
+
+            FToolMenuSection& SpacetimeSection = Menu->AddSection(
+                "SpacetimeDB",                               // Section name (must be unique)
+                LOCTEXT("SpacetimeDBSection", "SpacetimeDB") // What the user sees
+            );
+            
+            SpacetimeSection.AddMenuEntry(
                 "OpenSpacetimeDBGenerator",
-                LOCTEXT("OpenGenerator", "SpacetimeDB Generator"),
-                LOCTEXT("OpenGeneratorTooltip", "Open the SpacetimeDB code generator."),
-                FSlateIcon(),
+                LOCTEXT("OpenGenerator", "Spacetime Utils"),
+                LOCTEXT("OpenGeneratorTooltip", "Open the SpacetimeDB utilities tab."),
+                FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("ClassIcon.DataTable")),
                 FUIAction(FExecuteAction::CreateLambda([]
                 {
                     FGlobalTabmanager::Get()->TryInvokeTab(GeneratorTabName);
@@ -46,7 +52,7 @@ void FSpacetimeDBEditorModule::ShutdownModule()
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GeneratorTabName);
 }
 
-TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTabArgs& Args)
+TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneralTab(const FSpawnTabArgs& Args)
 {
     return SNew(SDockTab)
     .TabRole(ETabRole::NomadTab)
