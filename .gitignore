@@ -75,6 +75,11 @@ Plugins/**/Intermediate/*
 # Cache files for the editor to use
 DerivedDataCache/*
 
-# KDE Dolphin stuff
+# KDE Dolphin directory file
 .directory
+
+# Generated directory
+Generated
+Generated/*
+
 
