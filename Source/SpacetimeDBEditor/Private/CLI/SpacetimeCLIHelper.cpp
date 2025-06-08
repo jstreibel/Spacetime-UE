@@ -1,5 +1,7 @@
 #include "CLI/SpacetimeCLIHelper.h"
 
+#include "CLI/toml.hpp"
+
 bool FSpacetimeCLIHelper::IsCliAvailable()
 {
 	int32 ReturnCode;
@@ -85,6 +87,111 @@ bool FSpacetimeCLIHelper::GetCliTomlPath(FString& OutPath, FString& OutError)
 
 	OutPath = Candidate;
 	return true;
+}
+
+bool FSpacetimeCLIHelper::GetCliConfig(FSpacetimeCliConfig& OutConfig, FString& OutError)
+{
+	const FString Path = GetDefaultCliTomlPath();
+	if (!ValidateFile(Path, OutError))
+	{
+		return false;
+	}
+	return ParseToml(Path, OutConfig, OutError);
+}
+
+bool FSpacetimeCLIHelper::ValidateFile(const FString& InPath, FString& OutError)
+{
+	if (InPath.IsEmpty())
+	{
+		OutError = TEXT("Unable to determine cli.toml path.");
+		return false;
+	}
+	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+	if (!PF.FileExists(*InPath))
+	{
+		OutError = FString::Printf(TEXT("Configuration file not found: %s"), *InPath);
+		return false;
+	}
+	if (PF.FileSize(*InPath) <= 0)
+	{
+		OutError = FString::Printf(TEXT("Configuration file is empty: %s"), *InPath);
+		return false;
+	}
+	return true;
+}
+
+bool FSpacetimeCLIHelper::ParseToml(const FString& InPath, FSpacetimeCliConfig& OutConfig, FString& OutError)
+{
+	toml::table Table;
+    try
+    {
+        Table = toml::parse_file(TCHAR_TO_UTF8(*InPath));
+    }
+    catch (const toml::parse_error& Ex)
+    {
+        OutError = FString::Printf(TEXT("TOML parse error: %s"), ANSI_TO_TCHAR(Ex.what()));
+        return false;
+    }
+
+    auto ReadString = [&](const char* Key, FString& Dest) -> bool
+    {
+        if (auto Node = Table[Key].as_string())
+        {
+            Dest = UTF8_TO_TCHAR(Node->get().c_str());
+            return true;
+        }
+        OutError = FString::Printf(TEXT("Missing or invalid '%s' in cli.toml"), UTF8_TO_TCHAR(Key));
+        return false;
+    };
+
+    if (!ReadString("default_server", OutConfig.DefaultServer) ||
+        !ReadString("web_session_token", OutConfig.WebSessionToken) ||
+        !ReadString("spacetimedb_token", OutConfig.SpacetimeDBToken))
+    {
+        return false;
+    }
+
+    if (auto Array = Table["server_configs"].as_array())
+    {
+        for (auto& Item : *Array)
+        {
+            if (auto Sub = Item.as_table())
+            {
+                FSpacetimeServerConfig Cfg;
+                if (auto Nick = Sub->get("nickname")->value<std::string>(); Sub->get("nickname")->is_string())
+                {
+                    Cfg.Nickname = UTF8_TO_TCHAR(Nick->c_str());
+                }
+                else { OutError = TEXT("Invalid 'nickname' in server_configs"); return false; }
+
+                if (auto Host = Sub->get("host")->value<std::string>(); Sub->get("host")->is_string())
+                {
+                    Cfg.Host = UTF8_TO_TCHAR(Host->c_str());
+                }
+                else { OutError = TEXT("Invalid 'host' in server_configs"); return false; }
+
+                if (auto Prot = Sub->get("protocol")->value<std::string>(); Sub->get("protocol")->is_string())
+                {
+                    Cfg.Protocol = UTF8_TO_TCHAR(Prot->c_str());
+                }
+                else { OutError = TEXT("Invalid 'protocol' in server_configs"); return false; }
+
+                OutConfig.ServerConfigs.Add(MoveTemp(Cfg));
+            }
+            else
+            {
+                OutError = TEXT("Expected table entry in 'server_configs'");
+                return false;
+            }
+        }
+    }
+    else
+    {
+        OutError = TEXT("Missing or invalid 'server_configs' array");
+        return false;
+    }
+
+    return true;
 }
 
 FString FSpacetimeCLIHelper::GetDefaultCliTomlPath()

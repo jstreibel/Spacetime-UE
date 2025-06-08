@@ -24,6 +24,7 @@ public class SpacetimeDBEditor : ModuleRules
         {
             "Slate",
             "SlateCore",
+            "InputCore",
             "EditorStyle",
             "LevelEditor",
             "ToolMenus",

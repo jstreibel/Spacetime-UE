@@ -13,15 +13,7 @@ static const FName GeneratorTabName("SpacetimeDBGenerator");
 #define LOCTEXT_NAMESPACE "FSpacetimeDBEditorModule"
 
 void FSpacetimeDBEditorModule::StartupModule()
-{
-    // 0.
-    FString OutPath, OutError;
-    if (!FSpacetimeCLIHelper::GetCliTomlPath(OutPath, OutError))
-    {
-        UE_LOG(LogTemp, Error, TEXT("Could not find default 'cli.toml' configuration file: %s"), *OutError);
-    }
-    UE_LOG(LogTemp, Display, TEXT("Found 'cli.toml' at %s"), *OutPath);
-    
+{    
     // 1. Register the tab
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GeneratorTabName,
         FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneralTab))

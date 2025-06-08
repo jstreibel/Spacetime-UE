@@ -27,6 +27,13 @@ private:
 	// These are our two colored text widgets
 	TSharedPtr<STextBlock> CLITextBlock;
 	TSharedPtr<STextBlock> StatusTextBlock;
+	
+	// Keeps the list alive for the duration of this widget
+	TArray<TSharedPtr<FString>> ServerOptions;
+	// The currently selected item
+	TSharedPtr<FString> SelectedServer;
+	// The combo-box itself
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> ServerComboBox;
 
 	// Other stuff
 	TSharedPtr<SEditableTextBox> DatabaseNameTextBox;
