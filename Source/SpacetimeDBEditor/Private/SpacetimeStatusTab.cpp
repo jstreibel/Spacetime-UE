@@ -6,6 +6,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Async/Async.h"
+#include "CLI/SpacetimeCLIHelper.h"
 
 #define LOCTEXT_NAMESPACE "SpacetimeDBStatusTab"
 
@@ -158,8 +159,8 @@ void SSpacetimeStatusTab::ScheduleAsyncRefresh() const
 	Async(EAsyncExecution::ThreadPool, [CliWeak, StatusWeak]()
 	{
 		// *** Your blocking calls go here ***
-		const bool bCliAvailable = USpacetimeDBEditorHelpers::IsCliAvailable();
-		const bool bLoggedIn     = USpacetimeDBEditorHelpers::IsLoggedIn();
+		const bool bCliAvailable = FSpacetimeCLIHelper::IsCliAvailable();
+		const bool bLoggedIn     = FSpacetimeCLIHelper::IsLoggedIn();
 
 		// Then marshal back to the game (main) thread
 		AsyncTask(ENamedThreads::GameThread, [CliWeak, StatusWeak, bCliAvailable, bLoggedIn]()

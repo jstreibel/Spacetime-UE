@@ -6,6 +6,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/MessageDialog.h"
 #include "SpacetimeStatusTab.h"
+#include "CLI/SpacetimeCLIHelper.h"
 
 static const FName GeneratorTabName("SpacetimeDBGenerator");
 
@@ -13,6 +14,14 @@ static const FName GeneratorTabName("SpacetimeDBGenerator");
 
 void FSpacetimeDBEditorModule::StartupModule()
 {
+    // 0.
+    FString OutPath, OutError;
+    if (!FSpacetimeCLIHelper::GetCliTomlPath(OutPath, OutError))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Could not find default 'cli.toml' configuration file: %s"), *OutError);
+    }
+    UE_LOG(LogTemp, Display, TEXT("Found 'cli.toml' at %s"), *OutPath);
+    
     // 1. Register the tab
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GeneratorTabName,
         FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneralTab))
@@ -60,159 +69,6 @@ TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneralTab(const FSpawnTabAr
         SNew(SSpacetimeStatusTab)
         .RefreshInterval(3.0f)  // every 3 seconds
     ];
-
-    /*
-    return SNew(SDockTab)
-    .TabRole(NomadTab)
-    [
-        SNew(SVerticalBox)
-        
-        // ─── Row 1: "CLI: available/unavailable" ─────────────────────────────────────
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SNew(SHorizontalBox)
-            + SHorizontalBox::Slot()
-            .AutoWidth()
-            .VAlign(VAlign_Center)
-            [
-                SNew(STextBlock)
-                .Text(FText::FromString(TEXT("CLI: ")))
-            ]
-
-            // Value (green if available, red otherwise)
-            + SHorizontalBox::Slot()
-            .AutoWidth()
-            .VAlign(VAlign_Center)
-            [
-                SNew(STextBlock)
-                .Text( FText::FromString( bCliAvailable
-                                          ? TEXT("available")
-                                          : TEXT("unavailable") ) )
-                .ColorAndOpacity( bCliAvailable
-                                  ? FSlateColor(FLinearColor::Green)
-                                  : FSlateColor(FLinearColor::Red) )
-            ]
-        ]
-
-        // ─── Row 2: "Status: logged in/offline" ────────────────────────────────────
-        + SVerticalBox::Slot()
-        .AutoHeight()
-        .Padding(4)
-        [
-            SNew(SHorizontalBox)
-
-            // Label
-            + SHorizontalBox::Slot()
-            .AutoWidth()
-            .VAlign(VAlign_Center)
-            [
-                SNew(STextBlock)
-                .Text(FText::FromString(TEXT("Status: ")))
-            ]
-
-            // Value (green if logged in, red otherwise)
-            + SHorizontalBox::Slot()
-            .AutoWidth()
-            .VAlign(VAlign_Center)
-            [
-                SNew(STextBlock)
-                .Text( FText::FromString( bIsLoggedIn
-                                          ? TEXT("logged in")
-                                          : TEXT("offline") ) )
-                .ColorAndOpacity( bIsLoggedIn
-                                  ? FSlateColor(FLinearColor::Green)
-                                  : FSlateColor(FLinearColor::Red) )
-            ]
-        ]
-        
-        // 1) Labels + Text Boxes
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SNew(STextBlock)
-            .Text(LOCTEXT("DBUrl", "Server URL:"))
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SAssignNew(ServerURLTextBox, SEditableTextBox)
-            .Text(LOCTEXT("STDBServerURLText", "http://localhost.com:3000"))
-            .HintText(LOCTEXT("DBServerURLHint", "e.g. http://localhost.com:3000"))
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SNew(STextBlock)
-            .Text(LOCTEXT("DBNameLabel", "Database Name:"))
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SAssignNew(DatabaseNameTextBox, SEditableTextBox)
-            .HintText(LOCTEXT("DBNameHint", "e.g. quickstart-chat"))
-        ]
-        
-
-        // 2) Generate Button
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SNew(SButton)
-            .Text(LOCTEXT("GenerateButton", "Generate Code Reflection"))
-            .ToolTipText(LOCTEXT("GenerateTooltip",
-                "Fetches RawModuleDef from Given Spacetime Module and Generates Unreal Code Reflection"))
-            .OnClicked_Lambda([this]() -> FReply
-            {
-                if (!DatabaseNameTextBox.IsValid())
-                {
-                    FMessageDialog::Open(
-                        EAppMsgType::Ok,
-                        LOCTEXT("STDBGenerateMissedDatabaseName",
-                            "🛑 Missing field: database name"));
-                    return FReply::Handled();
-                }
-
-                if (!ServerURLTextBox.IsValid())
-                {
-                    FMessageDialog::Open(
-                        EAppMsgType::Ok,
-                        LOCTEXT("STDBGenerateMissedServerURL",
-                            "🛑 Missing field: server URL"));
-                    return FReply::Handled();
-                }
-
-                const FString ServerURL = ServerURLTextBox->GetText().ToString();
-                
-                const FString DBName = DatabaseNameTextBox->GetText().ToString();
-                FString OutDir, ErrorMsg;
-
-                const bool bOK = USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
-                    ServerURL, DBName, OutDir, ErrorMsg
-                );
-
-                if (!bOK)
-                {
-                    // Show error
-                    FMessageDialog::Open(
-                        EAppMsgType::Ok,
-                        FText::Format(
-                            LOCTEXT("GenerateFailedFmt", "🛑 Generate failed:\n{0}"),
-                            FText::FromString(ErrorMsg)
-                        )
-                    );
-                }
-                else
-                {
-                    // Show success and path
-                    FMessageDialog::Open(
-                        EAppMsgType::Ok,
-                        FText::Format(
-                            LOCTEXT("GenerateSuccessFmt", "✅ Generate succeeded!\nFiles written to:\n{0}"),
-                            FText::FromString(OutDir)
-                        )
-                    );
-                }
-
-                return FReply::Handled();
-            })
-        ]
-    ];
-    */
 }
 
 #undef LOCTEXT_NAMESPACE
