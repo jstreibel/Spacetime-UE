@@ -26,8 +26,8 @@ static bool FetchRawData(
 	const FString& DatabaseName,
 	FString& OutRawModuleDef)
 {	
-	//return RawModuleDefFromCli(DatabaseName, OutRawModuleDef);
-	return RawModuleDefFromHttp(ServerURL, DatabaseName, OutRawModuleDef);
+	return RawModuleDefFromCli(DatabaseName, OutRawModuleDef);
+	// return RawModuleDefFromHttp(ServerURL, DatabaseName, OutRawModuleDef);
 }
 
 // Converts any snake_case, kebab-case, space separated, or camelCase string
