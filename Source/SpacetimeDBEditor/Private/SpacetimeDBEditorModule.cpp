@@ -5,7 +5,6 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/MessageDialog.h"
-#include "SpacetimeDBEditorHelpers.h"  // your CallInEditor helper
 #include "SpacetimeStatusTab.h"
 
 static const FName GeneratorTabName("SpacetimeDBGenerator");
@@ -17,7 +16,7 @@ void FSpacetimeDBEditorModule::StartupModule()
     // 1. Register the tab
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GeneratorTabName,
         FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneratorTab))
-        .SetDisplayName(LOCTEXT("GeneratorTabTitle", "SpacetimeDB Generator"))
+        .SetDisplayName(LOCTEXT("GeneratorTabTitle", "SpacetimeDB"))
         .SetMenuType(ETabSpawnerMenuType::Hidden);
 
     // 2. Add menu entry under Window > Developer Tools
@@ -49,16 +48,13 @@ void FSpacetimeDBEditorModule::ShutdownModule()
 
 TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTabArgs& Args)
 {
-    auto bCliAvailable = USpacetimeDBEditorHelpers::IsCliAvailable();
-    auto bIsLoggedIn = USpacetimeDBEditorHelpers::IsLoggedIn();
-
     return SNew(SDockTab)
     .TabRole(ETabRole::NomadTab)
     [
         SNew(SSpacetimeStatusTab)
         .RefreshInterval(3.0f)  // every 3 seconds
     ];
-    
+
     /*
     return SNew(SDockTab)
     .TabRole(NomadTab)

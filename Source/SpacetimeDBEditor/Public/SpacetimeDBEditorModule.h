@@ -12,9 +12,5 @@ public:
 
 private:
     TSharedRef<SDockTab> SpawnGeneratorTab(const class FSpawnTabArgs& Args);
-
-    // Keep pointers to text boxes so we can read their values in the button callback
-    TSharedPtr<SEditableTextBox> DatabaseNameTextBox;
-    TSharedPtr<SEditableTextBox> ServerURLTextBox;
     
 };
