@@ -3,8 +3,7 @@
 **Schema-powered multiplayer for Unreal Engine.**  
 *Live logic, reflective state, and algebraic structure—from SpacetimeDB into Blueprints.*
 
-<img src="Resources/EditorUI.png" alt="Getting Database Description" width="150"/>
-<img src="Resources/Spacetime-DescribeDatabase-Unreal-Node.png" alt="Getting Database Description" width="160"/>
+<img src="Resources/EditorUI.png" alt="Getting Database Description" width="200"/> <img src="Resources/Spacetime-DescribeDatabase-Unreal-Node.png" alt="Getting Database Description" width="200"/>
 <img src="Resources/quickstart-chat-blueprint-nodes.png" alt="Code Reflection to Blueprint Nodes" width="200"/>
 <img src="Resources/codegen.png" alt="Code generated from RawModuleDef" width="605"/>
 <!--
