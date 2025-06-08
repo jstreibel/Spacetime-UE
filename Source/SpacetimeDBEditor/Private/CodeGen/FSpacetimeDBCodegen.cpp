@@ -4,7 +4,7 @@
 #include "Net/RepLayout.h"
 #include "Parser/Common.h"
 
-const FString ApiMacroString = TEXT("SPACETIMEDB_API");  
+const FString ApiMacroString = TEXT("SPACETIMEDBRUNTIME_API");  
 
 FString FSpacetimeDBCodeGen::MapBuiltinToUnreal(const FString& BuiltinName)
 {

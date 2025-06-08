@@ -6,6 +6,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/MessageDialog.h"
 #include "SpacetimeDBEditorHelpers.h"  // your CallInEditor helper
+#include "SpacetimeStatusTab.h"
 
 static const FName GeneratorTabName("SpacetimeDBGenerator");
 
@@ -50,12 +51,20 @@ TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTab
 {
     auto bCliAvailable = USpacetimeDBEditorHelpers::IsCliAvailable();
     auto bIsLoggedIn = USpacetimeDBEditorHelpers::IsLoggedIn();
-    
+
     return SNew(SDockTab)
     .TabRole(ETabRole::NomadTab)
     [
+        SNew(SSpacetimeStatusTab)
+        .RefreshInterval(3.0f)  // every 3 seconds
+    ];
+    
+    /*
+    return SNew(SDockTab)
+    .TabRole(NomadTab)
+    [
         SNew(SVerticalBox)
-
+        
         // ─── Row 1: "CLI: available/unavailable" ─────────────────────────────────────
         + SVerticalBox::Slot().AutoHeight().Padding(5)
         [
@@ -201,6 +210,7 @@ TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTab
             })
         ]
     ];
+    */
 }
 
 #undef LOCTEXT_NAMESPACE
