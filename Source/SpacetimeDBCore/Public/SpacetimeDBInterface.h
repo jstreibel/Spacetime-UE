@@ -12,9 +12,5 @@ class SPACETIMEDBCORE_API USpacetimeDBInterface : public UObject
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpacetimeDB")
 	FString SpacetimeDBModuleName;
-
-	UFUNCTION(BlueprintCallable, Category = "SpacetimeDB")
-	bool IsCLIAvailable();
-	
 	
 };

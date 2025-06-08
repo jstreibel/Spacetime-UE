@@ -48,12 +48,84 @@ void FSpacetimeDBEditorModule::ShutdownModule()
 
 TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTabArgs& Args)
 {
+    auto bCliAvailable = USpacetimeDBEditorHelpers::IsCliAvailable();
+    auto bIsLoggedIn = USpacetimeDBEditorHelpers::IsLoggedIn();
+    
     return SNew(SDockTab)
     .TabRole(ETabRole::NomadTab)
     [
         SNew(SVerticalBox)
 
-        // 1) Label + Text Box
+        // ─── Row 1: "CLI: available/unavailable" ─────────────────────────────────────
+        + SVerticalBox::Slot().AutoHeight().Padding(5)
+        [
+            SNew(SHorizontalBox)
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            .VAlign(VAlign_Center)
+            [
+                SNew(STextBlock)
+                .Text(FText::FromString(TEXT("CLI: ")))
+            ]
+
+            // Value (green if available, red otherwise)
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            .VAlign(VAlign_Center)
+            [
+                SNew(STextBlock)
+                .Text( FText::FromString( bCliAvailable
+                                          ? TEXT("available")
+                                          : TEXT("unavailable") ) )
+                .ColorAndOpacity( bCliAvailable
+                                  ? FSlateColor(FLinearColor::Green)
+                                  : FSlateColor(FLinearColor::Red) )
+            ]
+        ]
+
+        // ─── Row 2: "Status: logged in/offline" ────────────────────────────────────
+        + SVerticalBox::Slot()
+        .AutoHeight()
+        .Padding(4)
+        [
+            SNew(SHorizontalBox)
+
+            // Label
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            .VAlign(VAlign_Center)
+            [
+                SNew(STextBlock)
+                .Text(FText::FromString(TEXT("Status: ")))
+            ]
+
+            // Value (green if logged in, red otherwise)
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            .VAlign(VAlign_Center)
+            [
+                SNew(STextBlock)
+                .Text( FText::FromString( bIsLoggedIn
+                                          ? TEXT("logged in")
+                                          : TEXT("offline") ) )
+                .ColorAndOpacity( bIsLoggedIn
+                                  ? FSlateColor(FLinearColor::Green)
+                                  : FSlateColor(FLinearColor::Red) )
+            ]
+        ]
+        
+        // 1) Labels + Text Boxes
+        + SVerticalBox::Slot().AutoHeight().Padding(5)
+        [
+            SNew(STextBlock)
+            .Text(LOCTEXT("DBUrl", "Server URL:"))
+        ]
+        + SVerticalBox::Slot().AutoHeight().Padding(5)
+        [
+            SAssignNew(ServerURLTextBox, SEditableTextBox)
+            .Text(LOCTEXT("STDBServerURLText", "http://localhost.com:3000"))
+            .HintText(LOCTEXT("DBServerURLHint", "e.g. http://localhost.com:3000"))
+        ]
         + SVerticalBox::Slot().AutoHeight().Padding(5)
         [
             SNew(STextBlock)
@@ -62,27 +134,44 @@ TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneratorTab(const FSpawnTab
         + SVerticalBox::Slot().AutoHeight().Padding(5)
         [
             SAssignNew(DatabaseNameTextBox, SEditableTextBox)
-            .HintText(LOCTEXT("DBNameHint", "e.g. MyDatabase"))
+            .HintText(LOCTEXT("DBNameHint", "e.g. quickstart-chat"))
         ]
+        
 
         // 2) Generate Button
         + SVerticalBox::Slot().AutoHeight().Padding(5)
         [
             SNew(SButton)
-            .Text(LOCTEXT("GenerateButton", "Generate USTRUCTs"))
-            .ToolTipText(LOCTEXT("GenerateTooltip", "Calls GenerateUSTRUCTsFromSchema with the given name"))
+            .Text(LOCTEXT("GenerateButton", "Generate Code Reflection"))
+            .ToolTipText(LOCTEXT("GenerateTooltip",
+                "Fetches RawModuleDef from Given Spacetime Module and Generates Unreal Code Reflection"))
             .OnClicked_Lambda([this]() -> FReply
             {
                 if (!DatabaseNameTextBox.IsValid())
                 {
+                    FMessageDialog::Open(
+                        EAppMsgType::Ok,
+                        LOCTEXT("STDBGenerateMissedDatabaseName",
+                            "🛑 Missing field: database name"));
                     return FReply::Handled();
                 }
 
+                if (!ServerURLTextBox.IsValid())
+                {
+                    FMessageDialog::Open(
+                        EAppMsgType::Ok,
+                        LOCTEXT("STDBGenerateMissedServerURL",
+                            "🛑 Missing field: server URL"));
+                    return FReply::Handled();
+                }
+
+                const FString ServerURL = ServerURLTextBox->GetText().ToString();
+                
                 const FString DBName = DatabaseNameTextBox->GetText().ToString();
                 FString OutDir, ErrorMsg;
 
                 const bool bOK = USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
-                    DBName, OutDir, ErrorMsg
+                    ServerURL, DBName, OutDir, ErrorMsg
                 );
 
                 if (!bOK)

@@ -7,7 +7,7 @@ public class SpacetimeDBCore : ModuleRules
 {
 	public SpacetimeDBCore(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {

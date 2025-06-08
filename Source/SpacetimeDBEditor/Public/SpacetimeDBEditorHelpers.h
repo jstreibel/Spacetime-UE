@@ -22,8 +22,26 @@ public:
 	 */
 	UFUNCTION(CallInEditor, Category="SpacetimeDB|Generators")
 	static bool GenerateCxxUnrealCodeFromSpacetimeDB(
+		const FString& ServerURL,
 		const FString& DatabaseName,
 		FString& OutFullPath,
 		FString& OutError);
+	
+	static bool IsCliAvailable();
+
+	static bool IsLoggedIn();
+
+	struct FSpacetimeCredentials
+	{
+		FString Identity;
+		FString Token;
+
+		bool IsValid() const
+		{
+			return !Identity.IsEmpty() && !Token.IsEmpty();
+		}
+	};
+	
+	static bool TryParseSpacetimeLogin(const FString& CliOutput, FSpacetimeCredentials& OutCredentials);
 
 };

@@ -12,20 +12,22 @@
 
 #include <SpacetimeDBEditorHelpers.h>
 
-bool RawModuleDefFromCLI(
+bool RawModuleDefFromCli(
 	const FString &DatabaseName,
 	FString &Output);
 
 bool RawModuleDefFromHttp(
+	const FString& ServerURL,
 	const FString& DatabaseName,
 	FString& OutRawModuleDef);
 
 static bool FetchRawData(
-		const FString& DatabaseName,
-		FString& OutRawModuleDef)
+	const FString& ServerURL,
+	const FString& DatabaseName,
+	FString& OutRawModuleDef)
 {	
-	// return RawModuleDefFromCLI(DatabaseName, OutRawModuleDef);
-	return RawModuleDefFromHttp(DatabaseName, OutRawModuleDef);
+	//return RawModuleDefFromCli(DatabaseName, OutRawModuleDef);
+	return RawModuleDefFromHttp(ServerURL, DatabaseName, OutRawModuleDef);
 }
 
 // Converts any snake_case, kebab-case, space separated, or camelCase string
@@ -73,6 +75,7 @@ auto ToPascalCase = [](const FString& InString) -> FString
 };
 
 bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
+	const FString& ServerURL,
 	const FString& DatabaseName,
 	FString& OutFullPath,
 	FString& OutError)
@@ -83,7 +86,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	// 0. Fetch raw JSON schema
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Fetching RawModuleDef for '%s'"), *DatabaseName);
     FString RawModuleDefString;
-    if (!FetchRawData(DatabaseName, RawModuleDefString))
+    if (!FetchRawData(ServerURL, DatabaseName, RawModuleDefString))
     {
         OutError = TEXT("Failed to fetch raw module definition.");
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
@@ -190,7 +193,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
     
 }
 
-bool RawModuleDefFromCli(const FString &DatabaseName)
+bool RawModuleDefFromCli(const FString &DatabaseName, FString &Output)
 {
 	// Build the CLI command and parameters
 	const FString Executable = TEXT("spacetime");
@@ -250,14 +253,17 @@ bool RawModuleDefFromCli(const FString &DatabaseName)
 		TEXT("[spacetime] SpacetimeDB CLI returned %d bytes of JSON"), StdOut.Len()
 	);
 
+	Output = StdOut;
 	// Return SUCCESS
 	return true;
 }
 
 bool RawModuleDefFromHttp(
+	const FString& ServerURL,
 	const FString& DatabaseName,
 	FString& OutRawModuleDef)
 {
+	return RawModuleDefFromCli(DatabaseName, OutRawModuleDef);
 	/*
 	SpacetimeDB::String DBName = TCHAR_TO_UTF8(*DatabaseName);
 	SpacetimeDB::Database::Client Client =
@@ -283,4 +289,61 @@ bool RawModuleDefFromHttp(
 	UE_LOG(LogTemp, Error, TEXT("RawModuleDefFromHttp not implemented"))
 	
 	return false;
+}
+
+bool USpacetimeDBEditorHelpers::IsCliAvailable()
+{
+	int32 ReturnCode;
+	FString OutStdOut, OutStdErr;
+	
+	return FPlatformProcess::ExecProcess(
+		TEXT("spacetime"),
+		TEXT(""), &ReturnCode, &OutStdOut, &OutStdErr);
+}
+
+bool USpacetimeDBEditorHelpers::IsLoggedIn()
+{
+	int32 ReturnCode;
+	FString OutStdOut, OutStdErr;
+	
+	if (!FPlatformProcess::ExecProcess(
+		TEXT("spacetime"),
+		TEXT("login show"), &ReturnCode, &OutStdOut, &OutStdErr))
+	{
+		return false;
+	}
+
+	if (ReturnCode != 0) return false;
+
+	return OutStdOut.Contains("You are logged in as ");
+}
+
+bool USpacetimeDBEditorHelpers::TryParseSpacetimeLogin(const FString& CliOutput, FSpacetimeCredentials& OutCredentials)
+{
+	OutCredentials = FSpacetimeCredentials();
+
+	// Break into lines
+	TArray<FString> Lines;
+	CliOutput.ParseIntoArrayLines(Lines, /*InCullEmpty*/ true);
+
+	const FString IdentityPrefix = TEXT("You are logged in as ");
+	const FString TokenPrefix    = TEXT("Your auth token (don't share this!) is ");
+
+	for (const FString& RawLine : Lines)
+	{
+		FString Line = RawLine.TrimStartAndEnd();
+
+		if (Line.StartsWith(IdentityPrefix))
+		{
+			// Everything after the prefix is the identity
+			OutCredentials.Identity = Line.Mid(IdentityPrefix.Len());
+		}
+		else if (Line.StartsWith(TokenPrefix))
+		{
+			// Everything after the prefix is the JWT
+			OutCredentials.Token = Line.Mid(TokenPrefix.Len());
+		}
+	}
+
+	return OutCredentials.IsValid();
 }

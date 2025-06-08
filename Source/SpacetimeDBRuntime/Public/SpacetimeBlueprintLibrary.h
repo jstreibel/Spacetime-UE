@@ -19,10 +19,15 @@ class SPACETIMEDBRUNTIME_API USpacetimeBlueprintLibrary : public UBlueprintFunct
 	 * Calls: spacetime describe --json <DatabaseName>
 	 * Returns: true on success, and fills OutSpaces.
 	 */
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
+	UFUNCTION(BlueprintCallable,
+			  Category="SpacetimeDB",
+			  meta=(DisplayName="Get a Module's Tables and Reducers as a List of Strings",
+			  		Keywords="SpacetimeDB Get Description"))
 	static bool DescribeDatabase(
 		const FString&DatabaseName,
 		TArray<FString>& Tables,
 		TArray<FString>& Reducers,
-		FString& OutError);	
+		FString& OutError);
+
+	
 };

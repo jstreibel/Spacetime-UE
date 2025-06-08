@@ -11,8 +11,10 @@ public:
     virtual void ShutdownModule() override;
 
 private:
-    TSharedRef<class SDockTab> SpawnGeneratorTab(const class FSpawnTabArgs& Args);
+    TSharedRef<SDockTab> SpawnGeneratorTab(const class FSpawnTabArgs& Args);
 
-    // Keep a pointer to the text box so we can read its value in the button callback
-    TSharedPtr<class SEditableTextBox> DatabaseNameTextBox;
+    // Keep pointers to text boxes so we can read their values in the button callback
+    TSharedPtr<SEditableTextBox> DatabaseNameTextBox;
+    TSharedPtr<SEditableTextBox> ServerURLTextBox;
+    
 };
