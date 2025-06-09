@@ -125,20 +125,43 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
         return false;
     }
 
+
+	// 5. Generate typespace structs
+	{
+		FString TypespaceHeader;
+		const FString BaseSpacetimeHeaderName = FString::Printf(TEXT("%sTypespace"), *DatabaseNamePascal);
+		if (!FSpacetimeDBCodeGen::GenerateTypespaceStructs(RawModule, BaseSpacetimeHeaderName, TypespaceHeader, OutError))
+		{
+			OutError = TEXT("Failed to generate typespace structures: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+			return false;
+		}
+
+		const FString TypespaceHeaderName = BaseSpacetimeHeaderName + ".h";
+		const FString TypespaceHeaderPath = FPaths::ProjectDir() / TypespaceHeaderName;
+		if (!Writer.WriteFile(TypespaceHeaderPath, TypespaceHeader, OutError))
+		{
+			OutError = TEXT("Failed to write typespace header file: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+			return false;
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *TypespaceHeaderPath);
+	}
+	
 	
     // 5. Generate table structs header
-	if (0)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating table USTRUCTs"));
 		FString TablesHeader;
-		FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
+		const FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
 		if (!CodeGen->GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
 		{
 			OutError = TEXT("Table struct generation failed: ") + OutError;
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
 			return false;
 		}
-		const FString TablesHeaderName = FString::Printf(TEXT("%sTables.h"), *DatabaseNamePascal);
+		const FString TablesHeaderName = BaseTablesHeaderName + ".h";
 		const FString TablesHeaderPath = HeaderOutputDir / TablesHeaderName;
 		if (!Writer.WriteFile(TablesHeaderPath, TablesHeader, OutError))
 		{
@@ -146,43 +169,42 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 			return false;
 		}
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *TablesHeaderPath);
-	} else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[spacetime] Table code generation not implemented"));
-	}
+	} 
 
 	
     // 6. Generate reducer functions (header + source)
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
-    FString ReducersHeader, ReducersSource;
-	FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
-    if (!CodeGen->GenerateReducerFunctions(
-    	RawModule, BaseReducersHeaderName,
-    	ReducersHeader,
-    	ReducersSource,
-    	OutError))
-    {
-        OutError = TEXT("Reducer function generation failed: ") + OutError;
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
-        return false;
-    }
-    const FString ReducersHeaderName = FString::Printf(TEXT("%sReducers.h"), *DatabaseNamePascal);
-    const FString ReducersHeaderPath = HeaderOutputDir / ReducersHeaderName;
-    if (!Writer.WriteFile(ReducersHeaderPath, ReducersHeader, OutError))
-    {
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers header '%s': %s"), *ReducersHeaderPath, *OutError);
-        return false;
-    }
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersHeaderPath);
+	{
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
+		FString ReducersHeader, ReducersSource;
+		FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
+		if (!CodeGen->GenerateReducerFunctions(
+			RawModule, BaseReducersHeaderName,
+			ReducersHeader,
+			ReducersSource,
+			OutError))
+		{
+			OutError = TEXT("Reducer function generation failed: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+			return false;
+		}
+		const FString ReducersHeaderName = FString::Printf(TEXT("%sReducers.h"), *DatabaseNamePascal);
+		const FString ReducersHeaderPath = HeaderOutputDir / ReducersHeaderName;
+		if (!Writer.WriteFile(ReducersHeaderPath, ReducersHeader, OutError))
+		{
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers header '%s': %s"), *ReducersHeaderPath, *OutError);
+			return false;
+		}
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersHeaderPath);
 
-    const FString ReducersSourceName = FString::Printf(TEXT("%sReducers.cpp"), *DatabaseNamePascal);
-    const FString ReducersSourcePath = SourceOutputDir / ReducersSourceName;
-    if (!Writer.WriteFile(ReducersSourcePath, ReducersSource, OutError))
-    {
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers source '%s': %s"), *ReducersSourcePath, *OutError);
-        return false;
-    }
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersSourcePath);
+		const FString ReducersSourceName = FString::Printf(TEXT("%sReducers.cpp"), *DatabaseNamePascal);
+		const FString ReducersSourcePath = SourceOutputDir / ReducersSourceName;
+		if (!Writer.WriteFile(ReducersSourcePath, ReducersSource, OutError))
+		{
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers source '%s': %s"), *ReducersSourcePath, *OutError);
+			return false;
+		}
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersSourcePath);
+	}
 
 	
     // 7. Success

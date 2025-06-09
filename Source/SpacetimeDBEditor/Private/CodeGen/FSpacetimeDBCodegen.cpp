@@ -206,12 +206,16 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
             // FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Argument.TypeRef].Builtin);
             FString ArgName = Name.IsSet() ? ToPascalCase(*Name) : FCommon::CreateUniqueName();
 
-            if (!IsBuiltinWithNativeRepresentation(AlgebraicType.Tag))
+            FString UEType;
+            
+            if (IsBuiltinWithNativeRepresentation(AlgebraicType.Tag))
             {
-                OutError = TEXT("[prototype error] reducer argument is expected to be a SATS BuiltIn type in prototype.");
+                UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
             }
-
-            FString UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
+            else
+            {
+                
+            }
             
             const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
             
@@ -245,7 +249,9 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     FString& OutHeader,
     FString& OutError)
 {
-    for (const auto &TypeEntry : ModuleDef.Typespace.TypeEntries)
+    const auto &TypeEntries = ModuleDef.Typespace.TypeEntries;
+    
+    for (const auto &TypeEntry : TypeEntries)
     {
         FString OutHeaderText;
         OutHeaderText += TEXT("#pragma once\n\n"
@@ -257,12 +263,34 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         OutHeaderText += TEXT("USTRUCT(BlueprintType)");
         OutHeaderText += TEXT("\nstruct ") + ApiMacroString + " " + StructName + TEXT(" {\n\n"
                 "    GENERATED_BODY()\n\n");
-        
+
         if (TypeEntry.AlgebraicType.Tag == SATS::EType::Product)
         {
-            
+            for (const auto & [Name, AlgebraicType] : TypeEntry.AlgebraicType.Product.Elements)
+            {
+                if (AlgebraicType->Tag == SATS::EType::Ref)
+                {
+                    const auto Index = AlgebraicType->Ref.Index;
+                    if (!TypeEntries.IsValidIndex(Index))
+                    {
+                        
+                        OutError = FString::Printf(
+                            "'Ref' in Typespace type with Name '%s' has index '%i', whereas Typespace only has %i elements.",
+                            Name.IsSet() ? *Name.GetValue() : "<unnamed>", Index, TypeEntries.Num());
+                        return false;
+                    }
+
+                    auto &Type = TypeEntries[Index];
+                    Type.Name 
+                }
+            }
         }
-        //for (Ty)
+
+        else
+        {
+            OutError = "Codegen for Sats-Json Schema Typespace types different than Sats-Json Products are not implemented.";
+            return false;
+        }
 
         /*
         FString Prop = FString::Printf(
