@@ -1,5 +1,6 @@
-#include "FSpacetimeDBCodegen.h"
+#include "SpacetimeDBCodegen.h"
 
+#include "TypespaceCodegen.h"
 #include "Containers/UnrealString.h"
 #include "Net/RepLayout.h"
 #include "Parser/Common.h"
@@ -131,7 +132,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
         // Lookup product definition
         const int ProductTypeRef = Table.ProductTypeRef;
         const auto& ProductType = ModuleDef.Typespace.TypeEntries[ProductTypeRef];
-        if (ProductType.AlgebraicType.Tag != SATS::EType::Product)
+        if (ProductType.Tag != SATS::EType::Product)
         {
             OutError = TEXT("Table type is expected to be a SATS Product type.");
             return false;
@@ -249,10 +250,20 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     FString& OutHeader,
     FString& OutError)
 {
+    FHeader Header;
+    
+    if (!FTypespaceCodegen::FromIntermediateRepresentation(HeaderName, ModuleDef.Typespace, Header, OutError))
+    {
+        OutError = TEXT("Failed to generate header data from typespace: ") + OutError;
+        return false;
+    }
+
+    /*
     const auto &TypeEntries = ModuleDef.Typespace.TypeEntries;
     
     for (const auto &TypeEntry : TypeEntries)
     {
+        auto Gen = FTypespaceCodegen::FromIntermediateRepresentation(HeaderName, TypeEntry, OutHeader, OutError);
         FString OutHeaderText;
         OutHeaderText += TEXT("#pragma once\n\n"
                        "#include \"CoreMinimal.h\"\n"
@@ -292,6 +303,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
             return false;
         }
 
+        */
         /*
         FString Prop = FString::Printf(
             TEXT("    UPROPERTY(BlueprintReadWrite) %s %s;\n"),
@@ -300,13 +312,14 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         
         OutHeaderText += Prop;
         */
+        /*
         
 
         OutHeaderText += TEXT("};\n\n\n");
         
         // OutHeader = MoveTemp(OutHeaderText);
         // return true;
-    }
+    }*/
 
     return true;
 }

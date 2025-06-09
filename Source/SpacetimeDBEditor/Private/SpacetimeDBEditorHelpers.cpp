@@ -4,7 +4,7 @@
 #include "SpacetimeDBEditorHelpers.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
-#include "CodeGen/FSpacetimeDBCodegen.h"
+#include "CodeGen/SpacetimeDBCodegen.h"
 #include "HAL/PlatformProcess.h"
 #include "IO/CodeFileWriter.h"
 #include "Parser/ModuleDefParser.h"
@@ -151,6 +151,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	
 	
     // 5. Generate table structs header
+	if (0)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating table USTRUCTs"));
 		FString TablesHeader;

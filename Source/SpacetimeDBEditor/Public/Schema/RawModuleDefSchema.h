@@ -252,8 +252,7 @@ namespace SATS
     
     // --- TypeSpace and TypeEntry ---
     struct FTypespace {
-        struct FAlgebraicDef { FString Name; FAlgebraicType AlgebraicType; };
-        TArray<FAlgebraicDef> TypeEntries;
+        TArray<FAlgebraicType> TypeEntries;
     };
     
     // Top‐level module definition

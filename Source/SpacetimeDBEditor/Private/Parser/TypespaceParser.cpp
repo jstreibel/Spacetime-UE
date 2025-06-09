@@ -22,20 +22,20 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
     TypespaceOutput.TypeEntries.Empty();
     for (auto& TypeVal : *TypesArr) {
         const TSharedPtr<FJsonObject> WrapperObj = TypeVal->AsObject();
-        int32 ValueCount = WrapperObj->Values.Num();
+        const int32 ValueCount = WrapperObj->Values.Num();
 
-        if (bool IsSingleEntry = ValueCount == 1; !IsSingleEntry)
+        if (const bool IsSingleEntry = ValueCount == 1; !IsSingleEntry)
         {
             OutError = FString::Printf(TEXT("Unexpected type entry: expected single key for type kind, found %i"),
                 ValueCount);
             return false;
         }
         
-        SATS::FTypespace::FAlgebraicDef TypeEntry;
+        SATS::FAlgebraicType TypeEntry;
         
         if (WrapperObj->HasField(TEXT("Product")))
         {
-            TypeEntry.AlgebraicType.Tag = SATS::EType::Product;
+            TypeEntry.Tag = SATS::EType::Product;
 
             // Check consistency: in SATS, 'Product' is a tag for a single 'elements' Array. 
             const TSharedPtr<FJsonObject> ProductObj = WrapperObj->GetObjectField(TEXT("Product"));
@@ -55,7 +55,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             }
 
             // The list of Algebraic Types in typespace is described by a bunch of SATS Algebraic Values.
-            if (!FCommon::ParseProduct(*ProductTerms, TypeEntry.AlgebraicType.Product, OutError))
+            if (!FCommon::ParseProduct(*ProductTerms, TypeEntry.Product, OutError))
             {
                 int TypeIndex = TypespaceOutput.TypeEntries.Num();
                 OutError = FString::Printf(TEXT("Failed to parse Product Type %i: "), TypeIndex) + OutError;
@@ -63,7 +63,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             }
         }    
         else if (WrapperObj->HasField(TEXT("Sum"))) {
-            TypeEntry.AlgebraicType.Tag = SATS::EType::Sum;
+            TypeEntry.Tag = SATS::EType::Sum;
 
             // Check consistency: in SATS 'Sum' is a tag for a single 'options' or 'branches' array.
             // For 'branches', we normalize it to 'options'.
@@ -82,7 +82,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
                 return false;
             }
 
-            if (!FCommon::ParseSum(*SumTerms, TypeEntry.AlgebraicType.Sum, OutError))
+            if (!FCommon::ParseSum(*SumTerms, TypeEntry.Sum, OutError))
             {
                 return false;
             }
