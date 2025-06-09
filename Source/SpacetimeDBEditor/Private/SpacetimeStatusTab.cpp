@@ -1,5 +1,6 @@
 #include "SpacetimeStatusTab.h"
 
+#include "SpacetimeDBEditorHelpers.h"
 #include "Widgets/Text/STextBlock.h"
 
 #include "Widgets/Text/STextBlock.h"
@@ -22,7 +23,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 		for (const auto& Cfg : Config.ServerConfigs)
 		{
 			// you could show Nickname instead, e.g. Cfg.Nickname, or combine both
-			ServerOptions.Add(MakeShared<FString>(Cfg.Host));
+			ServerOptions.Add(MakeShared<FString>(Cfg.Nickname));
 		}
 
 		if (ServerOptions.Num() > 0)
@@ -135,7 +136,65 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
         [
             SNew(SButton)
             .Text(LOCTEXT("GenerateButton", "Generate Code Reflection"))
-            // … your existing OnClicked lambda …
+        	.OnClicked_Lambda([this]() -> FReply
+        	{
+        		// 1) Ensure the fields are valid
+				if (!DatabaseNameTextBox.IsValid())
+				{
+					FMessageDialog::Open(
+						EAppMsgCategory::Error,
+						EAppMsgType::Ok,
+						LOCTEXT("STDBGenerateMissedDatabaseName",
+							"🛑 Missing field: database name"));
+					return FReply::Handled();
+				}
+
+				if (!ServerURLTextBox.IsValid())
+				{
+					FMessageDialog::Open(
+						EAppMsgCategory::Error,
+						EAppMsgType::Ok,
+						LOCTEXT("STDBGenerateMissedServerURL",
+							"🛑 Missing field: server URL"));
+					return FReply::Handled();
+				}
+
+				// 2) Grab the text out of the widgets
+				const FString ServerURL = ServerURLTextBox->GetText().ToString();
+				const FString DBName    = DatabaseNameTextBox->GetText().ToString();
+
+				// 3) Call into your code-gen helper
+				FString OutDir, ErrorMsg;
+				const bool bOK = USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
+					ServerURL, DBName, OutDir, ErrorMsg
+				);
+
+				// 4) Show a dialog based on success or failure
+				if (!bOK)
+				{
+					FMessageDialog::Open(
+						EAppMsgCategory::Error,
+						EAppMsgType::Ok,
+						FText::Format(
+							LOCTEXT("GenerateFailedFmt", "🛑 Generate failed:\n{0}"),
+							FText::FromString(ErrorMsg)
+						)
+					);
+				}
+				else
+				{
+					FMessageDialog::Open(
+						EAppMsgCategory::Success,
+						EAppMsgType::Ok,
+						FText::Format(
+							LOCTEXT("GenerateSuccessFmt", "✅ Generate succeeded!\nFiles written to:\n{0}"),
+							FText::FromString(OutDir)
+						)
+					);
+				}
+
+				return FReply::Handled();
+			})
         ]
     ];
 

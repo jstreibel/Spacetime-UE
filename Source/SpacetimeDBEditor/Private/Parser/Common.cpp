@@ -180,14 +180,14 @@ bool FCommon::ParseNameAndAlgebraicType(
 	
 	if (!ResolveAlgebraicType(AlgebraicTypeObject, AlgebraicOut, OutError))
 	{
-		auto OutErrorTemp = FString::Printf(TEXT("Failed to resolve Algebraic Type"));
+		auto OutErrorTemp = FString::Printf(TEXT("Failed to resolve Algebraic Type of "));
 		if (OptionalName.IsSet())
 		{
-			OutErrorTemp += FString::Printf(TEXT(" of named SATS-JSON object '%s'"), *OptionalName.GetValue());
+			OutErrorTemp += FString::Printf(TEXT("named SATS-JSON object '%s'"), *OptionalName.GetValue());
 		}
 		else
 		{
-			OutErrorTemp += TEXT(" of unnamed SATS-JSON object");
+			OutErrorTemp += TEXT("unnamed SATS-JSON object");
 		}
 		OutError = OutErrorTemp + ": " + OutError; 
 		return false;
@@ -289,6 +289,8 @@ bool FCommon::ResolveAlgebraicType(
         return false;
     }
 
+	AlgebraicOut.Tag = SatsKind;
+
 	if (SatsKind == SATS::EType::Invalid)
 	{
 		OutError = TEXT("Internal inconsistency found while parsing SATS-JSON TypeDef; "
@@ -318,7 +320,6 @@ bool FCommon::ResolveAlgebraicType(
             return false;
         }
 
-        AlgebraicOut.Tag = SATS::EType::Product;
         AlgebraicOut.Product = MoveTemp(Product);
         return true;                    
     }
@@ -348,14 +349,13 @@ bool FCommon::ResolveAlgebraicType(
         }
         
         AlgebraicOut.Sum = MoveTemp(Sum);
-        AlgebraicOut.Tag = SATS::EType::Sum;
         return true;
     }
 
     if (SatsKind == SATS::EType::Ref)
-    {
-        OutError = TEXT("Parsing of Ref SATS-JSON types not implemented");
-        return false;
+    {        
+    	AlgebraicOut.Ref.Index = SatsJsonObject->GetIntegerField(TEXT("Ref"));
+    	return true;
     }
 		
     // else it is SATS Builtin 
@@ -369,7 +369,7 @@ bool FCommon::ResolveAlgebraicType(
             return false;
         }
 
-        // We can safely cast because the enums are correctly mapped
+        // We can safely cast because the enums are properly mapped in their definition
         AlgebraicOut.Tag = static_cast<SATS::EType>(Builtin.Tag);
         AlgebraicOut.Builtin = MoveTemp(Builtin);
         return true;

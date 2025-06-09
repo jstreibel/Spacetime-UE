@@ -20,7 +20,6 @@ bool FCodeFileWriter::WriteFile(
 				TEXT("Failed to create directory: %s"),
 				*Directory
 			);
-			UE_LOG(LogTemp, Error, TEXT("%s"), *OutError);
 			return false;
 		}
 	}
@@ -32,10 +31,8 @@ bool FCodeFileWriter::WriteFile(
 			TEXT("Failed to write file: %s"),
 			*FilePath
 		);
-		UE_LOG(LogTemp, Error, TEXT("%s"), *OutError);
 		return false;
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("Successfully wrote file: %s"), *FilePath);
+	
 	return true;
 }

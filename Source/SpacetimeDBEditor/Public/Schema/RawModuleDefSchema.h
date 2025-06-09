@@ -224,7 +224,7 @@ namespace SATS
     };
     
     struct FRefType {
-        FString Path;  // e.g. "other_module.SomeType"
+        uint32 Index;  // e.g. "other_module.SomeType"
     };
 
     struct FProductType {
