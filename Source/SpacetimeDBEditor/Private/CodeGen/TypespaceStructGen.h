@@ -11,13 +11,22 @@ struct FFunction
 };
 
 struct FStruct
-{	
+{
+	struct FAttribute
+	{
+		FString Name;
+		FString Type;
+		TOptional<FString> Comment;
+	};
+	
 	FString Name={};
-	TMap<FString, FString> Attributes={};
+	TArray<FAttribute> Attributes={};
 	
 	bool bIsReflected=false;
 	TArray<FString> Specifiers={};
 	TMap<FString, FString> MetadataSpecifiers={};
+
+	TOptional<FString> Comment;
 };
 
 struct FHeader
@@ -35,7 +44,7 @@ struct FHeader
 	FString ApiMacro;
 };
 
-class FTypespaceCodegen
+class FTypespaceStructGen
 {
 public:
 	static bool BuildHeaderLayoutFromIntermediateRepresentation(

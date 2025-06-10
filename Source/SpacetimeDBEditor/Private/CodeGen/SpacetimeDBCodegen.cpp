@@ -1,6 +1,6 @@
 #include "SpacetimeDBCodegen.h"
 
-#include "TypespaceCodegen.h"
+#include "TypespaceStructGen.h"
 #include "Containers/UnrealString.h"
 #include "Net/RepLayout.h"
 #include "Parser/Common.h"
@@ -136,15 +136,17 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     FString& OutError
 )
 {
+    const FString ClassName = "U" + ModuleName +  "Reducers";
     
     // Header
     FString HeaderText;
     HeaderText += TEXT("#pragma once\n\n"
                 "#include \"Kismet/BlueprintFunctionLibrary.h\"\n"
                 "#include \"CoreMinimal.h\"\n"
+                "#include \"" + ModuleName + "Typespace.h" + "\"\n"
                 "#include \"" + HeaderName + ".generated.h" + "\"\n\n\n");
     HeaderText += TEXT("UCLASS()\n"
-                "class " + ApiMacroString + " U" + ModuleName +  "Reducers : public UBlueprintFunctionLibrary {\n\n"
+                "class " + ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary {\n\n"
                 "   GENERATED_BODY()\n\npublic:\n\n");
 
     // Source
@@ -166,9 +168,16 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
             {
                 UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
             }
+            else if (AlgebraicType.Tag == SATS::EType::Ref)
+            {
+                const auto Index = AlgebraicType.Ref.Index;
+                const auto TypeName = ModuleDef.Types[Index].Name.Name;
+
+                UEType = FCommon::MakeStructName(TypeName, ModuleName);
+            }            
             else
             {
-                UE_LOG(LogTemp, Error, TEXT("non-UE-native SATS-JSON Algebraic Types not implemented in Reducers"));
+                UE_LOG(LogTemp, Error, TEXT("SpacetimeDB Reducer Unreal codegen currently supports only 'BuiltIn' and 'Ref' SATS-JSON Types"));
             }
             
             const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
@@ -183,11 +192,12 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
         HeaderText += Sig;
 
         // Implementation stub
-        FString Impl = FString::Printf(
-            TEXT("void USpacetimeDBReducers::%s(%s)\n{\n    // TODO: call SpacetimeDB client reducer '%s'\n}\n\n"),
+        FString Suffix = FString::Printf(
+            TEXT("::%s(%s)\n{\n    // TODO: call SpacetimeDB client reducer '%s'\n}\n\n"),
             *ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", ")),
             *ReducerDef.Name
         );
+        FString Impl = "void " + ClassName + Suffix;
         Src += "\n" + Impl;
     }
     HeaderText += TEXT("};\n");
@@ -206,7 +216,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 {
     FHeader Header;
     
-    if (!FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
+    if (!FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
         ModuleName,
         HeaderName,
         ModuleDef.Typespace,
@@ -242,18 +252,30 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 
     OutHeaderCode += TEXT("\n\n");
 
-    for (const auto &Struct : Header.Structs)
+    for (const auto & [
+        Name,
+        Attributes,
+        bIsReflected,
+        Specifiers,
+        MetadataSpecifiers,
+        Comment]
+        : Header.Structs)
     {
-        if (Struct.bIsReflected)
+        if (Comment.IsSet())
+        {
+            OutHeaderCode += "/* " + Comment.GetValue() + " */\n";
+        }
+        
+        if (bIsReflected)
         {
             OutHeaderCode += TEXT("USTRUCT(");
             
-            for (const auto &Specifiers : Struct.Specifiers)
+            for (const auto &Specifier : Specifiers)
             {
-                OutHeaderCode += Specifiers + TEXT(", ");
+                OutHeaderCode += Specifier + TEXT(", ");
             }
 
-            for (const auto &MetaSpecifiers : Struct.MetadataSpecifiers)
+            for (const auto &MetaSpecifiers : MetadataSpecifiers)
             {
                 OutHeaderCode += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
             }
@@ -262,20 +284,25 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 
             OutHeaderCode += ")\n";
         }
-        OutHeaderCode += TEXT("struct ") + Header.ApiMacro + " " + Struct.Name + " {\n\n";
+        OutHeaderCode += TEXT("struct ") + Header.ApiMacro + " " + Name + " {\n\n";
 
-        if (Struct.bIsReflected)
+        if (bIsReflected)
         {
             OutHeaderCode += TabString + "GENERATED_BODY();\n\n";
         }
 
-        for (const auto &Attribute : Struct.Attributes)
+        for (const auto &Attribute : Attributes)
         {
-            if (Struct.bIsReflected)
+            if (Attribute.Comment.IsSet())
+            {
+                OutHeaderCode += TabString + "/* " + Attribute.Comment.GetValue() + TEXT(" */\n");
+            }
+            
+            if (bIsReflected)
             {
                 OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
             }
-            OutHeaderCode += TabString + Attribute.Value + " " + Attribute.Key + ";" + "\n\n";
+            OutHeaderCode += TabString + Attribute.Type + " " + Attribute.Name + ";" + "\n\n";
         }
 
         OutHeaderCode += "};\n\n\n";

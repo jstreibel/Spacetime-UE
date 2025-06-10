@@ -344,7 +344,7 @@ namespace SATS
         FString Value;
     };
 
-    struct FRLSPolicy {
+    struct FRlsPolicy {
         FString Name;
         FString Using_Expr;
     };
@@ -356,6 +356,6 @@ namespace SATS
         TArray<struct FReducerDef>      Reducers;
         TArray<struct FExportedType>    Types;
         TArray<struct FMiscExport>      MiscExports;
-        TArray<struct FRLSPolicy>       RowLevelSecurity;
+        TArray<struct FRlsPolicy>       RowLevelSecurity;
     };
 }

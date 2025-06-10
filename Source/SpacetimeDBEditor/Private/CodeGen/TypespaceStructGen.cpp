@@ -1,4 +1,4 @@
-#include "TypespaceCodegen.h"
+#include "TypespaceStructGen.h"
 
 #include "Parser/Common.h"
 
@@ -29,6 +29,7 @@ FString GetAttributeName(const SATS::FOptionalString& Name)
 }
 
 bool GenerateNewStruct(
+	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& Types,
 	const SATS::FOptionalString& StructName,
 	const SATS::FProductType& Product,
@@ -40,6 +41,7 @@ bool GenerateNewStruct(
 	
 	OutStruct.bIsReflected = true;
 	OutStruct.Specifiers.Add("BlueprintType");
+	OutStruct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
 
 	UE_LOG(LogTemp, Display, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
 	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
@@ -50,7 +52,7 @@ bool GenerateNewStruct(
 			return false;
 		}
 		
-		const auto AttributeName = GetAttributeName(AttributeOptionalName);
+		const auto RawName = GetAttributeName(AttributeOptionalName);
 		const auto Tag = AttributeAlgebraicType->Tag;
 		
 		if (Tag == SATS::EType::Product)
@@ -58,12 +60,15 @@ bool GenerateNewStruct(
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &ProductElement = AttributeAlgebraicType->Product;
 			FStruct NewStruct;
-			if (!GenerateNewStruct(Types, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
+			if (!GenerateNewStruct(ModuleName, Types, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
 			{
 				return false;
 			}
-			
-			OutStruct.Attributes.Add(AttributeName, NewStruct.Name);
+
+			const auto NewStructName = FCommon::ToPascalCase(RawName);
+			OutStruct.Attributes.Add({
+				NewStructName,
+				NewStruct.Name});
 			OutHeader.Structs.Add(NewStruct);
 
 			continue;
@@ -79,15 +84,23 @@ bool GenerateNewStruct(
 		{
 			const auto Index = AttributeAlgebraicType->Ref.Index;
 			const auto& Referenced = Types[Index];
-			const FString Name = FCommon::ToPascalCase(Referenced.Name.Name);
-			OutStruct.Attributes.Add(Name + " /* " + Referenced.Name.Name + " */", "F" + Name);
+			const FString Name = FCommon::ToPascalCase(RawName);
+			const FString Type = Referenced.Name.Name;
+			
+			OutStruct.Attributes.Add({
+				Name + " /* " + Referenced.Name.Name + " */",
+				FCommon::MakeStructName(Referenced.Name.Name, ModuleName)});
+			
 			continue;
 		}
 
 		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
 		{
-			const FString Name = FCommon::ToPascalCase(AttributeName);
-			OutStruct.Attributes.Add(Name + "/* " + AttributeName + " */", SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)));
+			const FString Name = FCommon::ToPascalCase(RawName);
+			OutStruct.Attributes.Add({
+				Name,
+				SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)),
+			 RawName + ": " + SATS::TypeToString(Tag) });
 
 			if (Tag == SATS::EType::U256)
 			{
@@ -116,39 +129,42 @@ bool GenerateNewStruct(
 	return true;
 }
 
-void AddMissingBuitins(FHeader& Header)
+void AddMissingBuiltIns(FHeader& Header)
 {
-	FStruct UInt256;
-	UInt256.Name = TEXT("FUInt256");
-	UInt256.Attributes.Add("Value", "FString");
-	UInt256.bIsReflected = true;
-	UInt256.Specifiers.Add("BlueprintType");
+	{
+		FStruct UInt256;
+		UInt256.Name = TEXT("FUInt256");
+		UInt256.Attributes.Add({"Value", "FString"});
+		UInt256.bIsReflected = true;
+		UInt256.Specifiers.Add("BlueprintType");
+		UInt256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+		UInt256.Comment = TEXT("Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection.");
 
-	FStruct Int256;
-	Int256.Name = TEXT("FInt256");
-	Int256.Attributes.Add("Value", "FString");
-	Int256.bIsReflected = true;
-	Int256.Specifiers.Add("BlueprintType");
-	
-	Header.Structs.Add(UInt256);
-	Header.Structs.Add(Int256);
+		Header.Structs.Add(UInt256);
+	}
+
+	{
+		FStruct Int256;
+		Int256.Name = TEXT("FInt256");
+		Int256.Attributes.Add({"Value", "FString"});
+		Int256.bIsReflected = true;
+		Int256.Specifiers.Add("BlueprintType");
+		Int256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+		Int256.Comment = TEXT("Provides SATS-JSON I256 support; Unreal UBT lacks int256 reflection.");
+		
+		Header.Structs.Add(Int256);
+	}
 }
 
 
-bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
+bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 	const FString& ModuleName,
 	const FString& HeaderBaseName,
 	const SATS::FTypespace& Typespace,
 	const TArray<SATS::FExportedType>& Types,
 	FHeader &OutHeader,
 	FString &OutError)
-{
-	// List of Unreal reserver class/struct/etc names
-	// e.g. an user-implemented struct FPlayer conflicts with Unreal UPlayer class.
-	TArray<FString> ReservedNames = {
-		"Player"
-	};
-	
+{	
 	if (Typespace.TypeEntries.Num() != Types.Num())
 	{
 		OutError = FString::Printf(
@@ -165,7 +181,7 @@ bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
 	OutHeader.Includes.Add({"CoreMinimal.h", true});
 	OutHeader.Includes.Add({HeaderBaseName + ".generated.h", true});
 
-	AddMissingBuitins(OutHeader);
+	AddMissingBuiltIns(OutHeader);
 
 	for (const auto& Type : Types)
 	{
@@ -180,13 +196,14 @@ bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
 		}
 		
 		FStruct Struct;
-		FString StructName = Type.Name.Name;
-		if (ReservedNames.Contains(StructName))
-		{
-			StructName += "_" + ModuleName;
-		}
-		if (!GenerateNewStruct(Types, "F" + StructName, AlgebraicType.Product,
-			Struct, OutHeader, OutError))
+		Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+
+		if (FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
+			!GenerateNewStruct(
+				ModuleName,
+				Types, StructName,
+				AlgebraicType.Product,
+				Struct, OutHeader, OutError))
 		{
 			return false;
 		}

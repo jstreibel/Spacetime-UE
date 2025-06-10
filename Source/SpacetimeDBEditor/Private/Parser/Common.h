@@ -4,6 +4,12 @@
 class FCommon
 {
 public:
+	// List of Unreal reserver class/struct/etc names
+	// e.g. an user-implemented struct FPlayer conflicts with Unreal UPlayer class.
+	static const TArray<FString> ReservedNames;
+
+	static FString MakeStructName(const FString& InName, const FString& ModuleName);
+	
 	static FString ArrayToString(const TArray<FString>& StringArray);
 	
 	static FString CreateUniqueName();

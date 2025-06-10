@@ -12,7 +12,7 @@
 
 #include <SpacetimeDBEditorHelpers.h>
 
-#include "CodeGen/TypespaceCodegen.h"
+#include "CodeGen/TypespaceStructGen.h"
 
 bool RawModuleDefFromCli(
 	const FString &DatabaseName,
@@ -178,8 +178,8 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
 		
 		FString ReducersHeader, ReducersSource;
-		FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateReducerFunctions(
+		if (FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
+			!FSpacetimeDBCodeGen::GenerateReducerFunctions(
 			DatabaseNamePascal,
 			RawModule,
 			BaseReducersHeaderName,

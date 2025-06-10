@@ -1,5 +1,20 @@
 #include "Common.h"
 
+const TArray<FString> FCommon::ReservedNames = {
+	"Player"
+};
+
+FString FCommon::MakeStructName(const FString& InName, const FString& ModuleName)
+{
+	FString OutName = "F" + InName;
+	if (ReservedNames.Contains(InName))
+	{
+		OutName += "_" + FCommon::ToPascalCase(ModuleName);
+	}
+
+	return OutName;
+}
+
 FString FCommon::ArrayToString(const TArray<FString>& StringArray)
 {
 	FString Result;

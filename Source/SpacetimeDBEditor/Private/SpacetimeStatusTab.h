@@ -1,11 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CLI/SpacetimeCliConfig.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Framework/SlateDelegates.h"
 #include "Containers/Ticker.h"
 
-class SSpacetimeStatusTab : public SCompoundWidget
+class SSpacetimeStatusTab final : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SSpacetimeStatusTab)
@@ -24,8 +25,10 @@ private:
 	float RefreshInterval= 1.f;
 	float AccumulatedTime = 0.f;
 
+	FSpacetimeCliConfig Config;
+	
 	// These are our two colored text widgets
-	TSharedPtr<STextBlock> CLITextBlock;
+	TSharedPtr<STextBlock> CliTextBlock;
 	TSharedPtr<STextBlock> StatusTextBlock;
 	
 	// Keeps the list alive for the duration of this widget

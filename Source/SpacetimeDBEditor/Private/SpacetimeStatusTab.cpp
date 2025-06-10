@@ -15,7 +15,6 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 	RefreshInterval = InArgs._RefreshInterval;
 
 	// --- 1) load CLI config and build combo‐list ---
-	FSpacetimeCliConfig Config;
 	FString ConfigError;
 
 	if (FSpacetimeCLIHelper::GetCliConfig(Config, ConfigError))
@@ -50,7 +49,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
-				SAssignNew(CLITextBlock, STextBlock)
+				SAssignNew(CliTextBlock, STextBlock)
 				.Text(FText::FromString(TEXT("…")))
 			]
 		]
@@ -215,7 +214,7 @@ void SSpacetimeStatusTab::Tick(const FGeometry& AllottedGeometry, const double I
 void SSpacetimeStatusTab::ScheduleAsyncRefresh() const
 {
 	// Capture weak refs so we don’t keep widgets alive if the tab closes
-	TWeakPtr<STextBlock> CliWeak    = CLITextBlock;
+	TWeakPtr<STextBlock> CliWeak    = CliTextBlock;
 	TWeakPtr<STextBlock> StatusWeak = StatusTextBlock;
 
 	// Dispatch the blocking work to the thread-pool
