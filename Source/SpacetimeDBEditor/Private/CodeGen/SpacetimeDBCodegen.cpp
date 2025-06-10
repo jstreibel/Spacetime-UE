@@ -201,7 +201,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     const SATS::FRawModuleDef& ModuleDef,
     const FString& ModuleName,
     const FString& HeaderName,
-    FString& OutHeader,
+    FString& OutHeaderCode,
     FString& OutError)
 {
     FHeader Header;
@@ -220,63 +220,65 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 
     UE_LOG(LogTemp, Display, TEXT("[spacetime] built header layout from IR"));
 
-    if (Header.bPragmaOnce) OutHeader += TEXT("#pragma once\n\n");
+    if (Header.bPragmaOnce) OutHeaderCode += TEXT("#pragma once\n\n");
     
     for (auto [Path, bIsLocal] : Header.Includes)
     {
         
-        OutHeader += TEXT("#include ");
+        OutHeaderCode += TEXT("#include ");
 
         if (bIsLocal)
         {
-            OutHeader += FString::Printf(TEXT("\"%s\""), *Path);
+            OutHeaderCode += FString::Printf(TEXT("\"%s\""), *Path);
         }
         else
         {
-            OutHeader += FString::Printf(TEXT("<%s>"), *Path);
+            OutHeaderCode += FString::Printf(TEXT("<%s>"), *Path);
         }
 
-        OutHeader += TEXT("\n");
+        OutHeaderCode += TEXT("\n");
         
     }
+
+    OutHeaderCode += TEXT("\n\n");
 
     for (const auto &Struct : Header.Structs)
     {
         if (Struct.bIsReflected)
         {
-            OutHeader += TEXT("USTRUCT(");
+            OutHeaderCode += TEXT("USTRUCT(");
             
             for (const auto &Specifiers : Struct.Specifiers)
             {
-                OutHeader += Specifiers + TEXT(", ");
+                OutHeaderCode += Specifiers + TEXT(", ");
             }
 
             for (const auto &MetaSpecifiers : Struct.MetadataSpecifiers)
             {
-                OutHeader += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
+                OutHeaderCode += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
             }
 
-            OutHeader.RemoveFromEnd(", ");
+            OutHeaderCode.RemoveFromEnd(", ");
 
-            OutHeader += ")\n";
+            OutHeaderCode += ")\n";
         }
-        OutHeader += TEXT("struct ") + Header.ApiMacro + " " + Struct.Name + " {\n\n";
+        OutHeaderCode += TEXT("struct ") + Header.ApiMacro + " " + Struct.Name + " {\n\n";
 
         if (Struct.bIsReflected)
         {
-            OutHeader += TabString + "GENERATED_BODY();\n\n";
+            OutHeaderCode += TabString + "GENERATED_BODY();\n\n";
         }
 
         for (const auto &Attribute : Struct.Attributes)
         {
             if (Struct.bIsReflected)
             {
-                OutHeader += TabString + "UPROPERTY(BlueprintReadWrite)\n";
+                OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
             }
-            OutHeader += TabString + Attribute.Value + " " + Attribute.Key + ";" + "\n\n";
+            OutHeaderCode += TabString + Attribute.Value + " " + Attribute.Key + ";" + "\n\n";
         }
 
-        OutHeader += "};\n\n\n";
+        OutHeaderCode += "};\n\n\n";
     }
 
     return true;

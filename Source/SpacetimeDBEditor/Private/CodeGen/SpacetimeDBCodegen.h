@@ -44,7 +44,7 @@ public:
 	 * @param ModuleDef
 	 * @param ModuleName 
 	 * @param HeaderName 
-	 * @param OutHeader 
+	 * @param OutHeaderCode 
 	 * @param OutError 
 	 * @return 
 	 */
@@ -52,7 +52,7 @@ public:
 		const SATS::FRawModuleDef& ModuleDef,
 		const FString& ModuleName,
 		const FString& HeaderName,
-		FString& OutHeader,
+		FString& OutHeaderCode,
 		FString& OutError);
 
 private:

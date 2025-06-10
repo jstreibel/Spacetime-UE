@@ -176,16 +176,16 @@ namespace SATS
     inline FString MapBuiltinToUnreal(const FString& BuiltinName)
     {
         if (BuiltinName == "Bool")         return "bool";
-        if (BuiltinName == "I8")           return "int8";
-        if (BuiltinName == "U8")           return "uint8";
-        if (BuiltinName == "I16")          return "int16";
-        if (BuiltinName == "U16")          return "uint16";
-        if (BuiltinName == "I32")          return "int32";
-        if (BuiltinName == "U32")          return "uint32";
+        if (BuiltinName == "I8")           return "uint8";    // Unreal does not reflect int8
+        if (BuiltinName == "U8")           return "uint8"; 
+        if (BuiltinName == "I16")          return "int32";    // Unreal does not reflect int16
+        if (BuiltinName == "U16")          return "int32";    // Unreal does not reflect uint16
+        if (BuiltinName == "I32")          return "int32"; 
+        if (BuiltinName == "U32")          return "int32";    // Unreal does not reflect uint32
         if (BuiltinName == "I64")          return "int64";
-        if (BuiltinName == "U64")          return "uint64";
-        if (BuiltinName == "I256")         return "int256";
-        if (BuiltinName == "U256")         return "int256"; // TODO: maps to int256 since Unreal has no uint256
+        if (BuiltinName == "U64")          return "int64";    // Unreal does not reflect uint64
+        if (BuiltinName == "I256")         return "FInt256";  // These are hand-added USTRUCTs
+        if (BuiltinName == "U256")         return "FUInt256"; // These are hand-added USTRUCTs
         if (BuiltinName == "F32")          return "float";
         if (BuiltinName == "F64")          return "double";
         if (BuiltinName == "String")       return "FString";

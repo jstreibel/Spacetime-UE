@@ -116,6 +116,25 @@ bool GenerateNewStruct(
 	return true;
 }
 
+void AddMissingBuitins(FHeader& Header)
+{
+	FStruct UInt256;
+	UInt256.Name = TEXT("FUInt256");
+	UInt256.Attributes.Add("Value", "FString");
+	UInt256.bIsReflected = true;
+	UInt256.Specifiers.Add("BlueprintType");
+
+	FStruct Int256;
+	Int256.Name = TEXT("FInt256");
+	Int256.Attributes.Add("Value", "FString");
+	Int256.bIsReflected = true;
+	Int256.Specifiers.Add("BlueprintType");
+	
+	Header.Structs.Add(UInt256);
+	Header.Structs.Add(Int256);
+}
+
+
 bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
 	const FString& ModuleName,
 	const FString& HeaderBaseName,
@@ -145,6 +164,8 @@ bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
 	
 	OutHeader.Includes.Add({"CoreMinimal.h", true});
 	OutHeader.Includes.Add({HeaderBaseName + ".generated.h", true});
+
+	AddMissingBuitins(OutHeader);
 
 	for (const auto& Type : Types)
 	{
