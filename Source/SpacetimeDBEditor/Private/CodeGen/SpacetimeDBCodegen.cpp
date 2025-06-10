@@ -259,6 +259,8 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
                 OutHeader += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
             }
 
+            OutHeader.RemoveFromEnd(", ");
+
             OutHeader += ")\n";
         }
         OutHeader += TEXT("struct ") + Header.ApiMacro + " " + Struct->Name + " {\n\n";
