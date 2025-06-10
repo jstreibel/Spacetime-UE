@@ -30,25 +30,16 @@ struct FHeader
 
 	bool bPragmaOnce = true;
 	// TODO: also add Classes, Functions, etc.
-	TArray<TSharedPtr<FStruct>> Structs;
+	TArray<FStruct> Structs;
 	TArray<FInclude> Includes;
 	FString ApiMacro;
-
-	bool AnyStructReflected() const
-	{
-		for (const auto& Struct : Structs)
-		{
-			if (Struct->bIsReflected) return true;
-		}
-
-		return false;
-	}
 };
 
 class FTypespaceCodegen
 {
 public:
 	static bool BuildHeaderLayoutFromIntermediateRepresentation(
+		const FString& ModuleName,
 		const FString& HeaderBaseName,
 		const SATS::FTypespace& Typespace,
 		const TArray<SATS::FExportedType>& Types,

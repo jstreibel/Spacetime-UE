@@ -1,8 +1,6 @@
 #include "TypespaceCodegen.h"
 
-#include "Animation/AnimAttributes.h"
 #include "Parser/Common.h"
-#include "UObject/PackageTrailer.h"
 
 FString IntToString(const uint32 Value)
 {
@@ -34,27 +32,21 @@ bool GenerateNewStruct(
 	const TArray<SATS::FExportedType>& Types,
 	const SATS::FOptionalString& StructName,
 	const SATS::FProductType& Product,
-	const TSharedPtr<FStruct>& OutStruct,
+	FStruct& OutStruct,
 	FHeader &OutHeader,
 	FString &OutError)
 {
-	OutStruct->Name = StructName.IsSet() ? StructName.GetValue() : GenerateNameForInlineStruct();
+	OutStruct.Name = StructName.IsSet() ? StructName.GetValue() : GenerateNameForInlineStruct();
 	
-	if (!OutStruct.IsValid())
-	{
-		OutError = FString::Printf(TEXT("invalid OutStruct pointer while generating new struct '%s'"), *OutStruct->Name);
-		return false;
-	}
-	
-	OutStruct->bIsReflected = true;
-	OutStruct->Specifiers.Add("BlueprintType");
+	OutStruct.bIsReflected = true;
+	OutStruct.Specifiers.Add("BlueprintType");
 
-	UE_LOG(LogTemp, Display, TEXT("[spacetime] Generating Struct: %s"), *OutStruct->Name);
+	UE_LOG(LogTemp, Display, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
 	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
 	{
 		if (!AttributeAlgebraicType.IsValid())
 		{
-			OutError = FString::Printf(TEXT("invalid pointer while generating struct %s"), *OutStruct->Name);
+			OutError = FString::Printf(TEXT("invalid pointer while generating struct %s"), *OutStruct.Name);
 			return false;
 		}
 		
@@ -65,13 +57,13 @@ bool GenerateNewStruct(
 		{
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &ProductElement = AttributeAlgebraicType->Product;
-			TSharedPtr<FStruct> NewStruct = MakeShared<FStruct>();
+			FStruct NewStruct;
 			if (!GenerateNewStruct(Types, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
 			{
 				return false;
 			}
 			
-			OutStruct->Attributes.Add(NewStruct->Name, AttributeName);
+			OutStruct.Attributes.Add(AttributeName, NewStruct.Name);
 			OutHeader.Structs.Add(NewStruct);
 
 			continue;
@@ -87,15 +79,22 @@ bool GenerateNewStruct(
 		{
 			const auto Index = AttributeAlgebraicType->Ref.Index;
 			const auto& Referenced = Types[Index];
-			 
-			OutStruct->Attributes.Add(Referenced.Name.Name, "F" + Referenced.Name.Name);
+			const FString Name = FCommon::ToPascalCase(Referenced.Name.Name);
+			OutStruct.Attributes.Add(Name, "F" + Name);
 			continue;
 		}
 
 		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
 		{
-			OutStruct->Attributes.Add(AttributeName, SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)));
+			const FString Name = FCommon::ToPascalCase(AttributeName);
+			OutStruct.Attributes.Add(AttributeName + "/* " + AttributeName + " */", SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)));
 
+			if (Tag == SATS::EType::U256)
+			{
+				UE_LOG(LogTemp, Warning,
+					TEXT("mapping a U256 to int256 since Unreal currently has no uint256 native type"));
+			}
+			
 			if (Tag == SATS::EType::Array || Tag == SATS::EType::Map)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("SATS-JSON BuiltIn types 'Array' and 'Map' "
@@ -118,12 +117,19 @@ bool GenerateNewStruct(
 }
 
 bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
-	const FString &HeaderBaseName,
+	const FString& ModuleName,
+	const FString& HeaderBaseName,
 	const SATS::FTypespace& Typespace,
 	const TArray<SATS::FExportedType>& Types,
 	FHeader &OutHeader,
 	FString &OutError)
 {
+	// List of Unreal reserver class/struct/etc names
+	// e.g. an user-implemented struct FPlayer conflicts with Unreal UPlayer class.
+	TArray<FString> ReservedNames = {
+		"Player"
+	};
+	
 	if (Typespace.TypeEntries.Num() != Types.Num())
 	{
 		OutError = FString::Printf(
@@ -138,8 +144,7 @@ bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
 	// TODO: also check if types <-> typespace (if they have 1:1 matching)
 	
 	OutHeader.Includes.Add({"CoreMinimal.h", true});
-	OutHeader.Includes.Add({"UObject/NoExportTypes.h", true});
-	OutHeader.Includes.Add({HeaderBaseName + ".generated.h"});
+	OutHeader.Includes.Add({HeaderBaseName + ".generated.h", true});
 
 	for (const auto& Type : Types)
 	{
@@ -153,13 +158,18 @@ bool FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
 			return false;
 		}
 		
-		TSharedPtr<FStruct> Struct = MakeShared<FStruct>();
-		if (!GenerateNewStruct(Types, "F" + Type.Name.Name, AlgebraicType.Product,
+		FStruct Struct;
+		FString StructName = Type.Name.Name;
+		if (ReservedNames.Contains(StructName))
+		{
+			StructName += "_" + ModuleName;
+		}
+		if (!GenerateNewStruct(Types, "F" + StructName, AlgebraicType.Product,
 			Struct, OutHeader, OutError))
 		{
 			return false;
 		}
-
+		
 		OutHeader.Structs.Add(Struct);
 	}
 	

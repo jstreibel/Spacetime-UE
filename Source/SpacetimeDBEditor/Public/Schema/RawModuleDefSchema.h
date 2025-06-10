@@ -1,4 +1,5 @@
 #pragma once
+#include "Math/BigInt.h"
 
 // Spacetime Algebraic Type System
 namespace SATS
@@ -16,8 +17,6 @@ namespace SATS
         U32,    // { "U32": [] }
         I64,    // { "I64": [] }
         U64,    // { "U64": [] }
-        I128,   // { "I128": [] }
-        U128,   // { "U128": [] }
         I256,   // { "I256": [] }
         U256,   // { "U256": [] }
         F32,    // { "F32": [] }
@@ -40,8 +39,6 @@ namespace SATS
         U32,      // { "U32": [] }
         I64,      // { "I64": [] }
         U64,      // { "U64": [] }
-        I128,     // { "I128": [] }
-        U128,     // { "U128": [] }
         I256,     // { "I256": [] }
         U256,     // { "U256": [] }
         F32,      // { "F32": [] }
@@ -76,8 +73,6 @@ namespace SATS
             case EBuiltinType::U32:    return "U32";
             case EBuiltinType::I64:    return "I64";
             case EBuiltinType::U64:    return "U64";
-            case EBuiltinType::I128:   return "I128";
-            case EBuiltinType::U128:   return "U128";
             case EBuiltinType::I256:   return "I256";
             case EBuiltinType::U256:   return "U256";
             case EBuiltinType::F32:    return "F32";
@@ -106,8 +101,6 @@ namespace SATS
             case EType::U32:      return "U32";
             case EType::I64:      return "I64";
             case EType::U64:      return "U64";
-            case EType::I128:     return "I128";
-            case EType::U128:     return "U128";
             case EType::I256:     return "I256";
             case EType::U256:     return "U256";
             case EType::F32:      return "F32";
@@ -136,8 +129,6 @@ namespace SATS
         if (Kind == "U32")          return EType::U32;
         if (Kind == "I64")          return EType::I64;
         if (Kind == "U64")          return EType::U64;
-        if (Kind == "I128")         return EType::I128;
-        if (Kind == "U128")         return EType::U128;
         if (Kind == "I256")         return EType::I256;
         if (Kind == "U256")         return EType::U256;
         if (Kind == "F32")          return EType::F32;
@@ -170,8 +161,6 @@ namespace SATS
         if (Kind == "U32")          return EBuiltinType::U32;
         if (Kind == "I64")          return EBuiltinType::I64;
         if (Kind == "U64")          return EBuiltinType::U64;
-        if (Kind == "I128")         return EBuiltinType::I128;
-        if (Kind == "U128")         return EBuiltinType::U128;
         if (Kind == "I256")         return EBuiltinType::I256;
         if (Kind == "U256")         return EBuiltinType::U256;
         if (Kind == "F32")          return EBuiltinType::F32;
@@ -195,8 +184,8 @@ namespace SATS
         if (BuiltinName == "U32")          return "uint32";
         if (BuiltinName == "I64")          return "int64";
         if (BuiltinName == "U64")          return "uint64";
-        if (BuiltinName == "I256")         return "int128";
-        if (BuiltinName == "U256")         return "uint128";
+        if (BuiltinName == "I256")         return "int256";
+        if (BuiltinName == "U256")         return "int256"; // TODO: maps to int256 since Unreal has no uint256
         if (BuiltinName == "F32")          return "float";
         if (BuiltinName == "F64")          return "double";
         if (BuiltinName == "String")       return "FString";
@@ -239,8 +228,7 @@ namespace SATS
         int16, uint16,
         int32, uint32,
         int64, uint64, 
-        std::array<char,7>,    // I128 and U128?
-        // , int128, uint128
+        int256, /*uint256,*/
         float, double,
         FString
         // TODO: Resolve below: TMap and TArray need sizeof<FAlgebraicType>,

@@ -238,11 +238,6 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         
     }
 
-    if (Header.AnyStructReflected())
-    {
-        OutHeader += "#include \"" + HeaderName + ".generated.h\"\n\n\n";
-    }
-
     for (const auto &Struct : Header.Structs)
     {
         if (Struct->bIsReflected)
@@ -279,7 +274,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
             OutHeader += TabString + Attribute.Value + " " + Attribute.Key + ";" + "\n\n";
         }
 
-        OutHeader += TabString + "};\n\n";
+        OutHeader += "};\n\n\n";
     }
 
     return true;
