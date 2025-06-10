@@ -125,7 +125,10 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		
 		FString TypespaceHeaderCode;
 		const FString BaseSpacetimeHeaderName = FString::Printf(TEXT("%sTypespace"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateTypespaceStructs(RawModule, BaseSpacetimeHeaderName,
+		if (!FSpacetimeDBCodeGen::GenerateTypespaceStructs(
+			RawModule,
+			DatabaseName,
+			BaseSpacetimeHeaderName,
 			TypespaceHeaderCode, OutError))
 		{
 			OutError = TEXT("Failed to generate typespace structures: ") + OutError;

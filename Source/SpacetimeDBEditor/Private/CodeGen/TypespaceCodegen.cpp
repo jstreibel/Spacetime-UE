@@ -80,14 +80,14 @@ bool GenerateNewStruct(
 			const auto Index = AttributeAlgebraicType->Ref.Index;
 			const auto& Referenced = Types[Index];
 			const FString Name = FCommon::ToPascalCase(Referenced.Name.Name);
-			OutStruct.Attributes.Add(Name, "F" + Name);
+			OutStruct.Attributes.Add(Name + " /* " + Referenced.Name.Name + " */", "F" + Name);
 			continue;
 		}
 
 		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
 		{
 			const FString Name = FCommon::ToPascalCase(AttributeName);
-			OutStruct.Attributes.Add(AttributeName + "/* " + AttributeName + " */", SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)));
+			OutStruct.Attributes.Add(Name + "/* " + AttributeName + " */", SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)));
 
 			if (Tag == SATS::EType::U256)
 			{

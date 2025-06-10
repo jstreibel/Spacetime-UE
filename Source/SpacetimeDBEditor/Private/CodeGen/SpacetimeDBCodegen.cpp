@@ -199,6 +199,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
 
 bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     const SATS::FRawModuleDef& ModuleDef,
+    const FString& ModuleName,
     const FString& HeaderName,
     FString& OutHeader,
     FString& OutError)
@@ -206,6 +207,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     FHeader Header;
     
     if (!FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
+        ModuleName,
         HeaderName,
         ModuleDef.Typespace,
         ModuleDef.Types,
@@ -240,16 +242,16 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 
     for (const auto &Struct : Header.Structs)
     {
-        if (Struct->bIsReflected)
+        if (Struct.bIsReflected)
         {
             OutHeader += TEXT("USTRUCT(");
             
-            for (const auto &Specifiers : Struct->Specifiers)
+            for (const auto &Specifiers : Struct.Specifiers)
             {
                 OutHeader += Specifiers + TEXT(", ");
             }
 
-            for (const auto &MetaSpecifiers : Struct->MetadataSpecifiers)
+            for (const auto &MetaSpecifiers : Struct.MetadataSpecifiers)
             {
                 OutHeader += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
             }
@@ -258,16 +260,16 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 
             OutHeader += ")\n";
         }
-        OutHeader += TEXT("struct ") + Header.ApiMacro + " " + Struct->Name + " {\n\n";
+        OutHeader += TEXT("struct ") + Header.ApiMacro + " " + Struct.Name + " {\n\n";
 
-        if (Struct->bIsReflected)
+        if (Struct.bIsReflected)
         {
             OutHeader += TabString + "GENERATED_BODY();\n\n";
         }
 
-        for (const auto &Attribute : Struct->Attributes)
+        for (const auto &Attribute : Struct.Attributes)
         {
-            if (Struct->bIsReflected)
+            if (Struct.bIsReflected)
             {
                 OutHeader += TabString + "UPROPERTY(BlueprintReadWrite)\n";
             }

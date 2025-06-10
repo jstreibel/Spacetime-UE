@@ -41,7 +41,8 @@ public:
 
 	/**
 	 * Generates headers for Typespace Products, which map to C/C++ structs.
-	 * @param ModuleDef 
+	 * @param ModuleDef
+	 * @param ModuleName 
 	 * @param HeaderName 
 	 * @param OutHeader 
 	 * @param OutError 
@@ -49,6 +50,7 @@ public:
 	 */
 	static bool GenerateTypespaceStructs(
 		const SATS::FRawModuleDef& ModuleDef,
+		const FString& ModuleName,
 		const FString& HeaderName,
 		FString& OutHeader,
 		FString& OutError);
