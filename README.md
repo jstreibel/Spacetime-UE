@@ -3,14 +3,21 @@
 **Schema-powered multiplayer for Unreal Engine.**  
 *Live logic, reflective state, and algebraic structure—from SpacetimeDB into Blueprints.*
 
-<img src="Resources/EditorUI.png" alt="Getting Database Description" width="200"/> <img src="Resources/Spacetime-DescribeDatabase-Unreal-Node.png" alt="Getting Database Description" width="200"/>
-<img src="Resources/quickstart-chat-blueprint-nodes.png" alt="Code Reflection to Blueprint Nodes" width="200"/>
-<img src="Resources/codegen.png" alt="Code generated from RawModuleDef" width="605"/>
-<!--
-![Getting Database Description](https://github.com/jstreibel/Spacetime-UE/blob/main/Resources/Spacetime-DescribeDatabase-Unreal-Node.png)
-![Code generated from RawModuleDef](https://github.com/jstreibel/Spacetime-UE/blob/main/Resources/codegen.png)
-![Code Reflection to Blueprint Nodes](https://github.com/jstreibel/Spacetime-UE/blob/main/Resources/quickstart-chat-blueprint-nodes.png)
--->
+|  ![SpacetimeDB Blackholio Unreal Blueprint](Resources/BlueprintsBlackholio.png)   |
+|:---------------------------------------------------------------------------------:|
+| **Unreal Blueprints Functions & Types**. Blackholio Example. |
+
+| ![SpacetimeDB Unreal Editor UI](Resources/EditorUI.png) |
+|:-------------------------------------------------------:|
+|               **Editor UI**. SpacetimeDB.               |
+
+|        ![SpacetimeDB Unreal Codegen](Resources/codegen.png)         |
+|:-------------------------------------------------------------------:|
+| **Code Generation**. SpacetimeDB RawModuleDef -> Unreal Build Tool. |
+
+| ![SpacetimeDB QuickstartChat Unreal Blueprint](Resources/quickstart-chat-blueprint-nodes.png) |
+|:---------------------------------------------------------------------------------------------:|
+|        **Unreal Blueprints Functions & Types**. Quickstart-Chat Example.         |
 
 ---
 
