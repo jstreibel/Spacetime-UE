@@ -56,9 +56,14 @@ namespace SATS
         Product,  // { "Product": {"elements": []}
         Sum,      // { "Sum":     {"variants": []}
         Ref,      // { ? }
-    };   
+    };
+
+    inline bool IsBuiltIn(const EType &Type)
+    {
+        return Type < EType::Invalid;
+    }
     
-    inline FString BuiltinTypeToString(EBuiltinType Type)
+    inline FString BuiltinTypeToString(const EBuiltinType Type)
     {
         switch (Type)
         {
@@ -84,7 +89,7 @@ namespace SATS
         }
     };
 
-    inline FString TypeToString(EType Kind)
+    inline FString TypeToString(const EType Kind)
     {
         switch (Kind)
         {
@@ -179,6 +184,53 @@ namespace SATS
 
     }
 
+    inline FString MapBuiltinToUnreal(const FString& BuiltinName)
+    {
+        if (BuiltinName == "Bool")         return "bool";
+        if (BuiltinName == "I8")           return "int8";
+        if (BuiltinName == "U8")           return "uint8";
+        if (BuiltinName == "I16")          return "int16";
+        if (BuiltinName == "U16")          return "uint16";
+        if (BuiltinName == "I32")          return "int32";
+        if (BuiltinName == "U32")          return "uint32";
+        if (BuiltinName == "I64")          return "int64";
+        if (BuiltinName == "U64")          return "uint64";
+        if (BuiltinName == "I256")         return "int128";
+        if (BuiltinName == "U256")         return "uint128";
+        if (BuiltinName == "F32")          return "float";
+        if (BuiltinName == "F64")          return "double";
+        if (BuiltinName == "String")       return "FString";
+        if (BuiltinName == "Array")        return "// TArray<...>";
+        if (BuiltinName == "Map")          return "// TMap<...>";
+    
+        return FString::Printf(TEXT("// unknown SATS BuiltIn '%s'"), *BuiltinName);
+    }
+
+    inline bool IsBuiltinWithNativeRepresentation(const EType& Type)
+    {
+        const FString& TypeName = SATS::TypeToString(Type);
+        const TSet<FString> BuiltinsWithNativeRepresentations = {
+            "Bool",
+            "I8",
+            "U8",
+            "I16",
+            "U16",
+            "I32",
+            "U32",
+            "I64",
+            "U64",
+            "I256",
+            "U256",
+            "F32",
+            "F64",
+            "String",
+            "Array",
+            "Map"
+        };
+    
+        return BuiltinsWithNativeRepresentations.Contains(TypeName);
+    }
+    
     struct FAlgebraicType;
     
     using VBuiltinType = TVariant<
@@ -255,15 +307,6 @@ namespace SATS
         TArray<FAlgebraicType> TypeEntries;
     };
     
-    // Top‐level module definition
-    struct FRawModuleDef {
-        FTypespace Typespace;
-        TArray<struct FTableDef>        Tables;
-        TArray<struct FReducerDef>      Reducers;
-        TArray<struct FExportedType>    Types;
-        TArray<struct FMiscExport>      MiscExports;
-        TArray<struct FRLSPolicy>       RowLevelSecurity;
-    };
 
     // TODO: struct FRefType   
 
@@ -316,5 +359,15 @@ namespace SATS
     struct FRLSPolicy {
         FString Name;
         FString Using_Expr;
+    };
+
+    // Top‐level module definition
+    struct FRawModuleDef {
+        FTypespace Typespace;
+        TArray<struct FTableDef>        Tables;
+        TArray<struct FReducerDef>      Reducers;
+        TArray<struct FExportedType>    Types;
+        TArray<struct FMiscExport>      MiscExports;
+        TArray<struct FRLSPolicy>       RowLevelSecurity;
     };
 }

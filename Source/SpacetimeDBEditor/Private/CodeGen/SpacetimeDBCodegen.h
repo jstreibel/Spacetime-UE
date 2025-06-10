@@ -23,12 +23,15 @@ public:
 
 	/**
 	 * Emit a Blueprint function library header + source for all reducers.
+	 * @param ModuleName The module's name as present in the Spacetime server
 	 * @param ModuleDef  Parsed RawModuleDef
 	 * @param HeaderName The header name, without '.h'
 	 * @param OutHeader  Generated Reducers.h code
 	 * @param OutSource  Generated Reducers.cpp code
+	 * @param OutError   Error message, in case of 'false' return value
 	 */
 	static bool GenerateReducerFunctions(
+		const FString& ModuleName,
 		const SATS::FRawModuleDef& ModuleDef,
 		const FString& HeaderName,
 		FString& OutHeader,

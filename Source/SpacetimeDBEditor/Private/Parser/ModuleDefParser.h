@@ -24,6 +24,14 @@ public:
 	);
 
 private:
+	static bool ParseTypespace(
+		const TSharedPtr<FJsonObject>& RawModuleDefJson,
+		SATS::FTypespace& TypespaceOutput,
+		FString& OutError);
+	static bool ParseTypes(
+		const TSharedPtr<FJsonObject>& RawModuleDefJson,
+		TArray<SATS::FExportedType>& TypesOutput,
+		FString& OutError);
 	static bool ParseTables(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
 		TArray<SATS::FTableDef>& TablesOutput,

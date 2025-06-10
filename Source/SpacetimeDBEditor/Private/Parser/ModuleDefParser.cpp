@@ -29,6 +29,22 @@ bool FModuleDefParser::Parse(
     return ParseRawModuleDef(Root, RawModule, OutError);
 }
 
+bool FModuleDefParser::ParseTypespace(
+    const TSharedPtr<FJsonObject>& RawModuleDefJson,
+    SATS::FTypespace& TypespaceOutput,
+    FString& OutError)
+{
+    return FTypespaceParser::ParseTypespace(RawModuleDefJson, TypespaceOutput, OutError);
+}
+
+bool FModuleDefParser::ParseTypes(
+    const TSharedPtr<FJsonObject>& RawModuleDefJson,
+    TArray<SATS::FExportedType>& TypesOutput,
+    FString& OutError)
+{
+    return FTypespaceParser::ParseTypes(RawModuleDefJson, TypesOutput, OutError);
+}
+
 bool FModuleDefParser::ParseTables(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
     TArray<SATS::FTableDef>& TablesOutput,
@@ -156,17 +172,23 @@ bool FModuleDefParser::ParseReducers(
     return true;
 }
 
+
 bool FModuleDefParser::ParseRawModuleDef(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
     SATS::FRawModuleDef& OutDef,
     FString& OutError)
 {
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing module definition"));
-    
     // --- typespace ---
-    if (!FTypespaceParser::ParseTypespace(RawModuleDefJson, OutDef.Typespace, OutError))
+    if (!ParseTypespace(RawModuleDefJson, OutDef.Typespace, OutError))
     {
         OutError = TEXT("On 'typespace' parsing: ") + OutError;
+        return false;
+    }
+
+    // --- exported types ---
+    if (!ParseTypes(RawModuleDefJson, OutDef.Types, OutError))
+    {
+        OutError = TEXT("On 'types' parsing: ") + OutError;
         return false;
     }
 
@@ -184,7 +206,7 @@ bool FModuleDefParser::ParseRawModuleDef(
         return false;   
     }
 
-    // We can continue parsing 'types', 'misc_exports', 'row_level_security' similarly
+    // TODO: continue parsing 'misc_exports', 'row_level_security', etc. similarly
 
     return true;
 }

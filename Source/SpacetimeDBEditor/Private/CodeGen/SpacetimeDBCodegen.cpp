@@ -5,56 +5,8 @@
 #include "Net/RepLayout.h"
 #include "Parser/Common.h"
 
-const FString ApiMacroString = TEXT("SPACETIMEDBRUNTIME_API");  
-
-FString FSpacetimeDBCodeGen::MapBuiltinToUnreal(const FString& BuiltinName)
-{
-    if (BuiltinName == "Bool")         return "bool";
-    if (BuiltinName == "I8")           return "int8";
-    if (BuiltinName == "U8")           return "uint8";
-    if (BuiltinName == "I16")          return "int16";
-    if (BuiltinName == "U16")          return "uint16";
-    if (BuiltinName == "I32")          return "int32";
-    if (BuiltinName == "U32")          return "uint32";
-    if (BuiltinName == "I64")          return "int64";
-    if (BuiltinName == "U64")          return "uint64";
-    if (BuiltinName == "I128")         return "int128";
-    if (BuiltinName == "U128")         return "uint128";
-    if (BuiltinName == "F32")          return "float";
-    if (BuiltinName == "F64")          return "double";
-    if (BuiltinName == "String")       return "FString";
-    if (BuiltinName == "Array")        return "// TArray<...>";
-    if (BuiltinName == "Map")          return "// TMap<...>";
-    
-    return FString::Printf(TEXT("// unknown SATS BuiltIn '%s'"), *BuiltinName);
-}
-
-inline bool IsBuiltinWithNativeRepresentation(const FString& TypeName)
-{
-    const TSet<FString> BuiltinsWithNativeRepresentations = {
-        "Bool",
-        "I8",
-        "U8",
-        "I16",
-        "U16",
-        "I32",
-        "U32",
-        "I64",
-        "U64",
-        "I128",
-        "U128",
-        "F32",
-        "F64",
-        "String"
-    };
-    
-    return BuiltinsWithNativeRepresentations.Contains(TypeName);
-}
-
-inline bool IsBuiltinWithNativeRepresentation(const SATS::EType& Kind)
-{
-    return IsBuiltinWithNativeRepresentation(SATS::TypeToString(Kind));
-}
+const FString ApiMacroString = TEXT("SPACETIMEDBRUNTIME_API");
+const FString TabString = TEXT("    ");
 
 // Converts any snake_case, kebab-case, space separated, or camelCase string
 // into PascalCase (e.g. "chat_message" → "ChatMessage", "sendMessage" → "SendMessage").
@@ -111,7 +63,7 @@ FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebr
     // case BuiltIn:
     case SATS::EType::Array:    return TEXT("// TArray placeholder");
     case SATS::EType::Map:      return TEXT("// TMap placeholder");
-    default:   /* BuiltIn */    return MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Tag));
+    default:   /* BuiltIn */    return SATS::MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Tag));
     }    
 }
 
@@ -176,6 +128,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
 }
 
 bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
+    const FString& ModuleName,
     const SATS::FRawModuleDef& ModuleDef,
     const FString& HeaderName,
     FString& OutHeader,
@@ -191,7 +144,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
                 "#include \"CoreMinimal.h\"\n"
                 "#include \"" + HeaderName + ".generated.h" + "\"\n\n\n");
     HeaderText += TEXT("UCLASS()\n"
-                "class " + ApiMacroString + " USpacetimeDBReducers : public UBlueprintFunctionLibrary {\n\n"
+                "class " + ApiMacroString + " U" + ModuleName +  "Reducers : public UBlueprintFunctionLibrary {\n\n"
                 "   GENERATED_BODY()\n\npublic:\n\n");
 
     // Source
@@ -215,7 +168,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
             }
             else
             {
-                
+                UE_LOG(LogTemp, Error, TEXT("non-UE-native SATS-JSON Algebraic Types not implemented in Reducers"));
             }
             
             const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
@@ -252,74 +205,80 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 {
     FHeader Header;
     
-    if (!FTypespaceCodegen::FromIntermediateRepresentation(HeaderName, ModuleDef.Typespace, Header, OutError))
+    if (!FTypespaceCodegen::BuildHeaderLayoutFromIntermediateRepresentation(
+        HeaderName,
+        ModuleDef.Typespace,
+        ModuleDef.Types,
+        Header,
+        OutError))
     {
         OutError = TEXT("Failed to generate header data from typespace: ") + OutError;
         return false;
     }
 
-    /*
-    const auto &TypeEntries = ModuleDef.Typespace.TypeEntries;
+    UE_LOG(LogTemp, Display, TEXT("[spacetime] built header layout from IR"));
+
+    if (Header.bPragmaOnce) OutHeader += TEXT("#pragma once\n\n");
     
-    for (const auto &TypeEntry : TypeEntries)
+    for (auto [Path, bIsLocal] : Header.Includes)
     {
-        auto Gen = FTypespaceCodegen::FromIntermediateRepresentation(HeaderName, TypeEntry, OutHeader, OutError);
-        FString OutHeaderText;
-        OutHeaderText += TEXT("#pragma once\n\n"
-                       "#include \"CoreMinimal.h\"\n"
-                       "#include \"UObject/NoExportTypes.h\"\n"
-                       "#include \"" + HeaderName + ".generated.h\"\n\n\n");
+        
+        OutHeader += TEXT("#include ");
 
-        FString StructName = TEXT("F") + ToPascalCase(TypeEntry.Name);
-        OutHeaderText += TEXT("USTRUCT(BlueprintType)");
-        OutHeaderText += TEXT("\nstruct ") + ApiMacroString + " " + StructName + TEXT(" {\n\n"
-                "    GENERATED_BODY()\n\n");
-
-        if (TypeEntry.AlgebraicType.Tag == SATS::EType::Product)
+        if (bIsLocal)
         {
-            for (const auto & [Name, AlgebraicType] : TypeEntry.AlgebraicType.Product.Elements)
-            {
-                if (AlgebraicType->Tag == SATS::EType::Ref)
-                {
-                    const auto Index = AlgebraicType->Ref.Index;
-                    if (!TypeEntries.IsValidIndex(Index))
-                    {
-                        
-                        OutError = FString::Printf(
-                            "'Ref' in Typespace type with Name '%s' has index '%i', whereas Typespace only has %i elements.",
-                            Name.IsSet() ? *Name.GetValue() : "<unnamed>", Index, TypeEntries.Num());
-                        return false;
-                    }
-
-                    auto &Type = TypeEntries[Index];
-                    Type.Name 
-                }
-            }
+            OutHeader += FString::Printf(TEXT("\"%s\""), *Path);
         }
-
         else
         {
-            OutError = "Codegen for Sats-Json Schema Typespace types different than Sats-Json Products are not implemented.";
-            return false;
+            OutHeader += FString::Printf(TEXT("<%s>"), *Path);
         }
 
-        */
-        /*
-        FString Prop = FString::Printf(
-            TEXT("    UPROPERTY(BlueprintReadWrite) %s %s;\n"),
-            *CxxTypeString, *ToPascalCase(Name)
-        ); 
+        OutHeader += TEXT("\n");
         
-        OutHeaderText += Prop;
-        */
-        /*
-        
+    }
 
-        OutHeaderText += TEXT("};\n\n\n");
-        
-        // OutHeader = MoveTemp(OutHeaderText);
-        // return true;
-    }*/
+    if (Header.AnyStructReflected())
+    {
+        OutHeader += "#include \"" + HeaderName + ".generated.h\"\n\n\n";
+    }
+
+    for (const auto &Struct : Header.Structs)
+    {
+        if (Struct->bIsReflected)
+        {
+            OutHeader += TEXT("USTRUCT(");
+            
+            for (const auto &Specifiers : Struct->Specifiers)
+            {
+                OutHeader += Specifiers + TEXT(", ");
+            }
+
+            for (const auto &MetaSpecifiers : Struct->MetadataSpecifiers)
+            {
+                OutHeader += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
+            }
+
+            OutHeader += ")\n";
+        }
+        OutHeader += TEXT("struct ") + Header.ApiMacro + " " + Struct->Name + " {\n\n";
+
+        if (Struct->bIsReflected)
+        {
+            OutHeader += TabString + "GENERATED_BODY();\n\n";
+        }
+
+        for (const auto &Attribute : Struct->Attributes)
+        {
+            if (Struct->bIsReflected)
+            {
+                OutHeader += TabString + "UPROPERTY(BlueprintReadWrite)\n";
+            }
+            OutHeader += TabString + Attribute.Value + " " + Attribute.Key + ";" + "\n\n";
+        }
+
+        OutHeader += TabString + "};\n\n";
+    }
 
     return true;
 }

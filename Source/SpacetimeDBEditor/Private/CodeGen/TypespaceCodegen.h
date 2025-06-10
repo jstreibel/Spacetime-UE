@@ -11,13 +11,13 @@ struct FFunction
 };
 
 struct FStruct
-{
-	FString Name;
-	TMap<FString, FString> Attributes;
+{	
+	FString Name={};
+	TMap<FString, FString> Attributes={};
 	
-	bool bIsReflected;
-	TArray<FString> Specifiers;
-	TMap<FString, FString> MetadataSpecifiers;
+	bool bIsReflected=false;
+	TArray<FString> Specifiers={};
+	TMap<FString, FString> MetadataSpecifiers={};
 };
 
 struct FHeader
@@ -30,19 +30,30 @@ struct FHeader
 
 	bool bPragmaOnce = true;
 	// TODO: also add Classes, Functions, etc.
-	TArray<FStruct> Structs;
+	TArray<TSharedPtr<FStruct>> Structs;
 	TArray<FInclude> Includes;
 	FString ApiMacro;
+
+	bool AnyStructReflected() const
+	{
+		for (const auto& Struct : Structs)
+		{
+			if (Struct->bIsReflected) return true;
+		}
+
+		return false;
+	}
 };
 
 class FTypespaceCodegen
 {
 public:
-	static bool FromIntermediateRepresentation(
-		const FString &HeaderBaseName,
+	static bool BuildHeaderLayoutFromIntermediateRepresentation(
+		const FString& HeaderBaseName,
 		const SATS::FTypespace& Typespace,
-		FHeader &OutHeader,
-		FString &OutError);
+		const TArray<SATS::FExportedType>& Types,
+		FHeader& OutHeader,
+		FString& OutError);
 
 private:
 	

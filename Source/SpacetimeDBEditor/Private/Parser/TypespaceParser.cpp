@@ -114,3 +114,47 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
 
     return true;
 }
+
+bool FTypespaceParser::ParseTypes(
+    const TSharedPtr<FJsonObject>& RawModuleDefJson,
+    TArray<SATS::FExportedType>& TypesOutput,
+    FString& OutError)
+{
+    UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing types"));
+    
+    if (!RawModuleDefJson->HasTypedField(TEXT("types"), EJson::Array))
+    {
+        OutError = TEXT("Expected 'types' array in RawModuleDef SATS-JSON object");
+        return false;
+    }
+    
+    TArray<TSharedPtr<FJsonValue>> Types = RawModuleDefJson->GetArrayField(TEXT("types"));
+
+    for (const auto& TypeJsonValue : Types)
+    {
+        const auto &TypeJsonObj = TypeJsonValue->AsObject();
+
+        SATS::FExportedType Type;
+        // TODO: check everything below
+        
+        const auto &TypeNameJsonObj = TypeJsonObj->GetObjectField(TEXT("name"));
+        for (const auto &ScopeJsonArray = TypeNameJsonObj->GetArrayField(TEXT("scope"));
+            const auto &ScopeJsonValue : ScopeJsonArray)
+        {
+            const auto ScopeString = ScopeJsonValue->AsString();
+            Type.Name.Scope.Add(ScopeString);
+        }
+        
+        const FString TypeName = TypeNameJsonObj->GetStringField(TEXT("name"));
+        const int32 TypeIndex = TypeJsonObj->GetIntegerField(TEXT("ty"));
+        const bool bCustomOrdering = TypeJsonObj->GetBoolField(TEXT("custom_ordering"));
+
+        Type.Name.Name = TypeName;
+        Type.TypeRef = TypeIndex;
+        Type.bCustomOrdering = bCustomOrdering;
+
+        TypesOutput.Add(MoveTemp(Type));
+    }
+
+    return true;
+}
