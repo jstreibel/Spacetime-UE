@@ -38,10 +38,12 @@ bool GenerateNewStruct(
 	FString &OutError)
 {
 	OutStruct.Name = StructName.IsSet() ? StructName.GetValue() : GenerateNameForInlineStruct();
+
+	const auto UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 	
 	OutStruct.bIsReflected = true;
 	OutStruct.Specifiers.Add("BlueprintType");
-	OutStruct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+	OutStruct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 
 	UE_LOG(LogTemp, Display, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
 	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
@@ -164,7 +166,9 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 	const TArray<SATS::FExportedType>& Types,
 	FHeader &OutHeader,
 	FString &OutError)
-{	
+{
+	const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
+	
 	if (Typespace.TypeEntries.Num() != Types.Num())
 	{
 		OutError = FString::Printf(
@@ -196,7 +200,7 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 		}
 		
 		FStruct Struct;
-		Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+		Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 
 		if (FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
 			!GenerateNewStruct(

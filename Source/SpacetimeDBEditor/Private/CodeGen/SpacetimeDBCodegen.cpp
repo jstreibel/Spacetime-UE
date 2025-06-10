@@ -186,7 +186,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
         }
         
         FString Sig = FString::Printf(
-            TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB\")\n    static void %s(%s);\n\n"),
+            TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB|" + ModuleName + "\")\n    static void %s(%s);\n\n"),
             *ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", "))
         );
         HeaderText += Sig;
