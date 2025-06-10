@@ -28,6 +28,28 @@ FString GetAttributeName(const SATS::FOptionalString& Name)
 	return GenerateNameForAnonymousAttribute();
 }
 
+void WarnTypes(SATS::EType Tag)
+{
+	if (!SATS::IsReflectedInUnreal(Tag))
+	{
+		FString UEType = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), true);
+		FString UETypeAlt = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false);
+		FString SpacetimeBuiltIn = SATS::TypeToString(Tag);
+
+		UE_LOG(LogTemp, Warning,
+			TEXT("[spacetime] Mapping Spacetime type '%s' to Unreal '%s'; "
+			"Unreal lacks native '%s' Blueprint support"), *SpacetimeBuiltIn, *UETypeAlt, *UEType);
+
+		return;
+	}
+			
+	if (Tag == SATS::EType::Array || Tag == SATS::EType::Map)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[spacetime] SATS-JSON BuiltIn types 'Array' and 'Map' "
+			"not currently implemented in Unreal codegen"))
+	}
+}
+
 bool GenerateNewStruct(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& Types,
@@ -78,7 +100,7 @@ bool GenerateNewStruct(
 
 		if (Tag == SATS::EType::Sum)
 		{
-			UE_LOG(LogTemp, Error, TEXT("SATS-JSON BuiltIn Sums are not currently implemented in Unreal codegen"));
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] SATS-JSON BuiltIn Sums are not currently implemented in Unreal codegen"));
 			continue;
 		}
 
@@ -90,8 +112,9 @@ bool GenerateNewStruct(
 			const FString Type = Referenced.Name.Name;
 			
 			OutStruct.Attributes.Add({
-				Name + " /* " + Referenced.Name.Name + " */",
-				FCommon::MakeStructName(Referenced.Name.Name, ModuleName)});
+				Name,
+				FCommon::MakeStructName(Referenced.Name.Name, ModuleName),
+				RawName + ": " + Referenced.Name.Name});
 			
 			continue;
 		}
@@ -101,20 +124,10 @@ bool GenerateNewStruct(
 			const FString Name = FCommon::ToPascalCase(RawName);
 			OutStruct.Attributes.Add({
 				Name,
-				SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag)),
+				SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false),
 			 RawName + ": " + SATS::TypeToString(Tag) });
 
-			if (Tag == SATS::EType::U256)
-			{
-				UE_LOG(LogTemp, Warning,
-					TEXT("mapping a U256 to int256 since Unreal currently has no uint256 native type"));
-			}
-			
-			if (Tag == SATS::EType::Array || Tag == SATS::EType::Map)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("SATS-JSON BuiltIn types 'Array' and 'Map' "
-					"not currently implemented in Unreal codegen"))
-			}
+			WarnTypes(Tag);
 
 			continue;
 		}

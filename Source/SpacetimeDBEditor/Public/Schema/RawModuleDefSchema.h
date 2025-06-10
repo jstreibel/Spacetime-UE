@@ -173,19 +173,19 @@ namespace SATS
 
     }
 
-    inline FString MapBuiltinToUnreal(const FString& BuiltinName)
+    inline FString MapBuiltinToUnreal(const FString& BuiltinName, bool force)
     {
         if (BuiltinName == "Bool")         return "bool";
-        if (BuiltinName == "I8")           return "uint8";    // Unreal does not reflect int8
+        if (BuiltinName == "I8")           return force ? "int8"   : "uint8";    // Unreal does not reflect int8
         if (BuiltinName == "U8")           return "uint8"; 
-        if (BuiltinName == "I16")          return "int32";    // Unreal does not reflect int16
-        if (BuiltinName == "U16")          return "int32";    // Unreal does not reflect uint16
+        if (BuiltinName == "I16")          return force ? "int16"  : "int32";    // Unreal does not reflect int16
+        if (BuiltinName == "U16")          return force ? "uint16" : "int32";    // Unreal does not reflect uint16
         if (BuiltinName == "I32")          return "int32"; 
-        if (BuiltinName == "U32")          return "int32";    // Unreal does not reflect uint32
+        if (BuiltinName == "U32")          return force ? "uint32" : "int32";    // Unreal does not reflect uint32
         if (BuiltinName == "I64")          return "int64";
-        if (BuiltinName == "U64")          return "int64";    // Unreal does not reflect uint64
-        if (BuiltinName == "I256")         return "FInt256";  // These are hand-added USTRUCTs
-        if (BuiltinName == "U256")         return "FUInt256"; // These are hand-added USTRUCTs
+        if (BuiltinName == "U64")          return force ? "uint64" : "int64";    // Unreal does not reflect uint64
+        if (BuiltinName == "I256")         return force ? "int256" : "FInt256";  // These are hand-added USTRUCTs
+        if (BuiltinName == "U256")         return force ? "uin256" : "FUInt256"; // These are hand-added USTRUCTs
         if (BuiltinName == "F32")          return "float";
         if (BuiltinName == "F64")          return "double";
         if (BuiltinName == "String")       return "FString";
@@ -195,6 +195,19 @@ namespace SATS
         return FString::Printf(TEXT("// unknown SATS BuiltIn '%s'"), *BuiltinName);
     }
 
+    inline bool IsReflectedInUnreal(const EType& InType)
+    {
+        if (InType == EType::I8)           return false;
+        if (InType == EType::I16)          return false;
+        if (InType == EType::U16)          return false;
+        if (InType == EType::U32)          return false;
+        if (InType == EType::U64)          return false;
+        if (InType == EType::I256)         return false;
+        if (InType == EType::U256)         return false;
+
+        return true;
+    }
+    
     inline bool IsBuiltinWithNativeRepresentation(const EType& Type)
     {
         const FString& TypeName = SATS::TypeToString(Type);

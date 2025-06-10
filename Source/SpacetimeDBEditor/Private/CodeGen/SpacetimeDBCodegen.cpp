@@ -63,7 +63,7 @@ FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebr
     // case BuiltIn:
     case SATS::EType::Array:    return TEXT("// TArray placeholder");
     case SATS::EType::Map:      return TEXT("// TMap placeholder");
-    default:   /* BuiltIn */    return SATS::MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Tag));
+    default:   /* BuiltIn */    return SATS::MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Tag), false);
     }    
 }
 
@@ -184,9 +184,10 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
             
             Params.Add(ParamArgString);
         }
-        
-        FString Sig = FString::Printf(
-            TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB|" + ModuleName + "\")\n    static void %s(%s);\n\n"),
+
+        FString Prefix = TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB|" + ModuleName + "\")"); 
+        FString Sig = Prefix + FString::Printf(
+            TEXT("\n    static void %s(%s);\n\n"),
             *ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", "))
         );
         HeaderText += Sig;

@@ -145,7 +145,10 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 			return false;
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote typespace code to %s"), *TypespaceHeaderPath);
+		FString NicePath = TypespaceHeaderPath;
+		FPaths::NormalizeFilename(NicePath);
+		FPaths::CollapseRelativeDirectories(NicePath);
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote typespace code to %s"), *NicePath);
 	}
 	
 	
@@ -198,7 +201,11 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers header '%s': %s"), *ReducersHeaderPath, *OutError);
 			return false;
 		}
-		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *ReducersHeaderPath);
+
+		FString NicePath = ReducersHeaderPath;
+		FPaths::NormalizeFilename(NicePath);
+		FPaths::CollapseRelativeDirectories(NicePath);
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *NicePath);
 
 		const FString ReducersSourceName = FString::Printf(TEXT("%sReducers.cpp"), *DatabaseNamePascal);
 		const FString ReducersSourcePath = SourceOutputDir / ReducersSourceName;
@@ -207,13 +214,21 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers source '%s': %s"), *ReducersSourcePath, *OutError);
 			return false;
 		}
-		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote reducer code to %s"), *ReducersSourcePath);
+
+		
+		NicePath = ReducersSourcePath;
+		FPaths::NormalizeFilename(NicePath);
+		FPaths::CollapseRelativeDirectories(NicePath);
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote reducer code to %s"), *NicePath);
 	}
 
 	
     // 6. Success
     OutFullPath = OutputDir;
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Code generation completed for database '%s'"), *DatabaseName);
+	FPaths::ConvertRelativePathToFull(OutFullPath);
+    UE_LOG(LogTemp, Log, TEXT("[spacetime] Code generation completed for SpacetimeDB Module '%s'"), *DatabaseName);
+	UE_LOG(LogTemp, Log, TEXT("[spacetime] Location: %s"), *OutFullPath);
+	
     return true;
     
 }
