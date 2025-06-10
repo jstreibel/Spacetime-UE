@@ -136,6 +136,13 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     FString& OutError
 )
 {
+    TArray<SATS::FExportedType> SortedRefs = ModuleDef.Types;
+    Algo::Sort(SortedRefs, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
+    {
+        return EntryA.TypeRef < EntryB.TypeRef;
+    });
+    
+    
     const FString ClassName = "U" + ModuleName +  "Reducers";
     
     // Header
@@ -171,7 +178,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
             else if (AlgebraicType.Tag == SATS::EType::Ref)
             {
                 const auto Index = AlgebraicType.Ref.Index;
-                const auto TypeName = ModuleDef.Types[Index].Name.Name;
+                const auto TypeName = SortedRefs[Index].Name.Name;
 
                 UEType = FCommon::MakeStructName(TypeName, ModuleName);
             }            

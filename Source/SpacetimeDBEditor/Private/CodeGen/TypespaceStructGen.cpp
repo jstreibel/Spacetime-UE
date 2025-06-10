@@ -52,13 +52,13 @@ void WarnTypes(SATS::EType Tag)
 
 bool GenerateNewStruct(
 	const FString& ModuleName,
-	const TArray<SATS::FExportedType>& Types,
+	const TArray<SATS::FExportedType>& ExportedTypes,
 	const SATS::FOptionalString& StructName,
 	const SATS::FProductType& Product,
 	FStruct& OutStruct,
 	FHeader &OutHeader,
 	FString &OutError)
-{
+{	
 	OutStruct.Name = StructName.IsSet() ? StructName.GetValue() : GenerateNameForInlineStruct();
 
 	const auto UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
@@ -84,7 +84,7 @@ bool GenerateNewStruct(
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &ProductElement = AttributeAlgebraicType->Product;
 			FStruct NewStruct;
-			if (!GenerateNewStruct(ModuleName, Types, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
+			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
 			{
 				return false;
 			}
@@ -107,7 +107,7 @@ bool GenerateNewStruct(
 		if (Tag == SATS::EType::Ref)
 		{
 			const auto Index = AttributeAlgebraicType->Ref.Index;
-			const auto& Referenced = Types[Index];
+			const auto& Referenced = ExportedTypes[Index];
 			const FString Name = FCommon::ToPascalCase(RawName);
 			const FString Type = Referenced.Name.Name;
 			
@@ -176,13 +176,19 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 	const FString& ModuleName,
 	const FString& HeaderBaseName,
 	const SATS::FTypespace& Typespace,
-	const TArray<SATS::FExportedType>& Types,
+	const TArray<SATS::FExportedType>& ExportedTypes,
 	FHeader &OutHeader,
 	FString &OutError)
 {
+	TArray<SATS::FExportedType> SortedTypes = ExportedTypes;
+	Algo::Sort(SortedTypes, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
+	{
+		return EntryA.TypeRef < EntryB.TypeRef;
+	});
+	
 	const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 	
-	if (Typespace.TypeEntries.Num() != Types.Num())
+	if (Typespace.TypeEntries.Num() != SortedTypes.Num())
 	{
 		OutError = FString::Printf(
 			TEXT("Inconsistent number of entries in "
@@ -190,7 +196,7 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 			"'types' (%i entries) "
 			"in RawModuleDef"),
 			Typespace.TypeEntries.Num(),
-			Types.Num());
+			SortedTypes.Num());
 		return false;
 	}
 	// TODO: also check if types <-> typespace (if they have 1:1 matching)
@@ -200,7 +206,7 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 
 	AddMissingBuiltIns(OutHeader);
 
-	for (const auto& Type : Types)
+	for (const auto& Type : SortedTypes)
 	{
 		const auto Index = Type.TypeRef;
 		const auto &AlgebraicType = Typespace.TypeEntries[Index];
@@ -218,7 +224,7 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 		if (FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
 			!GenerateNewStruct(
 				ModuleName,
-				Types, StructName,
+				SortedTypes, StructName,
 				AlgebraicType.Product,
 				Struct, OutHeader, OutError))
 		{
