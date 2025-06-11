@@ -10,15 +10,28 @@ struct FFunction
 	FString ReturnType;
 };
 
-struct FStruct
+struct FAttribute
 {
-	struct FAttribute
-	{
-		FString Name;
-		FString Type;
-		TOptional<FString> Comment;
-	};
+	FString Name;
+	FString Type;
+	TOptional<FString> Comment;
+};
+
+struct FTaggedUnion
+{
+	TArray<FString> OptionTags;
+
+	FString BaseName={};
+	TArray<FAttribute> Variants={};
 	
+	bool bIsReflected;
+	FString SubCategory;
+
+	TOptional<FString> Comment;
+};
+
+struct FStruct
+{	
 	FString Name={};
 	TArray<FAttribute> Attributes={};
 	
@@ -31,17 +44,16 @@ struct FStruct
 
 struct FHeader
 {
-	struct FInclude
-	{
-		FString Path;
-		bool bIsLocal;
-	};
-
 	bool bPragmaOnce = true;
-	// TODO: also add Classes, Functions, etc.
-	TArray<FStruct> Structs;
+
+	struct FInclude { FString Path; bool bIsLocal; };
+	
 	TArray<FInclude> Includes;
 	FString ApiMacro;
+	
+	// TODO: also add Classes, Functions, etc.
+	TArray<FTaggedUnion> TaggedUnions;
+	TArray<FStruct> Structs;
 };
 
 class FTypespaceStructGen

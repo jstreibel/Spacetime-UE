@@ -11,7 +11,14 @@ FString GenerateNameForInlineStruct()
 {
 	static int32 Unnamed = 0;
 
-	return "FInlineStruct_" + IntToString(Unnamed++);
+	return "FProduct" + IntToString(Unnamed++);
+}
+
+FString GenerateBaseNameForInlineTaggedUnion()
+{
+	static int32 Unnamed = 0;
+
+	return "Sum" + IntToString(Unnamed++);
 }
 
 FString GenerateNameForAnonymousAttribute()
@@ -28,7 +35,7 @@ FString GetAttributeName(const SATS::FOptionalString& Name)
 	return GenerateNameForAnonymousAttribute();
 }
 
-void WarnTypes(SATS::EType Tag)
+void WarnTypes(const SATS::EType Tag)
 {
 	if (!SATS::IsReflectedInUnreal(Tag))
 	{
@@ -76,6 +83,10 @@ void AddMissingBuiltIns(FHeader& Header)
 		Header.Structs.Add(Int256);
 	}
 }
+
+bool GenerateNewTaggedUnion(const FString& ModuleName, const TArray<SATS::FExportedType>& ExportedTypes,
+	const SATS::FOptionalString& UnionName,	const SATS::FSumType& Sum, FTaggedUnion& OutTaggedUnion,
+	FHeader &OutHeader, FString &OutError);
 
 bool GenerateNewStruct(
 	const FString& ModuleName,
@@ -127,7 +138,18 @@ bool GenerateNewStruct(
 
 		if (Tag == SATS::EType::Sum)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[spacetime] SATS-JSON BuiltIn Sums are not currently implemented in Unreal codegen"));
+			const auto Anonymous = SATS::FOptionalString();
+			const auto &SumElement = AttributeAlgebraicType->Sum;
+			FTaggedUnion NewTaggedUnion;
+			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, Anonymous, SumElement, NewTaggedUnion, OutHeader, OutError))
+			{
+				return false;
+			}
+
+			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
+			OutStruct.Attributes.Add({NewTaggedUnionName, NewTaggedUnion.BaseName});
+			OutHeader.TaggedUnions.Add(NewTaggedUnion);
+
 			continue;
 		}
 
@@ -176,34 +198,33 @@ bool GenerateNewTaggedUnion(
 	const TArray<SATS::FExportedType>& ExportedTypes,
 	const SATS::FOptionalString& UnionName,
 	const SATS::FSumType& Sum,
-	FStruct& OutTaggedUnion,
+	FTaggedUnion& OutTaggedUnion,
 	FHeader &OutHeader,
 	FString &OutError)
 {
-	OutTaggedUnion.Name = UnionName.IsSet() ? UnionName.GetValue() : GenerateNameForInlineStruct();
+	OutTaggedUnion.BaseName = UnionName.IsSet() ? UnionName.GetValue() : GenerateBaseNameForInlineTaggedUnion();
 
 	const auto UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 	
 	OutTaggedUnion.bIsReflected = true;
-	OutTaggedUnion.Specifiers.Add("BlueprintType");
-	OutTaggedUnion.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
+	OutTaggedUnion.SubCategory = UnrealFormattedModuleName;
 
-	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
-	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
+	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Tagged Union: F%s"), *OutTaggedUnion.BaseName);
+	for (const auto& [VariantOptionalName, VariantAlgebraicType] : Sum.Options)
 	{
-		if (!AttributeAlgebraicType.IsValid())
+		if (!VariantAlgebraicType.IsValid())
 		{
-			OutError = FString::Printf(TEXT("invalid pointer while generating struct %s"), *OutStruct.Name);
+			OutError = FString::Printf(TEXT("invalid pointer while generating tagged union (Algebraic Sum) F%s"), *OutTaggedUnion.BaseName);
 			return false;
 		}
 		
-		const auto RawName = GetAttributeName(AttributeOptionalName);
-		const auto Tag = AttributeAlgebraicType->Tag;
+		const auto RawName = GetAttributeName(VariantOptionalName);
+		const auto Tag = VariantAlgebraicType->Tag;
 		
 		if (Tag == SATS::EType::Product)
 		{
 			const auto Anonymous = SATS::FOptionalString();
-			const auto &ProductElement = AttributeAlgebraicType->Product;
+			const auto &ProductElement = VariantAlgebraicType->Product;
 			FStruct NewStruct;
 			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
 			{
@@ -211,9 +232,8 @@ bool GenerateNewTaggedUnion(
 			}
 
 			const auto NewStructName = FCommon::ToPascalCase(RawName);
-			OutStruct.Attributes.Add({
-				NewStructName,
-				NewStruct.Name});
+			OutTaggedUnion.Variants.Add({NewStructName, NewStruct.Name});
+			OutTaggedUnion.OptionTags.Add(NewStruct.Name);
 			OutHeader.Structs.Add(NewStruct);
 
 			continue;
@@ -221,18 +241,30 @@ bool GenerateNewTaggedUnion(
 
 		if (Tag == SATS::EType::Sum)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[spacetime] SATS-JSON BuiltIn Sums are not currently implemented in Unreal codegen"));
+			const auto Anonymous = SATS::FOptionalString();
+			const auto &SumElement = VariantAlgebraicType->Sum;
+			FTaggedUnion NewTaggedUnion;
+			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, Anonymous, SumElement, NewTaggedUnion, OutHeader, OutError))
+			{
+				return false;
+			}
+
+			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
+			OutTaggedUnion.Variants.Add({NewTaggedUnionName, NewTaggedUnion.BaseName});
+			OutTaggedUnion.OptionTags.Add(NewTaggedUnion.BaseName);
+			OutHeader.TaggedUnions.Add(NewTaggedUnion);
+
 			continue;
 		}
 
 		if (Tag == SATS::EType::Ref)
 		{
-			const auto Index = AttributeAlgebraicType->Ref.Index;
+			const auto Index = VariantAlgebraicType->Ref.Index;
 			const auto& Referenced = ExportedTypes[Index];
 			const FString Name = FCommon::ToPascalCase(RawName);
 			const FString Type = Referenced.Name.Name;
 			
-			OutStruct.Attributes.Add({
+			OutTaggedUnion.Variants.Add({
 				Name,
 				FCommon::MakeStructName(Referenced.Name.Name, ModuleName),
 				RawName + ": " + Referenced.Name.Name});
@@ -243,7 +275,7 @@ bool GenerateNewTaggedUnion(
 		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
 		{
 			const FString Name = FCommon::ToPascalCase(RawName);
-			OutStruct.Attributes.Add({
+			OutTaggedUnion.Variants.Add({
 				Name,
 				SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false),
 			 RawName + ": " + SATS::TypeToString(Tag) });
