@@ -2,8 +2,9 @@
 
 #include "TypespaceStructGen.h"
 #include "Containers/UnrealString.h"
-#include "Net/RepLayout.h"
 #include "Parser/Common.h"
+
+#define STDB_USE_DEPR_METHOD false
 
 const FString ApiMacroString = TEXT("SPACETIMEDBRUNTIME_API");
 const FString TabString = TEXT("    ");
@@ -22,7 +23,7 @@ FString FSpacetimeDBCodeGen::ToPascalCase(const FString& InString)
 
         if (FChar::IsAlnum(Ch))
         {
-            // If we see an uppercase in the middle of a word that follows a lowercase,
+            // If we see an uppercase letter in the middle of a word that follows a lowercase letter,
             // treat it as the start of a new PascalCase word.
             if (!bCapNext 
                 && FChar::IsUpper(Ch) 
@@ -215,6 +216,102 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     return true;
 }
 
+void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
+{
+    const auto TaggedUnionOptionProperty = TabString +
+        FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\")\n"),
+            *TaggedUnion.SubCategory);
+    const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.BaseName);
+    
+    OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
+    OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
+    OutHeaderCode += FString::Printf(TEXT("{\n"));
+    OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
+    for (const auto& Option : TaggedUnion.OptionTags)
+    {
+        FString OptionName = Option.RightChop(1);
+        OutHeaderCode += TabString + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"), *OptionName, *OptionName);
+    }
+    OutHeaderCode += FString::Printf(TEXT("};\n"));
+    OutHeaderCode += FString::Printf(TEXT("\n"));
+    OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
+    OutHeaderCode += FString::Printf(TEXT("struct F%ls\n"), *TaggedUnion.BaseName);
+    OutHeaderCode += FString::Printf(TEXT("{\n"));
+    OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n"));
+    OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
+    OutHeaderCode += TabString + FString::Printf(TEXT("// Active payload\n"));
+    OutHeaderCode += TaggedUnionOptionProperty;
+    OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
+
+    for (const auto& Option : TaggedUnion.Variants)
+    {
+        OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
+        OutHeaderCode += TaggedUnionOptionProperty;
+        OutHeaderCode += TabString + FString::Printf(TEXT("%ls %ls;\n"), *Option.Type, *Option.Name);
+    }
+    
+    OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
+    OutHeaderCode += FString::Printf(TEXT("};\n\n\n"));
+}
+
+void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutHeaderCode)
+{
+    const auto & [
+            Name,
+            Attributes,
+            bIsReflected,
+            Specifiers,
+            MetadataSpecifiers,
+            Comment]
+    = Struct;
+    
+    if (Comment.IsSet())
+    {
+        OutHeaderCode += "/* " + Comment.GetValue() + " */\n";
+    }
+        
+    if (bIsReflected)
+    {
+        OutHeaderCode += TEXT("USTRUCT(");
+            
+        for (const auto &Specifier : Specifiers)
+        {
+            OutHeaderCode += Specifier + TEXT(", ");
+        }
+
+        for (const auto &MetaSpecifiers : MetadataSpecifiers)
+        {
+            OutHeaderCode += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
+        }
+
+        OutHeaderCode.RemoveFromEnd(", ");
+
+        OutHeaderCode += ")\n";
+    }
+    OutHeaderCode += TEXT("struct ") + ApiMacro + " " + Name + " {\n\n";
+
+    if (bIsReflected)
+    {
+        OutHeaderCode += TabString + "GENERATED_BODY();\n\n";
+    }
+
+    for (const auto &Attribute : Attributes)
+    {
+        if (Attribute.Comment.IsSet())
+        {
+            OutHeaderCode += TabString + "/* " + Attribute.Comment.GetValue() + TEXT(" */\n");
+        }
+            
+        if (bIsReflected)
+        {
+            OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
+        }
+        OutHeaderCode += TabString + Attribute.Type + " " + Attribute.Name + ";" + "\n\n";
+    }
+
+    OutHeaderCode += "};\n\n\n";
+}
+
 bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     const SATS::FRawModuleDef& ModuleDef,
     const FString& ModuleName,
@@ -224,7 +321,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 {
     FHeader Header;
     
-    if (!FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
+    if (!FTypespaceStructGen::BuildExportedTypesHeader(
         ModuleName,
         HeaderName,
         ModuleDef.Typespace,
@@ -259,100 +356,41 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     }
 
     OutHeaderCode += TEXT("\n\n");
-    
-    for (const auto& TaggedUnion : Header.TaggedUnions)
+
+    #if STDB_USE_DEPR_METHOD == true
     {
-        const auto TaggedUnionOptionProperty = TabString + 
-            FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
-        const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.BaseName);
-        
-        OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
-        OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
-        OutHeaderCode += FString::Printf(TEXT("{\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
-        for (const auto& Option : TaggedUnion.OptionTags)
+        for (const auto& TaggedUnion : Header.TaggedUnions)
         {
-            FString OptionName = Option.RightChop(1);
-            OutHeaderCode += TabString + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"), *OptionName, *OptionName);
+            GOutputTaggedUnion(TaggedUnion, OutHeaderCode);
         }
-        OutHeaderCode += FString::Printf(TEXT("};\n"));
-        OutHeaderCode += FString::Printf(TEXT("\n"));
-        OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
-        OutHeaderCode += FString::Printf(TEXT("struct F%ls\n"), *TaggedUnion.BaseName);
-        OutHeaderCode += FString::Printf(TEXT("{\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("// Active payload\n"));
-        OutHeaderCode += TaggedUnionOptionProperty;
-        OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
 
-        for (const auto& Option : TaggedUnion.Variants)
+        for (const auto & Struct : Header.Structs)
         {
-            OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-            OutHeaderCode += TaggedUnionOptionProperty;
-            OutHeaderCode += TabString + FString::Printf(TEXT("%ls %ls;\n"), *Option.Type, *Option.Name);
+            GOutputStruct(Struct, Header.ApiMacro, OutHeaderCode);
         }
-        
-        OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-        OutHeaderCode += FString::Printf(TEXT("};\n\n\n"));
     }
-    
-    
-    for (const auto & [
-        Name,
-        Attributes,
-        bIsReflected,
-        Specifiers,
-        MetadataSpecifiers,
-        Comment]
-        : Header.Structs)
+    #else
+    for (const auto& Element : Header.HeaderElements)
     {
-        if (Comment.IsSet())
+        if (Element.Type == FHeader::FHeaderElement::Struct)
         {
-            OutHeaderCode += "/* " + Comment.GetValue() + " */\n";
-        }
-        
-        if (bIsReflected)
-        {
-            OutHeaderCode += TEXT("USTRUCT(");
-            
-            for (const auto &Specifier : Specifiers)
-            {
-                OutHeaderCode += Specifier + TEXT(", ");
-            }
+            const auto& Struct = Header.Structs[Element.Index];
+            GOutputStruct(Struct, Header.ApiMacro, OutHeaderCode);
 
-            for (const auto &MetaSpecifiers : MetadataSpecifiers)
-            {
-                OutHeaderCode += MetaSpecifiers.Key + "=" + MetaSpecifiers.Value;
-            }
-
-            OutHeaderCode.RemoveFromEnd(", ");
-
-            OutHeaderCode += ")\n";
-        }
-        OutHeaderCode += TEXT("struct ") + Header.ApiMacro + " " + Name + " {\n\n";
-
-        if (bIsReflected)
-        {
-            OutHeaderCode += TabString + "GENERATED_BODY();\n\n";
+            continue;
         }
 
-        for (const auto &Attribute : Attributes)
+        if (Element.Type == FHeader::FHeaderElement::TaggedUnion)
         {
-            if (Attribute.Comment.IsSet())
-            {
-                OutHeaderCode += TabString + "/* " + Attribute.Comment.GetValue() + TEXT(" */\n");
-            }
-            
-            if (bIsReflected)
-            {
-                OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
-            }
-            OutHeaderCode += TabString + Attribute.Type + " " + Attribute.Name + ";" + "\n\n";
+            const auto& TaggedUnion = Header.TaggedUnions[Element.Index];
+            GOutputTaggedUnion(TaggedUnion, OutHeaderCode);
+
+            continue;
         }
 
-        OutHeaderCode += "};\n\n\n";
+        UE_LOG(LogTemp, Error, TEXT("Unrecognized Element.Type for element named '%ls'"), *Element.Name);
     }
+    #endif    
 
     return true;
 }

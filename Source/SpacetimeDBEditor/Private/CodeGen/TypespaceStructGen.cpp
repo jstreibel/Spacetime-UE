@@ -84,11 +84,91 @@ void AddMissingBuiltIns(FHeader& Header)
 	}
 }
 
-bool GenerateNewTaggedUnion(const FString& ModuleName, const TArray<SATS::FExportedType>& ExportedTypes,
-	const SATS::FOptionalString& UnionName,	const SATS::FSumType& Sum, FTaggedUnion& OutTaggedUnion,
-	FHeader &OutHeader, FString &OutError);
+void BuildElementList(
+	const TArray<FTaggedUnion>& TaggedUnions,
+	const TArray<FStruct>& Structs,
+	TArray<FHeader::FHeaderElement>& OutElements)
+{
+	// TaggedUnions first
+	for (int32 i = 0; i < TaggedUnions.Num(); ++i)
+	{
+		const auto& TU = TaggedUnions[i];
+		FHeader::FHeaderElement E;
+		E.Type  = FHeader::FHeaderElement::TaggedUnion;
+		E.Index = i;
+		E.Name  = TU.BaseName;
+		// collect any variant‐types that refer to other elements:
+		for (auto& Attr : TU.Variants)
+			E.Depends.Add(Attr.Type);
+		OutElements.Add(MoveTemp(E));
+	}
 
-bool GenerateNewStruct(
+	// then Structs
+	for (int32 i = 0; i < Structs.Num(); ++i)
+	{
+		const auto& S  = Structs[i];
+		FHeader::FHeaderElement E;
+		E.Type  = FHeader::FHeaderElement::Struct;
+		E.Index = i;
+		E.Name  = S.Name;
+		for (auto& Attr : S.Attributes)
+			E.Depends.Add(Attr.Type);
+		OutElements.Add(MoveTemp(E));
+	}
+}
+
+TArray<FHeader::FHeaderElement> TopoSortElements(const TArray<FHeader::FHeaderElement>& In)
+{
+	int32 N = In.Num();
+	// map name -> position in In[]
+	TMap<FString,int32> NameToPos;
+	for (int32 i = 0; i < N; ++i)
+		NameToPos.Add(In[i].Name, i);
+
+	// build graph: adj[u] = list of nodes that depend on u
+	TArray<TArray<int32>> Adj; Adj.SetNum(N);
+	TArray<int32> InDegree;    InDegree.Init(0, N);
+
+	for (int32 u = 0; u < N; ++u)
+	{
+		for (auto& DepName : In[u].Depends)
+		{
+			if (int32* v = NameToPos.Find(DepName))
+			{
+				// u depends on *v, so edge (*v)->u
+				Adj[*v].Add(u);
+				InDegree[u]++;
+			}
+		}
+	}
+
+	// collect all zero‐in‐degree nodes
+	TQueue<int32> Q;
+	for (int32 i = 0; i < N; ++i)
+		if (InDegree[i] == 0)
+			Q.Enqueue(i);
+
+	// Kahn’s main loop
+	TArray<FHeader::FHeaderElement> Sorted;
+	while (!Q.IsEmpty())
+	{
+		int32 u; Q.Dequeue(u);
+		Sorted.Add(In[u]);
+		for (int32 w : Adj[u])
+		{
+			if (--InDegree[w] == 0)
+				Q.Enqueue(w);
+		}
+	}
+
+	// if we didn’t pick up everything, there’s a cycle!
+	UE_LOG(LogTemp, Error, TEXT("[spacetimedb] Cyclic dependency detected in RawModuleDef types/typespace"));
+
+	return Sorted;
+}
+
+
+bool FTypespaceStructGen::GenerateNewStruct(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& ExportedTypes,
 	const SATS::FOptionalString& StructName,
@@ -141,13 +221,17 @@ bool GenerateNewStruct(
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &SumElement = AttributeAlgebraicType->Sum;
 			FTaggedUnion NewTaggedUnion;
-			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, Anonymous, SumElement, NewTaggedUnion, OutHeader, OutError))
+			if (!GenerateNewTaggedUnion(
+					ModuleName, ExportedTypes,
+					Anonymous,  SumElement,
+					NewTaggedUnion, OutHeader,
+					OutError))
 			{
 				return false;
 			}
 
 			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
-			OutStruct.Attributes.Add({"F" + NewTaggedUnionName, NewTaggedUnion.BaseName});
+			OutStruct.Attributes.Add({NewTaggedUnionName,  "F" + NewTaggedUnion.BaseName});
 			OutHeader.TaggedUnions.Add(NewTaggedUnion);
 
 			continue;
@@ -193,7 +277,7 @@ bool GenerateNewStruct(
 	return true;
 }
 
-bool GenerateNewTaggedUnion(
+bool FTypespaceStructGen::GenerateNewTaggedUnion(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& ExportedTypes,
 	const SATS::FOptionalString& UnionName,
@@ -250,7 +334,7 @@ bool GenerateNewTaggedUnion(
 			}
 
 			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
-			OutTaggedUnion.Variants.Add({"F" + NewTaggedUnionName, NewTaggedUnion.BaseName});
+			OutTaggedUnion.Variants.Add({NewTaggedUnion.BaseName, "F" + NewTaggedUnionName});
 			OutTaggedUnion.OptionTags.Add(NewTaggedUnion.BaseName);
 			OutHeader.TaggedUnions.Add(NewTaggedUnion);
 
@@ -297,8 +381,7 @@ bool GenerateNewTaggedUnion(
 	return true;
 }
 
-
-bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
+bool FTypespaceStructGen::BuildExportedTypesHeader(
 	const FString& ModuleName,
 	const FString& HeaderBaseName,
 	const SATS::FTypespace& Typespace,
@@ -359,6 +442,24 @@ bool FTypespaceStructGen::BuildHeaderLayoutFromIntermediateRepresentation(
 		
 		OutHeader.Structs.Add(Struct);
 	}
+
+	if (!BuildAndSortElementList(OutHeader.TaggedUnions,OutHeader.Structs,
+													 OutHeader.HeaderElements,OutError))
+	{
+		return false;
+	}
+	
+	return true;
+}
+
+bool FTypespaceStructGen::BuildAndSortElementList(const TArray<FTaggedUnion>& TaggedUnions,
+	const TArray<FStruct>& Structs, TArray<FHeader::FHeaderElement>& OutElements, FString &OutError)
+{
+	// 1) flatten everything into a single array
+	BuildElementList(TaggedUnions, Structs, OutElements);
+
+	// 2) run a topological sort (Kahn’s algorithm)
+	OutElements = TopoSortElements(OutElements);
 	
 	return true;
 }
