@@ -264,7 +264,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
     {
         const auto TaggedUnionOptionProperty = TabString + 
             FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
-        const auto TagName = FString::Printf(TEXT("E%ls_Tag"), *TaggedUnion.BaseName);
+        const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.BaseName);
         
         OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
         OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
@@ -272,11 +272,12 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
         for (const auto& Option : TaggedUnion.OptionTags)
         {
-            OutHeaderCode += TabString + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"), *Option, *Option);
+            FString OptionName = Option.RightChop(1);
+            OutHeaderCode += TabString + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"), *OptionName, *OptionName);
         }
         OutHeaderCode += FString::Printf(TEXT("};\n"));
         OutHeaderCode += FString::Printf(TEXT("\n"));
-        OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType)\n"));
+        OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
         OutHeaderCode += FString::Printf(TEXT("struct F%ls\n"), *TaggedUnion.BaseName);
         OutHeaderCode += FString::Printf(TEXT("{\n"));
         OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n"));
@@ -293,10 +294,9 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         }
         
         OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("};\n"));
+        OutHeaderCode += FString::Printf(TEXT("};\n\n\n"));
     }
-
-    OutHeaderCode += FString::Printf(TEXT("\n\n"));    
+    
     
     for (const auto & [
         Name,

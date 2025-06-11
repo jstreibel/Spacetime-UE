@@ -147,7 +147,7 @@ bool GenerateNewStruct(
 			}
 
 			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
-			OutStruct.Attributes.Add({NewTaggedUnionName, NewTaggedUnion.BaseName});
+			OutStruct.Attributes.Add({"F" + NewTaggedUnionName, NewTaggedUnion.BaseName});
 			OutHeader.TaggedUnions.Add(NewTaggedUnion);
 
 			continue;
@@ -250,7 +250,7 @@ bool GenerateNewTaggedUnion(
 			}
 
 			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
-			OutTaggedUnion.Variants.Add({NewTaggedUnionName, NewTaggedUnion.BaseName});
+			OutTaggedUnion.Variants.Add({"F" + NewTaggedUnionName, NewTaggedUnion.BaseName});
 			OutTaggedUnion.OptionTags.Add(NewTaggedUnion.BaseName);
 			OutHeader.TaggedUnions.Add(NewTaggedUnion);
 
