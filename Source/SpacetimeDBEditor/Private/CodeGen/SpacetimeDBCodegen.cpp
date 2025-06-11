@@ -236,7 +236,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
         return false;
     }
 
-    UE_LOG(LogTemp, Display, TEXT("[spacetime] built header layout from IR"));
+    UE_LOG(LogTemp, Log, TEXT("[spacetime] Successfully built header layout from IR"));
 
     if (Header.bPragmaOnce) OutHeaderCode += TEXT("#pragma once\n\n");
     

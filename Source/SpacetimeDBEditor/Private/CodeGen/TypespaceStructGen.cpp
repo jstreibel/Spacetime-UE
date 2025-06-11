@@ -50,6 +50,33 @@ void WarnTypes(SATS::EType Tag)
 	}
 }
 
+void AddMissingBuiltIns(FHeader& Header)
+{
+	{
+		FStruct UInt256;
+		UInt256.Name = TEXT("FUInt256");
+		UInt256.Attributes.Add({"Value", "FString"});
+		UInt256.bIsReflected = true;
+		UInt256.Specifiers.Add("BlueprintType");
+		UInt256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+		UInt256.Comment = TEXT("Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection.");
+
+		Header.Structs.Add(UInt256);
+	}
+
+	{
+		FStruct Int256;
+		Int256.Name = TEXT("FInt256");
+		Int256.Attributes.Add({"Value", "FString"});
+		Int256.bIsReflected = true;
+		Int256.Specifiers.Add("BlueprintType");
+		Int256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
+		Int256.Comment = TEXT("Provides SATS-JSON I256 support; Unreal UBT lacks int256 reflection.");
+		
+		Header.Structs.Add(Int256);
+	}
+}
+
 bool GenerateNewStruct(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& ExportedTypes,
@@ -67,7 +94,7 @@ bool GenerateNewStruct(
 	OutStruct.Specifiers.Add("BlueprintType");
 	OutStruct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 
-	UE_LOG(LogTemp, Display, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
+	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
 	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
 	{
 		if (!AttributeAlgebraicType.IsValid())
@@ -144,31 +171,98 @@ bool GenerateNewStruct(
 	return true;
 }
 
-void AddMissingBuiltIns(FHeader& Header)
+bool GenerateNewTaggedUnion(
+	const FString& ModuleName,
+	const TArray<SATS::FExportedType>& ExportedTypes,
+	const SATS::FOptionalString& UnionName,
+	const SATS::FSumType& Sum,
+	FStruct& OutTaggedUnion,
+	FHeader &OutHeader,
+	FString &OutError)
 {
-	{
-		FStruct UInt256;
-		UInt256.Name = TEXT("FUInt256");
-		UInt256.Attributes.Add({"Value", "FString"});
-		UInt256.bIsReflected = true;
-		UInt256.Specifiers.Add("BlueprintType");
-		UInt256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
-		UInt256.Comment = TEXT("Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection.");
+	OutTaggedUnion.Name = UnionName.IsSet() ? UnionName.GetValue() : GenerateNameForInlineStruct();
 
-		Header.Structs.Add(UInt256);
-	}
+	const auto UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
+	
+	OutTaggedUnion.bIsReflected = true;
+	OutTaggedUnion.Specifiers.Add("BlueprintType");
+	OutTaggedUnion.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 
+	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
+	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
 	{
-		FStruct Int256;
-		Int256.Name = TEXT("FInt256");
-		Int256.Attributes.Add({"Value", "FString"});
-		Int256.bIsReflected = true;
-		Int256.Specifiers.Add("BlueprintType");
-		Int256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
-		Int256.Comment = TEXT("Provides SATS-JSON I256 support; Unreal UBT lacks int256 reflection.");
+		if (!AttributeAlgebraicType.IsValid())
+		{
+			OutError = FString::Printf(TEXT("invalid pointer while generating struct %s"), *OutStruct.Name);
+			return false;
+		}
 		
-		Header.Structs.Add(Int256);
+		const auto RawName = GetAttributeName(AttributeOptionalName);
+		const auto Tag = AttributeAlgebraicType->Tag;
+		
+		if (Tag == SATS::EType::Product)
+		{
+			const auto Anonymous = SATS::FOptionalString();
+			const auto &ProductElement = AttributeAlgebraicType->Product;
+			FStruct NewStruct;
+			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
+			{
+				return false;
+			}
+
+			const auto NewStructName = FCommon::ToPascalCase(RawName);
+			OutStruct.Attributes.Add({
+				NewStructName,
+				NewStruct.Name});
+			OutHeader.Structs.Add(NewStruct);
+
+			continue;
+		}
+
+		if (Tag == SATS::EType::Sum)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] SATS-JSON BuiltIn Sums are not currently implemented in Unreal codegen"));
+			continue;
+		}
+
+		if (Tag == SATS::EType::Ref)
+		{
+			const auto Index = AttributeAlgebraicType->Ref.Index;
+			const auto& Referenced = ExportedTypes[Index];
+			const FString Name = FCommon::ToPascalCase(RawName);
+			const FString Type = Referenced.Name.Name;
+			
+			OutStruct.Attributes.Add({
+				Name,
+				FCommon::MakeStructName(Referenced.Name.Name, ModuleName),
+				RawName + ": " + Referenced.Name.Name});
+			
+			continue;
+		}
+
+		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
+		{
+			const FString Name = FCommon::ToPascalCase(RawName);
+			OutStruct.Attributes.Add({
+				Name,
+				SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false),
+			 RawName + ": " + SATS::TypeToString(Tag) });
+
+			WarnTypes(Tag);
+
+			continue;
+		}
+
+		if (Tag == SATS::EType::Invalid)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Invalid SATS-JSON type found in Typespace codegen"));
+		}
+
+		UE_LOG(LogTemp, Error, TEXT("Internal inconsistency found in Typespace codegen - unhandled SATS-JSON type"));
+		
 	}
+	
+	return true;
 }
 
 
