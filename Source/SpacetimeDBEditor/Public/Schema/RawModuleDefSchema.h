@@ -80,8 +80,10 @@ namespace SATS
             case EBuiltinType::String: return "String";
             case EBuiltinType::Array:  return "Array";
             case EBuiltinType::Map:    return "Map";
-            default:                   return "Invalid";
+            case EBuiltinType::Invalid: return "Invalid";
         }
+
+        UE_LOG(LogTemp, Warning, TEXT("Undealt with Sats BuiltIn type"));
     };
 
     inline FString TypeToString(const EType Kind)

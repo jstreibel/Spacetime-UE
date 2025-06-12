@@ -1,6 +1,6 @@
 #include "SpacetimeDBCodegen.h"
 
-#include "TypespaceStructGen.h"
+#include "TypespaceStructIRBuilder.h"
 #include "Containers/UnrealString.h"
 #include "Parser/Common.h"
 #include "../Config.h"
@@ -307,13 +307,20 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
         {
             OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
         }
-        OutHeaderCode += TabString + Attribute.Type + " " + Attribute.Name + ";" + "\n\n";
+        OutHeaderCode += TabString + Attribute.Type + " " + Attribute.Name;
+
+        if (Attribute.DefaultValue.IsSet())
+        {
+            OutHeaderCode += " = " + Attribute.DefaultValue.GetValue();
+        }
+
+        OutHeaderCode += ";\n\n";
     }
 
     OutHeaderCode += "};\n\n\n";
 }
 
-bool GRenderHeaderToCode(const FHeader& Header, FString &OutCode, FString &OutError, bool TopoSort=false)
+bool GRenderHeaderToCode(const FHeader& Header, FString &OutCode, FString &OutError, const bool TopoSort=false)
 {    
     // Cleanup
     OutCode = "";
@@ -409,7 +416,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceCode(
     FHeader ExportedTypesHeader;
     FHeader InlineTypesHeader;
     
-    if (!FTypespaceStructGen::BuildTypesHeaders(
+    if (!FTypespaceStructIRBuilder::BuildTypesHeaders(
         ModuleName,
         ModuleDef.Typespace,
         ModuleDef.Types,
@@ -423,7 +430,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceCode(
 
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Successfully built header layout from IR"));
 
-    if (!GRenderHeaderToCode(ExportedTypesHeader, OutExportedTypesCode, OutError))
+    if (!GRenderHeaderToCode(ExportedTypesHeader, OutExportedTypesCode, OutError, true))
     {
         return false;
     }

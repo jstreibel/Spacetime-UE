@@ -13,7 +13,7 @@
 #include <SpacetimeDBEditorHelpers.h>
 
 #include "Config.h"
-#include "CodeGen/TypespaceStructGen.h"
+#include "CodeGen/TypespaceStructIRBuilder.h"
 
 bool RawModuleDefFromCli(
 	const FString &DatabaseName,
