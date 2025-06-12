@@ -12,6 +12,7 @@
 
 #include <SpacetimeDBEditorHelpers.h>
 
+#include "Config.h"
 #include "CodeGen/TypespaceStructGen.h"
 
 bool RawModuleDefFromCli(
@@ -83,7 +84,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	FString& OutError)
 {
 	const FString DatabaseNamePascal = ToPascalCase(DatabaseName);
-	
+	const FString GeneratedDirectory = "StdbGenerated";
 
 	// 0. Fetch raw JSON schema
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Fetching RawModuleDef for '%s'"), *DatabaseName);
@@ -104,12 +105,11 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
         UE_LOG(LogTemp, Error, TEXT("[spacetime] RawModuleDef parse failed: %s"), *OutError);
         return false;
     }
-	
 
 	// 2. Ensure output directory exists
-	const FString OutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/<Public&Private>/Generated");
-	const FString HeaderOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/Public/Generated");
-	const FString SourceOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/Private/Generated");
+	const FString OutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/<Public&Private>") / GeneratedDirectory;
+	const FString HeaderOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/Public") / GeneratedDirectory;
+	const FString SourceOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/Private") / GeneratedDirectory;
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Creating output directories '%s' and '%s'"), *HeaderOutputDir, *SourceOutputDir);
     if (!IFileManager::Get().MakeDirectory(*HeaderOutputDir, /*Tree=*/ true) | !IFileManager::Get().MakeDirectory(*SourceOutputDir, /*Tree=*/ true))
     {
@@ -123,32 +123,46 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating SATS-JSON Typespace Unreal-reflected C++ structs"));
 		
-		FString TypespaceHeaderCode;
-		const FString BaseSpacetimeHeaderName = FString::Printf(TEXT("%sTypespace"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateTypespaceStructs(
-			RawModule,
-			DatabaseName,
-			BaseSpacetimeHeaderName,
-			TypespaceHeaderCode, OutError))
+		FString ExportedTypesHeaderCode;
+		FString InlineTypesHeaderCode;
+		// const FString BaseSpacetimeHeaderName = FString::Printf(TEXT("%sTypespace"), *DatabaseNamePascal);
+		if (!FSpacetimeDBCodeGen::GenerateTypespaceCode(
+			RawModule,						DatabaseName,
+			ExportedTypesHeaderCode,		InlineTypesHeaderCode,
+			OutError))
 		{
 			OutError = TEXT("Failed to generate typespace structures: ") + OutError;
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
 			return false;
 		}
 
-		const FString TypespaceHeaderName = BaseSpacetimeHeaderName + ".h";
-		const FString TypespaceHeaderPath = HeaderOutputDir / TypespaceHeaderName;
-		if (!FCodeFileWriter::WriteFile(TypespaceHeaderPath, TypespaceHeaderCode, OutError))
+		const FString ExportedFilePath =
+			HeaderOutputDir / FSpacetimeConfig::MakeExportedTypesCodeFileName(DatabaseName) + ".h";
+
+		const FString InlineFilePath =
+			HeaderOutputDir / FSpacetimeConfig::MakeInlineTypesCodeFileName(DatabaseName) + ".h";
+		
+		if (!FCodeFileWriter::WriteFile(ExportedFilePath, ExportedTypesHeaderCode, OutError))
 		{
 			OutError = TEXT("Failed to write typespace header file: ") + OutError;
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
 			return false;
 		}
 
-		FString NicePath = TypespaceHeaderPath;
-		FPaths::NormalizeFilename(NicePath);
-		FPaths::CollapseRelativeDirectories(NicePath);
-		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote typespace code to %s"), *NicePath);
+		if (!FCodeFileWriter::WriteFile(InlineFilePath, InlineTypesHeaderCode, OutError))
+		{
+			OutError = TEXT("Failed to write typespace header file: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+			return false;
+		}
+
+		// FString NicePath = ExportedFilePath;
+		// FPaths::NormalizeFilename(NicePath);
+		// FPaths::CollapseRelativeDirectories(NicePath);
+		// UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote typespace code to %s"), *NicePath);
+
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Typespace code output success"));
+		
 	}
 	
 	
@@ -176,16 +190,14 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	} 
 
 	
-    // 5. Generate reducer functions (header + source)
+    // 5. Generate STDB Reducer functions (header + source)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
 		
 		FString ReducersHeader, ReducersSource;
-		if (FString BaseReducersHeaderName = FString::Printf(TEXT("%sReducers"), *DatabaseNamePascal);
-			!FSpacetimeDBCodeGen::GenerateReducerFunctions(
+		if (!FSpacetimeDBCodeGen::GenerateReducerFunctions(
 			DatabaseNamePascal,
 			RawModule,
-			BaseReducersHeaderName,
 			ReducersHeader,
 			ReducersSource,
 			OutError))
@@ -194,8 +206,11 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
 			return false;
 		}
-		const FString ReducersHeaderName = FString::Printf(TEXT("%sReducers.h"), *DatabaseNamePascal);
-		const FString ReducersHeaderPath = HeaderOutputDir / ReducersHeaderName;
+
+		const FString ReducersFilename = FSpacetimeConfig::MakeReducerCodeFileName(DatabaseName); 		
+		const FString ReducersHeaderPath = HeaderOutputDir / ReducersFilename + ".h";
+		const FString ReducersSourcePath = SourceOutputDir / ReducersFilename + ".cpp";
+		
 		if (!FCodeFileWriter::WriteFile(ReducersHeaderPath, ReducersHeader, OutError))
 		{
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers header '%s': %s"), *ReducersHeaderPath, *OutError);
@@ -206,9 +221,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		FPaths::NormalizeFilename(NicePath);
 		FPaths::CollapseRelativeDirectories(NicePath);
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Wrote %s"), *NicePath);
-
-		const FString ReducersSourceName = FString::Printf(TEXT("%sReducers.cpp"), *DatabaseNamePascal);
-		const FString ReducersSourcePath = SourceOutputDir / ReducersSourceName;
+		
 		if (!FCodeFileWriter::WriteFile(ReducersSourcePath, ReducersSource, OutError))
 		{
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write reducers source '%s': %s"), *ReducersSourcePath, *OutError);

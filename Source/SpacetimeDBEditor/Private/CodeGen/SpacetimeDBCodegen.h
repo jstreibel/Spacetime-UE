@@ -33,7 +33,6 @@ public:
 	static bool GenerateReducerFunctions(
 		const FString& ModuleName,
 		const SATS::FRawModuleDef& ModuleDef,
-		const FString& HeaderName,
 		FString& OutHeader,
 		FString& OutSource,
 		FString& OutError
@@ -43,22 +42,21 @@ public:
 	 * Generates headers for Typespace Products, which map to C/C++ structs.
 	 * @param ModuleDef
 	 * @param ModuleName 
-	 * @param HeaderName 
-	 * @param OutHeaderCode 
+	 * @param HeaderName
+	 * @param OutExportedTypesCode
+	 * @param OutInlineTypesCode 
 	 * @param OutError 
 	 * @return 
 	 */
-	static bool GenerateTypespaceStructs(
+	static bool GenerateTypespaceCode(
 		const SATS::FRawModuleDef& ModuleDef,
 		const FString& ModuleName,
-		const FString& HeaderName,
-		FString& OutHeaderCode,
+		FString& OutExportedTypesCode,
+		FString& OutInlineTypesCode,
 		FString& OutError);
 
 private:
 	static FString ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind);
-	// Map a SATS builtin (e.g. "Int", "String") to Unreal type ("int32", "FString")
-	static FString MapBuiltinToUnreal(const FString& BuiltinName);
 	// Sanitize identifier and convert to PascalCase
 	static FString ToPascalCase(const FString& InString);
 };

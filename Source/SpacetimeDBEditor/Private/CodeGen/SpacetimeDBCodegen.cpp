@@ -3,11 +3,7 @@
 #include "TypespaceStructGen.h"
 #include "Containers/UnrealString.h"
 #include "Parser/Common.h"
-
-#define STDB_USE_DEPR_METHOD false
-
-const FString ApiMacroString = TEXT("SPACETIMEDBRUNTIME_API");
-const FString TabString = TEXT("    ");
+#include "../Config.h"
 
 // Converts any snake_case, kebab-case, space separated, or camelCase string
 // into PascalCase (e.g. "chat_message" → "ChatMessage", "sendMessage" → "SendMessage").
@@ -93,7 +89,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
 
         FString StructName = TEXT("F") + ToPascalCase(Table.Name) + TEXT("Row");
         OutHeaderText += TEXT("USTRUCT(BlueprintType)");
-        OutHeaderText += TEXT("\nstruct ") + ApiMacroString + " " + StructName + TEXT(" {\n\n"
+        OutHeaderText += TEXT("\nstruct ") + FSpacetimeConfig::ApiMacroString + " " + StructName + TEXT(" {\n\n"
             "    GENERATED_BODY()\n\n");
 
         /*
@@ -131,18 +127,18 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
 bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     const FString& ModuleName,
     const SATS::FRawModuleDef& ModuleDef,
-    const FString& HeaderName,
     FString& OutHeader,
     FString& OutSource,
     FString& OutError
 )
 {
+    const FString& HeaderName = FSpacetimeConfig::MakeReducerCodeFileName(ModuleName); 
+    
     TArray<SATS::FExportedType> SortedRefs = ModuleDef.Types;
     Algo::Sort(SortedRefs, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
     {
         return EntryA.TypeRef < EntryB.TypeRef;
     });
-    
     
     const FString ClassName = "U" + ModuleName +  "Reducers";
     
@@ -151,15 +147,16 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     HeaderText += TEXT("#pragma once\n\n"
                 "#include \"Kismet/BlueprintFunctionLibrary.h\"\n"
                 "#include \"CoreMinimal.h\"\n"
-                "#include \"" + ModuleName + "Typespace.h" + "\"\n"
+                "#include \"" + FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName) + ".h" + "\"\n"
                 "#include \"" + HeaderName + ".generated.h" + "\"\n\n\n");
     HeaderText += TEXT("UCLASS()\n"
-                "class " + ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary {\n\n"
+                "class " + FSpacetimeConfig::ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary {\n\n"
                 "   GENERATED_BODY()\n\npublic:\n\n");
 
     // Source
     FString Src;
-    Src += TEXT("#include \"Generated/" + HeaderName + ".h\"\n\n\n");
+    const FString HeaderFileRelativePath = FSpacetimeConfig::GeneratedDirectory + "/" + HeaderName + ".h";
+    Src += "#include \"" + HeaderFileRelativePath + "\"\n\n\n";
 
     for (const auto& ReducerDef : ModuleDef.Reducers)
     {
@@ -218,6 +215,8 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
 
 void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
 {
+    const auto TabString = FSpacetimeConfig::TabString;
+    
     const auto TaggedUnionOptionProperty = TabString +
         FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\")\n"),
             *TaggedUnion.SubCategory);
@@ -256,6 +255,8 @@ void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
 
 void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutHeaderCode)
 {
+    const auto TabString = FSpacetimeConfig::TabString;
+    
     const auto & [
             Name,
             Attributes,
@@ -312,21 +313,108 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
     OutHeaderCode += "};\n\n\n";
 }
 
-bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
+bool GRenderHeaderToCode(const FHeader& Header, FString &OutCode, FString &OutError, bool TopoSort=false)
+{    
+    // Cleanup
+    OutCode = "";
+
+    // TODO: add license
+    
+    if (Header.bPragmaOnce) OutCode += TEXT("#pragma once\n\n");
+    
+    for (auto [Path, bIsLocal] : Header.Includes)
+    {
+        
+        OutCode += TEXT("#include ");
+
+        if (bIsLocal)
+        {
+            OutCode += FString::Printf(TEXT("\"%s\""), *Path);
+        }
+        else
+        {
+            OutCode += FString::Printf(TEXT("<%s>"), *Path);
+        }
+
+        OutCode += TEXT("\n");
+        
+    }
+
+    OutCode += TEXT("\n\n");
+
+    TArray<FHeader::FHeaderElement> Elements;
+    if (TopoSort)
+    {
+        Elements = Header.TopoSortElements();
+    }
+    else
+    {
+        Elements = Header.GetHeaderElements();
+    }
+    
+    for (const auto& Element : Elements)
+    {
+        if (Element.Type == FHeader::FHeaderElement::Struct)
+        {
+            const auto& ExportedStructs = Header.GetStructs();
+            const auto Index = Element.Index;
+            
+            if (Index >= ExportedStructs.Num())
+            {
+                OutError = FString::Printf(TEXT(
+                    "index (Index=%i, Num=%i) out of bounds for ExportedStructs element %s"),
+                    Index, ExportedStructs.Num(), *Element.Name);
+
+                return false;
+            }
+            const auto& Struct = ExportedStructs[Index];
+            GOutputStruct(Struct, Header.ApiMacro, OutCode);
+
+            continue;
+        }
+
+        if (Element.Type == FHeader::FHeaderElement::TaggedUnion)
+        {
+            const auto& ExportedTaggedUnions = Header.GetTaggedUnions();
+            const auto Index = Element.Index;
+            
+            if (Index >= ExportedTaggedUnions.Num())
+            {
+                OutError = FString::Printf(TEXT(
+                    "index (Index=%i, Num=%i) out of bounds for ExportedTaggedUnions element %s"),
+                    Index, ExportedTaggedUnions.Num(), *Element.Name);
+
+                return false;
+            }
+            
+            const auto& TaggedUnion = ExportedTaggedUnions[Index];
+            GOutputTaggedUnion(TaggedUnion, OutCode);
+
+            continue;
+        }
+
+        UE_LOG(LogTemp, Error, TEXT("Unrecognized Element.Type for element named '%ls'"), *Element.Name);
+    }
+
+    return true;
+}
+
+bool FSpacetimeDBCodeGen::GenerateTypespaceCode(
     const SATS::FRawModuleDef& ModuleDef,
     const FString& ModuleName,
-    const FString& HeaderName,
-    FString& OutHeaderCode,
+    FString& OutExportedTypesCode,
+    FString& OutInlineTypesCode,
     FString& OutError)
 {
-    FHeader Header;
+    FHeader ExportedTypesHeader;
+    FHeader InlineTypesHeader;
     
-    if (!FTypespaceStructGen::BuildExportedTypesHeader(
+    if (!FTypespaceStructGen::BuildTypesHeaders(
         ModuleName,
-        HeaderName,
         ModuleDef.Typespace,
         ModuleDef.Types,
-        Header,
+        ExportedTypesHeader,
+        InlineTypesHeader,
         OutError))
     {
         OutError = TEXT("Failed to generate header data from typespace: ") + OutError;
@@ -335,62 +423,17 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceStructs(
 
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Successfully built header layout from IR"));
 
-    if (Header.bPragmaOnce) OutHeaderCode += TEXT("#pragma once\n\n");
+    if (!GRenderHeaderToCode(ExportedTypesHeader, OutExportedTypesCode, OutError))
+    {
+        return false;
+    }
     
-    for (auto [Path, bIsLocal] : Header.Includes)
+    if (!GRenderHeaderToCode(InlineTypesHeader, OutInlineTypesCode, OutError))
     {
-        
-        OutHeaderCode += TEXT("#include ");
-
-        if (bIsLocal)
-        {
-            OutHeaderCode += FString::Printf(TEXT("\"%s\""), *Path);
-        }
-        else
-        {
-            OutHeaderCode += FString::Printf(TEXT("<%s>"), *Path);
-        }
-
-        OutHeaderCode += TEXT("\n");
-        
+        return false;
     }
 
-    OutHeaderCode += TEXT("\n\n");
-
-    #if STDB_USE_DEPR_METHOD == true
-    {
-        for (const auto& TaggedUnion : Header.TaggedUnions)
-        {
-            GOutputTaggedUnion(TaggedUnion, OutHeaderCode);
-        }
-
-        for (const auto & Struct : Header.Structs)
-        {
-            GOutputStruct(Struct, Header.ApiMacro, OutHeaderCode);
-        }
-    }
-    #else
-    for (const auto& Element : Header.HeaderElements)
-    {
-        if (Element.Type == FHeader::FHeaderElement::Struct)
-        {
-            const auto& Struct = Header.Structs[Element.Index];
-            GOutputStruct(Struct, Header.ApiMacro, OutHeaderCode);
-
-            continue;
-        }
-
-        if (Element.Type == FHeader::FHeaderElement::TaggedUnion)
-        {
-            const auto& TaggedUnion = Header.TaggedUnions[Element.Index];
-            GOutputTaggedUnion(TaggedUnion, OutHeaderCode);
-
-            continue;
-        }
-
-        UE_LOG(LogTemp, Error, TEXT("Unrecognized Element.Type for element named '%ls'"), *Element.Name);
-    }
-    #endif    
-
+    UE_LOG(LogTemp, Log, TEXT("[spacetime] Successfully rendered header layout to files"));
+    
     return true;
 }

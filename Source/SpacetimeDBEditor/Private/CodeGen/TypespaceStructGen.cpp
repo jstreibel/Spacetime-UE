@@ -1,5 +1,6 @@
 #include "TypespaceStructGen.h"
 
+#include "Config.h"
 #include "Parser/Common.h"
 
 FString IntToString(const uint32 Value)
@@ -68,7 +69,7 @@ void AddMissingBuiltIns(FHeader& Header)
 		UInt256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
 		UInt256.Comment = TEXT("Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection.");
 
-		Header.Structs.Add(UInt256);
+		Header.AddStruct(UInt256);
 	}
 
 	{
@@ -80,7 +81,7 @@ void AddMissingBuiltIns(FHeader& Header)
 		Int256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
 		Int256.Comment = TEXT("Provides SATS-JSON I256 support; Unreal UBT lacks int256 reflection.");
 		
-		Header.Structs.Add(Int256);
+		Header.AddStruct(Int256);
 	}
 }
 
@@ -117,64 +118,13 @@ void BuildElementList(
 	}
 }
 
-TArray<FHeader::FHeaderElement> TopoSortElements(const TArray<FHeader::FHeaderElement>& In)
-{
-	int32 N = In.Num();
-	// map name -> position in In[]
-	TMap<FString,int32> NameToPos;
-	for (int32 i = 0; i < N; ++i)
-		NameToPos.Add(In[i].Name, i);
-
-	// build graph: adj[u] = list of nodes that depend on u
-	TArray<TArray<int32>> Adj; Adj.SetNum(N);
-	TArray<int32> InDegree;    InDegree.Init(0, N);
-
-	for (int32 u = 0; u < N; ++u)
-	{
-		for (auto& DepName : In[u].Depends)
-		{
-			if (int32* v = NameToPos.Find(DepName))
-			{
-				// u depends on *v, so edge (*v)->u
-				Adj[*v].Add(u);
-				InDegree[u]++;
-			}
-		}
-	}
-
-	// collect all zero‐in‐degree nodes
-	TQueue<int32> Q;
-	for (int32 i = 0; i < N; ++i)
-		if (InDegree[i] == 0)
-			Q.Enqueue(i);
-
-	// Kahn’s main loop
-	TArray<FHeader::FHeaderElement> Sorted;
-	while (!Q.IsEmpty())
-	{
-		int32 u; Q.Dequeue(u);
-		Sorted.Add(In[u]);
-		for (int32 w : Adj[u])
-		{
-			if (--InDegree[w] == 0)
-				Q.Enqueue(w);
-		}
-	}
-
-	// if we didn’t pick up everything, there’s a cycle!
-	UE_LOG(LogTemp, Error, TEXT("[spacetimedb] Cyclic dependency detected in RawModuleDef types/typespace"));
-
-	return Sorted;
-}
-
-
 bool FTypespaceStructGen::GenerateNewStruct(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& ExportedTypes,
 	const SATS::FOptionalString& StructName,
 	const SATS::FProductType& Product,
 	FStruct& OutStruct,
-	FHeader &OutHeader,
+	FHeader &OutInlineHeader,
 	FString &OutError)
 {	
 	OutStruct.Name = StructName.IsSet() ? StructName.GetValue() : GenerateNameForInlineStruct();
@@ -202,7 +152,7 @@ bool FTypespaceStructGen::GenerateNewStruct(
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &ProductElement = AttributeAlgebraicType->Product;
 			FStruct NewStruct;
-			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
+			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutInlineHeader, OutError))
 			{
 				return false;
 			}
@@ -211,7 +161,7 @@ bool FTypespaceStructGen::GenerateNewStruct(
 			OutStruct.Attributes.Add({
 				NewStructName,
 				NewStruct.Name});
-			OutHeader.Structs.Add(NewStruct);
+			OutInlineHeader.AddStruct(NewStruct);
 
 			continue;
 		}
@@ -224,7 +174,7 @@ bool FTypespaceStructGen::GenerateNewStruct(
 			if (!GenerateNewTaggedUnion(
 					ModuleName, ExportedTypes,
 					Anonymous,  SumElement,
-					NewTaggedUnion, OutHeader,
+					NewTaggedUnion, OutInlineHeader,
 					OutError))
 			{
 				return false;
@@ -232,7 +182,7 @@ bool FTypespaceStructGen::GenerateNewStruct(
 
 			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
 			OutStruct.Attributes.Add({NewTaggedUnionName,  "F" + NewTaggedUnion.BaseName});
-			OutHeader.TaggedUnions.Add(NewTaggedUnion);
+			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
 
 			continue;
 		}
@@ -283,7 +233,7 @@ bool FTypespaceStructGen::GenerateNewTaggedUnion(
 	const SATS::FOptionalString& UnionName,
 	const SATS::FSumType& Sum,
 	FTaggedUnion& OutTaggedUnion,
-	FHeader &OutHeader,
+	FHeader &OutInlineHeader,
 	FString &OutError)
 {
 	OutTaggedUnion.BaseName = UnionName.IsSet() ? UnionName.GetValue() : GenerateBaseNameForInlineTaggedUnion();
@@ -310,7 +260,7 @@ bool FTypespaceStructGen::GenerateNewTaggedUnion(
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &ProductElement = VariantAlgebraicType->Product;
 			FStruct NewStruct;
-			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutHeader, OutError))
+			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutInlineHeader, OutError))
 			{
 				return false;
 			}
@@ -318,7 +268,7 @@ bool FTypespaceStructGen::GenerateNewTaggedUnion(
 			const auto NewStructName = FCommon::ToPascalCase(RawName);
 			OutTaggedUnion.Variants.Add({NewStructName, NewStruct.Name});
 			OutTaggedUnion.OptionTags.Add(NewStruct.Name);
-			OutHeader.Structs.Add(NewStruct);
+			OutInlineHeader.AddStruct(NewStruct);
 
 			continue;
 		}
@@ -328,7 +278,7 @@ bool FTypespaceStructGen::GenerateNewTaggedUnion(
 			const auto Anonymous = SATS::FOptionalString();
 			const auto &SumElement = VariantAlgebraicType->Sum;
 			FTaggedUnion NewTaggedUnion;
-			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, Anonymous, SumElement, NewTaggedUnion, OutHeader, OutError))
+			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, Anonymous, SumElement, NewTaggedUnion, OutInlineHeader, OutError))
 			{
 				return false;
 			}
@@ -336,7 +286,7 @@ bool FTypespaceStructGen::GenerateNewTaggedUnion(
 			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
 			OutTaggedUnion.Variants.Add({NewTaggedUnion.BaseName, "F" + NewTaggedUnionName});
 			OutTaggedUnion.OptionTags.Add(NewTaggedUnion.BaseName);
-			OutHeader.TaggedUnions.Add(NewTaggedUnion);
+			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
 
 			continue;
 		}
@@ -381,41 +331,30 @@ bool FTypespaceStructGen::GenerateNewTaggedUnion(
 	return true;
 }
 
-bool FTypespaceStructGen::BuildExportedTypesHeader(
+bool FTypespaceStructGen::BuildTypesHeaders(
 	const FString& ModuleName,
-	const FString& HeaderBaseName,
 	const SATS::FTypespace& Typespace,
 	const TArray<SATS::FExportedType>& ExportedTypes,
-	FHeader &OutHeader,
+	FHeader &OutExported,
+	FHeader &OutInline,
 	FString &OutError)
 {
-	TArray<SATS::FExportedType> SortedTypes = ExportedTypes;
-	Algo::Sort(SortedTypes, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
-	{
-		return EntryA.TypeRef < EntryB.TypeRef;
-	});
+	// TODO: check if 'ExportedTypes' have matched Refs in 'Typespace'
 	
 	const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
-	
-	if (Typespace.TypeEntries.Num() != SortedTypes.Num())
-	{
-		OutError = FString::Printf(
-			TEXT("Inconsistent number of entries in "
-			"'typespace' (%i entries) and "
-			"'types' (%i entries) "
-			"in RawModuleDef"),
-			Typespace.TypeEntries.Num(),
-			SortedTypes.Num());
-		return false;
-	}
-	// TODO: also check if types <-> typespace (if they have 1:1 matching)
-	
-	OutHeader.Includes.Add({"CoreMinimal.h", true});
-	OutHeader.Includes.Add({HeaderBaseName + ".generated.h", true});
+	const FString ExportedTypesHeaderName = FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName);
+	const FString InlineTypesHeaderName = FSpacetimeConfig::MakeInlineTypesCodeFileName(ModuleName);
 
-	AddMissingBuiltIns(OutHeader);
+	OutInline.Includes.Add({"CoreMinimal.h", true});
+	OutInline.Includes.Add({InlineTypesHeaderName + ".generated.h", true});
+	
+	OutExported.Includes.Add({"CoreMinimal.h", true});
+	OutExported.Includes.Add({InlineTypesHeaderName + ".h", true});
+	OutExported.Includes.Add({ExportedTypesHeaderName + ".generated.h", true});
 
-	for (const auto& Type : SortedTypes)
+	AddMissingBuiltIns(OutInline);
+
+	for (const auto& Type : ExportedTypes)
 	{
 		const auto Index = Type.TypeRef;
 		const auto &AlgebraicType = Typespace.TypeEntries[Index];
@@ -433,33 +372,80 @@ bool FTypespaceStructGen::BuildExportedTypesHeader(
 		if (FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
 			!GenerateNewStruct(
 				ModuleName,
-				SortedTypes, StructName,
+				ExportedTypes, StructName,
+				AlgebraicType.Product,
+				Struct, OutInline, OutError))
+		{
+			return false;
+		}
+		
+		OutExported.AddStruct(Struct);
+	}
+		
+	return true;
+}
+
+bool FTypespaceStructGen::BuildTypespaceHeader_Deprecated(
+	const FString& ModuleName,
+	const FString& HeaderBaseName,
+	const SATS::FTypespace& Typespace,
+	const TArray<SATS::FExportedType>& ExportedTypes,
+	FHeader& OutHeader,
+	FString& OutError)
+{
+	TArray<SATS::FExportedType> Types = ExportedTypes;
+	Algo::Sort(Types, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
+	{
+		return EntryA.TypeRef < EntryB.TypeRef;
+	});
+	
+	const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
+	
+	if (Typespace.TypeEntries.Num() != Types.Num())
+	{
+		OutError = FString::Printf(
+			TEXT("Inconsistent number of entries in "
+			"'typespace' (%i entries) and "
+			"'types' (%i entries) "
+			"in RawModuleDef"),
+			Typespace.TypeEntries.Num(),
+			Types.Num());
+		return false;
+	}
+	// TODO: also check if types <-> typespace (if they have 1:1 matching)
+	
+	OutHeader.Includes.Add({"CoreMinimal.h", true});
+	OutHeader.Includes.Add({HeaderBaseName + ".generated.h", true});
+
+	AddMissingBuiltIns(OutHeader);
+
+	for (const auto& Type : Types)
+	{
+		const auto Index = Type.TypeRef;
+		const auto &AlgebraicType = Typespace.TypeEntries[Index];
+
+		if (AlgebraicType.Tag != SATS::EType::Product)
+		{
+			OutError = FString::Printf(TEXT("Header generation for types in 'typespace' other than C++ structs "
+				"(i.e. 'Product' Sats-Type) not implemented - problem occured with type '%i'"), Index);
+			return false;
+		}
+		
+		FStruct Struct;
+		Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
+
+		if (FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
+			!GenerateNewStruct(
+				ModuleName,
+				Types, StructName,
 				AlgebraicType.Product,
 				Struct, OutHeader, OutError))
 		{
 			return false;
 		}
 		
-		OutHeader.Structs.Add(Struct);
+		OutHeader.AddStruct(Struct);
 	}
-
-	if (!BuildAndSortElementList(OutHeader.TaggedUnions,OutHeader.Structs,
-													 OutHeader.HeaderElements,OutError))
-	{
-		return false;
-	}
-	
-	return true;
-}
-
-bool FTypespaceStructGen::BuildAndSortElementList(const TArray<FTaggedUnion>& TaggedUnions,
-	const TArray<FStruct>& Structs, TArray<FHeader::FHeaderElement>& OutElements, FString &OutError)
-{
-	// 1) flatten everything into a single array
-	BuildElementList(TaggedUnions, Structs, OutElements);
-
-	// 2) run a topological sort (Kahn’s algorithm)
-	OutElements = TopoSortElements(OutElements);
 	
 	return true;
 }
