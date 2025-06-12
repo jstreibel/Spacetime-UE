@@ -8,17 +8,20 @@
 #include "SpacetimeStatusTab.h"
 #include "CLI/SpacetimeCLIHelper.h"
 
-static const FName GeneratorTabName("SpacetimeDBGenerator");
+static const FName UtilsTabName("SpacetimeDBUtils");
 
 #define LOCTEXT_NAMESPACE "FSpacetimeDBEditorModule"
 
 void FSpacetimeDBEditorModule::StartupModule()
-{    
+{
     // 1. Register the tab
-    FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GeneratorTabName,
-        FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneralTab))
-        .SetDisplayName(LOCTEXT("GeneratorTabTitle", "SpacetimeDB"))
-        .SetMenuType(ETabSpawnerMenuType::Hidden);
+    const auto
+    OnSpawnTab = FOnSpawnTab::CreateRaw(this, &FSpacetimeDBEditorModule::SpawnGeneralTab); 
+    auto
+    TabSpawnerEntry = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(UtilsTabName, OnSpawnTab);
+    TabSpawnerEntry
+    .SetDisplayName(LOCTEXT("GeneratorTabTitle", "SpacetimeDB"))
+    .SetMenuType(ETabSpawnerMenuType::Hidden);
 
     // 2. Add menu entry under Window > Developer Tools
     UToolMenus::RegisterStartupCallback(
@@ -33,13 +36,13 @@ void FSpacetimeDBEditorModule::StartupModule()
             );
             
             SpacetimeSection.AddMenuEntry(
-                "OpenSpacetimeDBGenerator",
-                LOCTEXT("OpenGenerator", "Spacetime Utils"),
-                LOCTEXT("OpenGeneratorTooltip", "Open the SpacetimeDB utilities tab."),
+                "OpenSpacetimeDBUtils",
+                LOCTEXT("OpenUtils", "Spacetime Utils"),
+                LOCTEXT("OpenUtilsTooltip", "Open the SpacetimeDB utilities tab."),
                 FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("ClassIcon.DataTable")),
                 FUIAction(FExecuteAction::CreateLambda([]
                 {
-                    FGlobalTabmanager::Get()->TryInvokeTab(GeneratorTabName);
+                    FGlobalTabmanager::Get()->TryInvokeTab(UtilsTabName);
                 }))
             );
         })
@@ -50,7 +53,7 @@ void FSpacetimeDBEditorModule::ShutdownModule()
 {
     UToolMenus::UnRegisterStartupCallback(this);
     UToolMenus::UnregisterOwner(this);
-    FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GeneratorTabName);
+    FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(UtilsTabName);
 }
 
 TSharedRef<SDockTab> FSpacetimeDBEditorModule::SpawnGeneralTab(const FSpawnTabArgs& Args)

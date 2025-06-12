@@ -15,18 +15,16 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 	RefreshInterval = InArgs._RefreshInterval;
 
 	// --- 1) load CLI config and build combo‐list ---
-	FString ConfigError;
 
-	if (FSpacetimeCLIHelper::GetCliConfig(Config, ConfigError))
+	if (FString ConfigError; FSpacetimeCLIHelper::GetCliConfig(Config, ConfigError))
 	{
-		for (const auto& Cfg : Config.ServerConfigs)
+		for (const auto& ServerConfig : Config.ServerConfigs)
 		{
-			// you could show Nickname instead, e.g. Cfg.Nickname, or combine both
-			ServerOptions.Add(MakeShared<FString>(Cfg.Nickname));
+			ServerOptions.Add(MakeShared<FString>(ServerConfig.Nickname));
 		}
 
 		if (ServerOptions.Num() > 0)
-		{
+		{			
 			SelectedServer = ServerOptions[0];
 		}
 	}
@@ -50,7 +48,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(CliTextBlock, STextBlock)
-				.Text(FText::FromString(TEXT("…")))
+				.Text(FText::FromString(TEXT("<placeholder>")))
 			]
 		]
 
@@ -64,7 +62,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(StatusTextBlock, STextBlock)
-				.Text(FText::FromString(TEXT("…")))
+				.Text(FText::FromString(TEXT("<placeholder>")))
 			]
 		]
 
