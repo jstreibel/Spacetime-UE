@@ -20,7 +20,7 @@ public:
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
 private:
-	void ScheduleAsyncRefresh() const;
+	void ScheduleAsyncRefresh();
 	
 	float RefreshInterval= 1.f;
 	float AccumulatedTime = 0.f;
@@ -30,13 +30,16 @@ private:
 	// These are our two colored text widgets
 	TSharedPtr<STextBlock> CliTextBlock;
 	TSharedPtr<STextBlock> StatusTextBlock;
+
+	using FStdbServerComboBoxItem = TSharedPtr<FSpacetimeServerConfig>;
+	using FStdbServerComboBox = SComboBox<FStdbServerComboBoxItem>; 
 	
 	// Keeps the list alive for the duration of this widget
-	TArray<TSharedPtr<FString>> ServerOptions;
+	TArray<FStdbServerComboBoxItem> ServerOptions;
 	// The currently selected item
-	TSharedPtr<FString> SelectedServer;
+	FStdbServerComboBoxItem SelectedServer;
 	// The combo-box itself
-	TSharedPtr<SComboBox<TSharedPtr<FString>>> ServerComboBox;
+	TSharedPtr<FStdbServerComboBox> ServerComboBox;
 
 	// Other stuff
 	TSharedPtr<SEditableTextBox> DatabaseNameTextBox;

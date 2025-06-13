@@ -6,7 +6,6 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/MessageDialog.h"
 #include "SpacetimeStatusTab.h"
-#include "CLI/SpacetimeCLIHelper.h"
 
 static const FName UtilsTabName("SpacetimeDBUtils");
 
@@ -20,7 +19,7 @@ void FSpacetimeDBEditorModule::StartupModule()
     auto
     TabSpawnerEntry = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(UtilsTabName, OnSpawnTab);
     TabSpawnerEntry
-    .SetDisplayName(LOCTEXT("GeneratorTabTitle", "SpacetimeDB"))
+    .SetDisplayNameAttribute(LOCTEXT("SpacetimeDBTabTitle", "SpacetimeDB"))
     .SetMenuType(ETabSpawnerMenuType::Hidden);
 
     // 2. Add menu entry under Window > Developer Tools

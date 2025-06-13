@@ -91,6 +91,8 @@ bool FSpacetimeCLIHelper::GetCliTomlPath(FString& OutPath, FString& OutError)
 
 bool FSpacetimeCLIHelper::GetCliConfig(FSpacetimeCliConfig& OutConfig, FString& OutError)
 {
+	OutConfig = FSpacetimeCliConfig();
+	
 	const FString Path = GetDefaultCliTomlPath();
 	if (!ValidateFile(Path, OutError))
 	{
