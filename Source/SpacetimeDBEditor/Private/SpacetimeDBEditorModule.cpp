@@ -5,7 +5,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/MessageDialog.h"
-#include "SpacetimeStatusTab.h"
+#include "UI/SpacetimeStatusTab.h"
 
 static const FName UtilsTabName("SpacetimeDBUtils");
 

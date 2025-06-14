@@ -65,7 +65,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
             })
             .OnSelectionChanged_Lambda([this](TSharedPtr<FSpacetimeServerConfig> NewValue, ESelectInfo::Type)
             {
-                if (NewValue.IsValid() && ServerURLTextBox.IsValid()) { ServerURLTextBox->SetText(FText::FromString(NewValue->GetURL())); }
+                if (NewValue.IsValid() && ServerURITextBox.IsValid()) { ServerURITextBox->SetText(FText::FromString(NewValue->GetURI())); }
             })
             [
                 // what’s shown when collapsed
@@ -86,13 +86,13 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
         + SVerticalBox::Slot().AutoHeight().Padding(StandardPadding, StandardPadding)
         [
             SNew(STextBlock)
-            .Text(LOCTEXT("DBUrl", "Server URL:"))
+            .Text(LOCTEXT("DBUrl", "SpacetimeDB instance URI:"))
         ]
         + SVerticalBox::Slot().AutoHeight().Padding(StandardPadding, StandardPadding)
         [
-            SAssignNew(ServerURLTextBox, SEditableTextBox)
+            SAssignNew(ServerURITextBox, SEditableTextBox)
             .Text(SelectedServer.IsValid()
-                      ? FText::FromString(SelectedServer->GetURL())
+                      ? FText::FromString(SelectedServer->GetURI())
                       : LOCTEXT("URLPlaceholder", "http://localhost.com:3000"))
             .HintText(LOCTEXT("DBServerURLHint", "e.g. http://localhost.com:3000"))
         ]
@@ -126,7 +126,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 						return FReply::Handled();
 					}
 
-					if (!ServerURLTextBox.IsValid())
+					if (!ServerURITextBox.IsValid())
 					{
 						FMessageDialog::Open(
 							EAppMsgCategory::Error,
@@ -137,7 +137,7 @@ void SSpacetimeStatusTab::Construct(const FArguments& InArgs)
 					}
 
 					// 2) Grab the text out of the widgets
-					const FString ServerURL = ServerURLTextBox->GetText().ToString();
+					const FString ServerURL = ServerURITextBox->GetText().ToString();
 					const FString DBName    = DatabaseNameTextBox->GetText().ToString();
 
 					// 3) Call into your code-gen helper
@@ -235,7 +235,7 @@ void SSpacetimeStatusTab::ScheduleAsyncRefresh() {
 			}
 
 			ServerOptions.Empty();
-			ServerURLTextBox->SetText(FText::FromString(TEXT("(no servers)")));
+			ServerURITextBox->SetText(FText::FromString(TEXT("(no servers)")));
 			
 			// --- 1) load CLI config and build combo‐list ---
 			if (bCliAvailable && bLoggedIn)
@@ -251,7 +251,7 @@ void SSpacetimeStatusTab::ScheduleAsyncRefresh() {
 					{
 						// TODO: select default server from 'cli.toml'
 						SelectedServer = ServerOptions[0];
-						ServerURLTextBox->SetText(FText::FromString(SelectedServer->GetURL()));
+						ServerURITextBox->SetText(FText::FromString(SelectedServer->GetURI()));
 					}
 				}
 				else

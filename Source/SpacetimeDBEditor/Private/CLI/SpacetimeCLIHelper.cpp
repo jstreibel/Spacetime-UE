@@ -1,6 +1,6 @@
 #include "CLI/SpacetimeCLIHelper.h"
 
-#include "CLI/toml.hpp"
+#include "toml.hpp"
 
 bool FSpacetimeCLIHelper::IsCliAvailable()
 {

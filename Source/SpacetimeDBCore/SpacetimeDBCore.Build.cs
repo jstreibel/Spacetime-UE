@@ -32,7 +32,7 @@ public class SpacetimeDBCore : ModuleRules
 				"Engine",
 				// "Slate",
 				// "SlateCore",
-				
+				"HTTP",
 				"Json",			// Add Unreal JSON parser for std output from Spacetime CLI...
 				"JsonUtilities" // ... and a couple extra helpers
 			}

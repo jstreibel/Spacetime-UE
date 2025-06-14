@@ -18,7 +18,7 @@ struct FSpacetimeServerConfig
 	/** Protocol ("http" or "https") */
 	FString Protocol;
 
-	FString GetURL() const { return FString::Printf(TEXT("%ls://%ls"), *Protocol, *Host); }
+	FString GetURI() const { return FString::Printf(TEXT("%ls://%ls"), *Protocol, *Host); }
 };
 
 /**

@@ -43,5 +43,5 @@ private:
 
 	// Other stuff
 	TSharedPtr<SEditableTextBox> DatabaseNameTextBox;
-	TSharedPtr<SEditableTextBox> ServerURLTextBox;
+	TSharedPtr<SEditableTextBox> ServerURITextBox;
 };
