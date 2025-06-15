@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
+#include "HttpFwd.h"
+#include "Kismet/BlueprintAsyncActionBase.h"
 #include "SpacetimeHttpClient.generated.h"
 
 
@@ -25,15 +26,36 @@ struct FIdentityInfo
 };
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnIdentitySuccess, FIdentityInfo, Identity);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnIdentityError  , FString     , ErrorMessage);
+
 /**
  * 
  */
 UCLASS()
-class SPACETIMEDBCORE_API USpacetimeHttpClient : public UBlueprintFunctionLibrary
+class SPACETIMEDBCORE_API USpacetimeHttpClient : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 
 public:
+	// Blueprint nodes will let users hook these up
+	UPROPERTY(BlueprintAssignable)
+	FOnIdentitySuccess OnSuccess;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnIdentityError OnError;
+	
 	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Http")
-	static bool CreateIdentity(const FString& ServerURI, FIdentityInfo& OutIdentity, FString& OutError);
+	static USpacetimeHttpClient* CreateIdentity(const FString& ServerURI);
+
+	// UObject interface: this is called automatically after the node is created
+	virtual void Activate() override;
+
+private:
+	// Bound to the FHttpRequest’s completion
+	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+	// Stored so we can kick off the request in Activate()
+	FString URL;
+
 };

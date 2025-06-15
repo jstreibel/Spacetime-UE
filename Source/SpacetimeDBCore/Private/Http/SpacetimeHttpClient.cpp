@@ -8,83 +8,68 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Serialization/JsonSerializer.h"
 
-bool USpacetimeHttpClient::CreateIdentity(
-	const FString& ServerURI,
-	FIdentityInfo& OutIdentity,
-	FString& OutError)
+USpacetimeHttpClient* USpacetimeHttpClient::CreateIdentity(const FString& ServerURI)
 {
-	// Synchronization event to block until the HTTP response arrives
-    FEvent* RequestCompleteEvent = FGenericPlatformProcess::GetSynchEventFromPool(false);
+	USpacetimeHttpClient* Node = NewObject<USpacetimeHttpClient>();
+	Node->URL = ServerURI / TEXT("v1/identity");
+	return Node;
+}
 
-    bool bSucceeded = false;
-    FString ErrorMessage;
+void USpacetimeHttpClient::Activate()
+{
+	Super::Activate();
 
-    // Create the HTTP request
-    const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-    HttpRequest->SetVerb(TEXT("POST"));
-    HttpRequest->SetURL( ServerURI / TEXT("v1/identity") );
-    HttpRequest->SetHeader("Content-Type", "application/json");
+	// Build the HTTP request
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Req = FHttpModule::Get().CreateRequest();
+	Req->SetVerb(TEXT("POST"));
+	Req->SetURL(URL);
+	Req->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 
-    // Bind response handler
-    HttpRequest->OnProcessRequestComplete().BindLambda(
-        [&OutIdentity, &bSucceeded, &ErrorMessage, RequestCompleteEvent]
-        (FHttpRequestPtr Req, const FHttpResponsePtr& Resp, const bool bWasSuccessful)
-        {
-            if (!bWasSuccessful || !Resp.IsValid())
-            {
-                ErrorMessage = TEXT("Failed to POST to /v1/identity: network error or invalid response");
-            }
-            else if (Resp->GetResponseCode() != EHttpResponseCodes::Ok)
-            {
-                ErrorMessage = FString::Printf(
-                    TEXT("Unhandled status code: %d"),
-                    Resp->GetResponseCode()
-                );
-            }
-            else
-            {
-                // Parse JSON body
-                TSharedPtr<FJsonObject> JsonObject;
-                TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Resp->GetContentAsString());
+	// Bind our handler
+	Req->OnProcessRequestComplete().BindUObject(this, &USpacetimeHttpClient::HandleResponse);
 
-                if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
-                {
-                    if (JsonObject->HasField(TEXT("identity")))
-                    {
-                        OutIdentity.Id    = JsonObject->GetStringField(TEXT("id"));
-                        OutIdentity.Token = JsonObject->GetStringField(TEXT("token"));
-                        bSucceeded = true;
-                    }
-                    else
-                    {
-                        ErrorMessage = FString::Printf(
-                            TEXT("Response missing 'identity'. Full body: %s"),
-                            *Resp->GetContentAsString()
-                        );
-                    }
-                }
-                else
-                {
-                    ErrorMessage = TEXT("Failed to parse JSON response");
-                }
-            }
+	// Fire and forget: UE will call HandleResponse when done
+	Req->ProcessRequest();
+}
 
-            // Wake up the waiting thread
-            RequestCompleteEvent->Trigger();
-        }
-    );
+void USpacetimeHttpClient::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	// Ensure any Blueprint events fire on the Game Thread
+	AsyncTask(ENamedThreads::GameThread, [this, Response, bWasSuccessful]()
+	{
+		if (!bWasSuccessful || !Response.IsValid())
+		{
+			OnError.Broadcast(TEXT("Network error or invalid response"));
+		}
+		else if (Response->GetResponseCode() != EHttpResponseCodes::Ok)
+		{
+			OnError.Broadcast(FString::Printf(TEXT("HTTP %d"), Response->GetResponseCode()));
+		}
+		else
+		{
+			// Parse JSON
+			const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+			if (TSharedPtr<FJsonObject> Root; FJsonSerializer::Deserialize(Reader, Root) && Root.IsValid())
+			{
+				if (Root->HasField(TEXT("identity")) && Root->HasField(TEXT("token")))
+				{
+					FIdentityInfo Info;
+					Info.Id    = Root->GetStringField(TEXT("identity"));
+					Info.Token = Root->GetStringField(TEXT("token"));
+					OnSuccess.Broadcast(Info);
+				}
+				else
+				{
+					OnError.Broadcast(TEXT("Missing ‘identity’ or ‘token’ in JSON"));
+				}
+			}
+			else
+			{
+				OnError.Broadcast(TEXT("Failed to parse JSON"));
+			}
+		}
 
-    // Send the request and wait
-    HttpRequest->ProcessRequest();
-    RequestCompleteEvent->Wait();
-    FGenericPlatformProcess::ReturnSynchEventToPool(RequestCompleteEvent);
-
-    // Check result
-    if (!bSucceeded)
-    {
-        OutError = ErrorMessage;
-        return false; // empty optional
-    }
-
-    return true;
+		// Let UE gc this object when done
+		SetReadyToDestroy();
+	});
 }

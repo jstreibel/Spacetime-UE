@@ -7,9 +7,9 @@
 
 #include "toml.hpp"
 
-bool USpacetimeAuthSubsystem::LoadIdentity()
+bool USpacetimeAuthSubsystem::LoadIdentity(FIdentityInfo& Identity)
 {
-	const FString Path = GetTokenFilePath();
+	const FString Path = GetIdentityFilePath();
 	if (FString Content; FFileHelper::LoadFileToString(Content, *Path))
 	{
 		const FTCHARToUTF8 Utf8Conv(*Content);
@@ -23,10 +23,10 @@ bool USpacetimeAuthSubsystem::LoadIdentity()
 
 			const auto Id = **Table.get_as<std::string>("id");
 			const auto Token = **Table.get_as<std::string>("token");
-			CachedIdentity.Id = StringCast<TCHAR>(Id.c_str());
-			CachedIdentity.Token = StringCast<TCHAR>(Token.c_str());
+			Identity.Id = StringCast<TCHAR>(Id.c_str());
+			Identity.Token = StringCast<TCHAR>(Token.c_str());
 
-			UE_LOG(LogTemp, Log, TEXT("Parsed TOML → User id=\"%s\""), *CachedIdentity.Id);
+			UE_LOG(LogTemp, Log, TEXT("Parsed TOML → User id=\"%s\""), *Identity.Id);
 		}
 		catch (const toml::parse_error& Err)
 		{
@@ -49,7 +49,7 @@ bool USpacetimeAuthSubsystem::LoadIdentity()
 
 bool USpacetimeAuthSubsystem::SaveIdentity(const FIdentityInfo& Identity)
 {
-	const FString Path = GetTokenFilePath();
+	const FString Path = GetIdentityFilePath();
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
 
 	std::string Id = TCHAR_TO_UTF8(*Identity.Id);
@@ -72,26 +72,15 @@ bool USpacetimeAuthSubsystem::SaveIdentity(const FIdentityInfo& Identity)
 	
 }
 
-void USpacetimeAuthSubsystem::ClearIdentity()
-{
-	CachedIdentity.Id.Empty();
-	CachedIdentity.Token.Empty();
-	
-	IFileManager::Get().Delete(*GetTokenFilePath());
-}
+// void USpacetimeAuthSubsystem::ClearIdentity()
+// {
+// 	CachedIdentity.Id.Empty();
+// 	CachedIdentity.Token.Empty();
+// 	
+// 	IFileManager::Get().Delete(*GetIdentityFilePath());
+// }
 
-bool USpacetimeAuthSubsystem::CreateIdentity(const FString& ServerURI, FString& OutError)
-{
-	if (!USpacetimeHttpClient::CreateIdentity(ServerURI, CachedIdentity, OutError))
-	{
-		OutError = FString::Printf(TEXT("Failed to create identity: %s"), *OutError);
-		return false;
-	}
-
-	return true;
-}
-
-FString USpacetimeAuthSubsystem::GetTokenFilePath()
+FString USpacetimeAuthSubsystem::GetIdentityFilePath()
 {
 	FString Base = GetUserDataBaseDir();
 	FString Dir  = FPaths::Combine(Base, TEXT("SpacetimeDB"));

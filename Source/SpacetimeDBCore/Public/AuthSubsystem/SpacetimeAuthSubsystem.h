@@ -20,28 +20,24 @@ class SPACETIMEDBCORE_API USpacetimeAuthSubsystem : public UBlueprintFunctionLib
 public:	
 	/** Loads the token file (if present); returns true if one was loaded. */
 	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Auth")
-	bool LoadIdentity();
+	static bool LoadIdentity(FIdentityInfo& Identity);
 
 	/** Persists the supplied token string to disk. */
 	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Auth")
-	bool SaveIdentity(const FIdentityInfo& Identity);
+	static bool SaveIdentity(const FIdentityInfo& Identity);
 
-	/** Returns the in-memory token (empty if none loaded). */
-	UFUNCTION(BlueprintPure, Category="SpacetimeDB|Auth")
-	FIdentityInfo GetIdentity() const { return CachedIdentity; }
-
-	/** Deletes the file + clears cache, forcing a fresh login next time. */
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Auth")
-	void ClearIdentity();
+	// /** Returns the in-memory token (empty if none loaded). */
+	// UFUNCTION(BlueprintPure, Category="SpacetimeDB|Auth")
+	// static FIdentityInfo GetIdentity() const { return CachedIdentity; }
 
 	/** Deletes the file + clears cache, forcing a fresh login next time. */
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Auth")
-	bool CreateIdentity(const FString& ServerURI, FString& OutError);
+	// UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Auth")
+	// void ClearIdentity();
 
 private:
-	static FString GetTokenFilePath();
+	static FString GetIdentityFilePath();
 	static FString GetUserDataBaseDir();
 
 	/** Holds the token for this session. */
-	FIdentityInfo CachedIdentity;
+	// FIdentityInfo CachedIdentity;
 };
