@@ -84,6 +84,7 @@ namespace SATS
         }
 
         UE_LOG(LogTemp, Warning, TEXT("Undealt with Sats BuiltIn type"));
+        return "<unknown>";
     };
 
     inline FString TypeToString(const EType Kind)
@@ -290,6 +291,7 @@ namespace SATS
             TSharedPtr<FAlgebraicType> AlgebraicType;
         };
         TArray<FField> Elements;
+        
     };
 
     struct FSumType {
