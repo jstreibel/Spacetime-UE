@@ -300,11 +300,11 @@ namespace SATS
     };
 
     struct FAlgebraicType {
-        EType    Tag;
-        FProductType Product;    // valid if kind==Product
-        FSumType     Sum;        // valid if kind==Sum
-        FBuiltinType Builtin;    // valid if kind==Builtin: e.g. "Int", "String"
-        FRefType     Ref;        // valid if kind==Ref
+        EType    Type;
+        FProductType Product;    // valid if Type==Product
+        FSumType     Sum;        // valid if Type==Sum
+        FBuiltinType Builtin;    // valid if Type==Builtin: e.g. "Int", "String"
+        FRefType     Ref;        // valid if Type==Ref
     };
     
     // --- TypeSpace and TypeEntry ---

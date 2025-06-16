@@ -22,27 +22,27 @@ FString GenerateBaseNameForInlineTaggedUnion()
 	return "Sum" + IntToString(Unnamed++);
 }
 
-FString GenerateNameForAnonymousAttribute()
+FString GenerateNameForAnonymousDataMember()
 {
 	static int32 Unnamed = 0;
 
 	return "AnonymousField_" + FString::FromInt(Unnamed++);
 }
 
-FString GetAttributeName(const SATS::FOptionalString& Name)
+FString GetDataMemberName(const SATS::FOptionalString& Name)
 {
 	if (Name.IsSet()) return Name.GetValue();
 
-	return GenerateNameForAnonymousAttribute();
+	return GenerateNameForAnonymousDataMember();
 }
 
 void WarnTypes(const SATS::EType Tag)
 {
 	if (!SATS::IsReflectedInUnreal(Tag))
 	{
-		FString UEType = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), true);
-		FString UETypeAlt = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false);
-		FString SpacetimeBuiltIn = SATS::TypeToString(Tag);
+		const FString UEType = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), true);
+		const FString UETypeAlt = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false);
+		const FString SpacetimeBuiltIn = SATS::TypeToString(Tag);
 
 		UE_LOG(LogTemp, Warning,
 			TEXT("[spacetime] Mapping Spacetime type '%s' to Unreal '%s'; "
@@ -63,7 +63,7 @@ void AddMissingBuiltIns(FHeader& Header)
 	{
 		FStruct UInt256;
 		UInt256.Name = TEXT("FUInt256");
-		UInt256.Attributes.Add({"Value", "FString"});
+		UInt256.DataMembers.Add({"Value", "FString"});
 		UInt256.bIsReflected = true;
 		UInt256.Specifiers.Add("BlueprintType");
 		UInt256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
@@ -75,7 +75,7 @@ void AddMissingBuiltIns(FHeader& Header)
 	{
 		FStruct Int256;
 		Int256.Name = TEXT("FInt256");
-		Int256.Attributes.Add({"Value", "FString"});
+		Int256.DataMembers.Add({"Value", "FString"});
 		Int256.bIsReflected = true;
 		Int256.Specifiers.Add("BlueprintType");
 		Int256.MetadataSpecifiers.Add("Category", "\"SpacetimeDB\"");
@@ -97,7 +97,7 @@ void BuildElementList(
 		FHeader::FHeaderElement E;
 		E.Type  = FHeader::FHeaderElement::TaggedUnion;
 		E.Index = i;
-		E.Name  = TU.BaseName;
+		E.Name  = TU.Name;
 		// collect any variant‐types that refer to other elements:
 		for (auto& Attr : TU.Variants)
 			E.Depends.Add(Attr.Type);
@@ -112,7 +112,7 @@ void BuildElementList(
 		E.Type  = FHeader::FHeaderElement::Struct;
 		E.Index = i;
 		E.Name  = S.Name;
-		for (auto& Attr : S.Attributes)
+		for (auto& Attr : S.DataMembers)
 			E.Depends.Add(Attr.Type);
 		OutElements.Add(MoveTemp(E));
 	}
@@ -121,13 +121,13 @@ void BuildElementList(
 bool FTypespaceStructIRBuilder::GenerateNewStruct(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& ExportedTypes,
-	const SATS::FOptionalString& StructName,
+	const FString& StructName,
 	const SATS::FProductType& Product,
 	FStruct& OutStruct,
-	FHeader &OutInlineHeader,
-	FString &OutError)
+	FHeader& OutInlineHeader,
+	FString& OutError)
 {	
-	OutStruct.Name = StructName.IsSet() ? StructName.GetValue() : GenerateNameForInlineStruct();
+	OutStruct.Name = StructName;
 
 	const auto UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 	
@@ -136,90 +136,89 @@ bool FTypespaceStructIRBuilder::GenerateNewStruct(
 	OutStruct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 
 	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Struct: %s"), *OutStruct.Name);
-	for (const auto& [AttributeOptionalName, AttributeAlgebraicType] : Product.Elements)
+	for (const auto& [DataMemberOptionalName, DataMemberAlgebraicType] : Product.Elements)
 	{
-		if (!AttributeAlgebraicType.IsValid())
+		if (!DataMemberAlgebraicType.IsValid())
 		{
 			OutError = FString::Printf(TEXT("invalid pointer while generating struct %s"), *OutStruct.Name);
 			return false;
 		}
 		
-		const auto RawName = GetAttributeName(AttributeOptionalName);
-		const auto Tag = AttributeAlgebraicType->Tag;
+		const auto RawName = GetDataMemberName(DataMemberOptionalName);
+		const auto AlgebraicKind = DataMemberAlgebraicType->Type;
 		
-		if (Tag == SATS::EType::Product)
+		if (AlgebraicKind == SATS::EType::Product)
 		{
-			const auto Anonymous = SATS::FOptionalString();
-			const auto &ProductElement = AttributeAlgebraicType->Product;
+			const auto DataMemberName = FCommon::ToPascalCase(RawName);
+			const auto DataMemberType = "F" + DataMemberName;
+			
+			const auto &ProductElement = DataMemberAlgebraicType->Product;
 			FStruct NewStruct;
-			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutInlineHeader, OutError))
+			if (!GenerateNewStruct(ModuleName, ExportedTypes, DataMemberType, ProductElement, NewStruct, OutInlineHeader, OutError))
 			{
 				return false;
 			}
-
-			const auto NewStructName = FCommon::ToPascalCase(RawName);
-			OutStruct.Attributes.Add({
-				NewStructName,
-				NewStruct.Name});
+			OutStruct.DataMembers.Add({DataMemberName, DataMemberType});
+			
 			OutInlineHeader.AddStruct(NewStruct);
 
 			continue;
 		}
 
-		if (Tag == SATS::EType::Sum)
+		if (AlgebraicKind == SATS::EType::Sum)
 		{
-			const auto Anonymous = SATS::FOptionalString();
-			const auto &SumElement = AttributeAlgebraicType->Sum;
+			const auto DataMemberName = FCommon::ToPascalCase(RawName);
+			const auto DataMemberType = "F" + DataMemberName;
+			
+			const auto &SumElement = DataMemberAlgebraicType->Sum;
 			FTaggedUnion NewTaggedUnion;
 			if (!GenerateNewTaggedUnion(
 					ModuleName, ExportedTypes,
-					Anonymous,  SumElement,
+					DataMemberType,  SumElement,
 					NewTaggedUnion, OutInlineHeader,
 					OutError))
 			{
 				return false;
 			}
-
-			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
 			
-			OutStruct.Attributes.Add({NewTaggedUnionName,  "F" + NewTaggedUnion.BaseName});
+			OutStruct.DataMembers.Add({DataMemberName,  DataMemberType});
 			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
 
 			continue;
 		}
 
-		if (Tag == SATS::EType::Ref)
+		if (AlgebraicKind == SATS::EType::Ref)
 		{
-			const auto Index = AttributeAlgebraicType->Ref.Index;
+			const auto Index = DataMemberAlgebraicType->Ref.Index;
 			const auto& Referenced = ExportedTypes[Index];
 
-			FAttribute Attribute;
-			Attribute.Name = FCommon::ToPascalCase(RawName);
-			Attribute.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
-			Attribute.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Tag);
-			Attribute.Comment = RawName + ": " + Referenced.Name.Name;
+			FDataMember DataMember;
+			DataMember.Name = FCommon::ToPascalCase(RawName);
+			DataMember.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
+			DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(AlgebraicKind);
+			DataMember.Comment = RawName + ": " + Referenced.Name.Name;
 			
-			OutStruct.Attributes.Add(Attribute);
+			OutStruct.DataMembers.Add(DataMember);
 			
 			continue;
 		}
 
-		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
+		if (SATS::IsBuiltinWithNativeRepresentation(AlgebraicKind))
 		{
-			FAttribute Attribute;
-			Attribute.Name = FCommon::ToPascalCase(RawName);
-			Attribute.Type = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false);
-			Attribute.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Tag);
-			Attribute.Comment = RawName + ": " + SATS::TypeToString(Tag);
+			FDataMember DataMember;
+			DataMember.Name = FCommon::ToPascalCase(RawName);
+			DataMember.Type = SATS::MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind), false);
+			DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(AlgebraicKind);
+			DataMember.Comment = RawName + ": " + SATS::TypeToString(AlgebraicKind);
 			
-			OutStruct.Attributes.Add(Attribute);
+			OutStruct.DataMembers.Add(DataMember);
 
-			WarnTypes(Tag);
+			WarnTypes(AlgebraicKind);
 
 			continue;
 		}
 
-		if (Tag == SATS::EType::Invalid)
+		if (AlgebraicKind == SATS::EType::Invalid)
 		{
 			UE_LOG(LogTemp, Error, TEXT("Invalid SATS-JSON type found in Typespace codegen"));
 		}
@@ -234,43 +233,47 @@ bool FTypespaceStructIRBuilder::GenerateNewStruct(
 bool FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
 	const FString& ModuleName,
 	const TArray<SATS::FExportedType>& ExportedTypes,
-	const SATS::FOptionalString& UnionName,
+	const FString& UnionName,
 	const SATS::FSumType& Sum,
 	FTaggedUnion& OutTaggedUnion,
 	FHeader &OutInlineHeader,
 	FString &OutError)
 {
-	OutTaggedUnion.BaseName = UnionName.IsSet() ? UnionName.GetValue() : GenerateBaseNameForInlineTaggedUnion();
+	// OutTaggedUnion.BaseName = UnionName.IsSet() ? UnionName.GetValue() : GenerateBaseNameForInlineTaggedUnion();
+	OutTaggedUnion.Name = UnionName;
 
 	const auto UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 	
 	OutTaggedUnion.bIsReflected = true;
 	OutTaggedUnion.SubCategory = UnrealFormattedModuleName;
 
-	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Tagged Union: F%s"), *OutTaggedUnion.BaseName);
+	// const auto Anonymous = SATS::FOptionalString();
+	
+	UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating Tagged Union: F%s"), *OutTaggedUnion.Name);
 	for (const auto& [VariantOptionalName, VariantAlgebraicType] : Sum.Options)
 	{
 		if (!VariantAlgebraicType.IsValid())
 		{
-			OutError = FString::Printf(TEXT("invalid pointer while generating tagged union (Algebraic Sum) F%s"), *OutTaggedUnion.BaseName);
+			OutError = FString::Printf(TEXT("invalid pointer while generating tagged union (Algebraic Sum) F%s"), *OutTaggedUnion.Name);
 			return false;
 		}
 		
-		const auto RawName = GetAttributeName(VariantOptionalName);
-		const auto Tag = VariantAlgebraicType->Tag;
+		const auto RawName = GetDataMemberName(VariantOptionalName);
+		const auto Tag = VariantAlgebraicType->Type;
 		
 		if (Tag == SATS::EType::Product)
 		{
-			const auto Anonymous = SATS::FOptionalString();
+			const auto DataMemberName = FCommon::ToPascalCase(RawName);
+			const auto DataMemberType = "F" + DataMemberName;
+			
 			const auto &ProductElement = VariantAlgebraicType->Product;
 			FStruct NewStruct;
-			if (!GenerateNewStruct(ModuleName, ExportedTypes, Anonymous, ProductElement, NewStruct, OutInlineHeader, OutError))
+			if (!GenerateNewStruct(ModuleName, ExportedTypes, DataMemberType, ProductElement, NewStruct, OutInlineHeader, OutError))
 			{
 				return false;
 			}
-
-			const auto NewStructName = FCommon::ToPascalCase(RawName);
-			OutTaggedUnion.Variants.Add({NewStructName, NewStruct.Name});
+			
+			OutTaggedUnion.Variants.Add({DataMemberName, DataMemberType});
 			OutTaggedUnion.OptionTags.Add(NewStruct.Name);
 			OutInlineHeader.AddStruct(NewStruct);
 
@@ -279,17 +282,18 @@ bool FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
 
 		if (Tag == SATS::EType::Sum)
 		{
-			const auto Anonymous = SATS::FOptionalString();
+			const auto DataMemberName = FCommon::ToPascalCase(RawName);
+			const auto DataMemberType = "F" + DataMemberName;
+			
 			const auto &SumElement = VariantAlgebraicType->Sum;
 			FTaggedUnion NewTaggedUnion;
-			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, Anonymous, SumElement, NewTaggedUnion, OutInlineHeader, OutError))
+			if (!GenerateNewTaggedUnion(ModuleName, ExportedTypes, DataMemberType, SumElement, NewTaggedUnion, OutInlineHeader, OutError))
 			{
 				return false;
 			}
-
-			const auto NewTaggedUnionName = FCommon::ToPascalCase(RawName);
-			OutTaggedUnion.Variants.Add({NewTaggedUnion.BaseName, "F" + NewTaggedUnionName});
-			OutTaggedUnion.OptionTags.Add(NewTaggedUnion.BaseName);
+			
+			OutTaggedUnion.Variants.Add({DataMemberName, DataMemberType});
+			OutTaggedUnion.OptionTags.Add(DataMemberType);
 			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
 
 			continue;
@@ -302,7 +306,7 @@ bool FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
 			const FString Name = FCommon::ToPascalCase(RawName);
 			const FString Type = Referenced.Name.Name;
 			
-			FAttribute Variant;
+			FDataMember Variant;
             Variant.Name = Name;
             Variant.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
             Variant.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Tag);
@@ -315,7 +319,7 @@ bool FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
 
 		if (SATS::IsBuiltinWithNativeRepresentation(Tag))
 		{
-			FAttribute Variant;
+			FDataMember Variant;
             Variant.Name = FCommon::ToPascalCase(RawName);
             Variant.Type = SATS::MapBuiltinToUnreal(SATS::TypeToString(Tag), false);
             Variant.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Tag);
@@ -368,7 +372,7 @@ bool FTypespaceStructIRBuilder::BuildTypesHeaders(
 		const auto Index = Type.TypeRef;
 		const auto &AlgebraicType = Typespace.TypeEntries[Index];
 
-		if (AlgebraicType.Tag != SATS::EType::Product)
+		if (AlgebraicType.Type != SATS::EType::Product)
 		{
 			OutError = FString::Printf(TEXT("Header generation for types in 'typespace' other than C++ structs "
 				"(i.e. 'Product' Sats-Type) not implemented - problem occured with type '%i'"), Index);
@@ -433,7 +437,7 @@ bool FTypespaceStructIRBuilder::BuildTypespaceHeader_Deprecated(
 		const auto Index = Type.TypeRef;
 		const auto &AlgebraicType = Typespace.TypeEntries[Index];
 
-		if (AlgebraicType.Tag != SATS::EType::Product)
+		if (AlgebraicType.Type != SATS::EType::Product)
 		{
 			OutError = FString::Printf(TEXT("Header generation for types in 'typespace' other than C++ structs "
 				"(i.e. 'Product' Sats-Type) not implemented - problem occured with type '%i'"), Index);

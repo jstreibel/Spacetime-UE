@@ -51,7 +51,7 @@ FString FSpacetimeDBCodeGen::ToPascalCase(const FString& InString)
 
 FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind)
 {
-    switch (AlgebraicKind.Tag)
+    switch (AlgebraicKind.Type)
     {
     case SATS::EType::Product:  return "// Product placeholder";
     case SATS::EType::Sum:      return "// Sum placeholder";
@@ -60,7 +60,7 @@ FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebr
     // case BuiltIn:
     case SATS::EType::Array:    return TEXT("// TArray placeholder");
     case SATS::EType::Map:      return TEXT("// TMap placeholder");
-    default:   /* BuiltIn */    return SATS::MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Tag), false);
+    default:   /* BuiltIn */    return SATS::MapBuiltinToUnreal(SATS::TypeToString(AlgebraicKind.Type), false);
     }    
 }
 
@@ -81,7 +81,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
         // Lookup product definition
         const int ProductTypeRef = Table.ProductTypeRef;
         const auto& ProductType = ModuleDef.Typespace.TypeEntries[ProductTypeRef];
-        if (ProductType.Tag != SATS::EType::Product)
+        if (ProductType.Type != SATS::EType::Product)
         {
             OutError = TEXT("Table type is expected to be a SATS Product type.");
             return false;
@@ -169,11 +169,11 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
 
             FString UEType;
             
-            if (IsBuiltinWithNativeRepresentation(AlgebraicType.Tag))
+            if (IsBuiltinWithNativeRepresentation(AlgebraicType.Type))
             {
                 UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
             }
-            else if (AlgebraicType.Tag == SATS::EType::Ref)
+            else if (AlgebraicType.Type == SATS::EType::Ref)
             {
                 const auto Index = AlgebraicType.Ref.Index;
                 const auto TypeName = SortedRefs[Index].Name.Name;
@@ -220,7 +220,7 @@ void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
     const auto TaggedUnionOptionProperty = TabString +
         FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\")\n"),
             *TaggedUnion.SubCategory);
-    const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.BaseName);
+    const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.Name.RightChop(1));
     
     OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
     OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
@@ -234,7 +234,7 @@ void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
     OutHeaderCode += FString::Printf(TEXT("};\n"));
     OutHeaderCode += FString::Printf(TEXT("\n"));
     OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
-    OutHeaderCode += FString::Printf(TEXT("struct F%ls\n"), *TaggedUnion.BaseName);
+    OutHeaderCode += FString::Printf(TEXT("struct %ls\n"), *TaggedUnion.Name);
     OutHeaderCode += FString::Printf(TEXT("{\n"));
     OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n"));
     OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
@@ -352,7 +352,7 @@ bool GRenderHeaderToCode(const FHeader& Header, FString &OutCode, FString &OutEr
     TArray<FHeader::FHeaderElement> Elements;
     if (TopoSort)
     {
-        Elements = Header.TopoSortElements();
+        Elements = Header.GetTopoSortedElements();
     }
     else
     {

@@ -304,7 +304,7 @@ bool FCommon::ResolveAlgebraicType(
         return false;
     }
 
-	AlgebraicOut.Tag = SatsKind;
+	AlgebraicOut.Type = SatsKind;
 
 	if (SatsKind == SATS::EType::Invalid)
 	{
@@ -385,7 +385,7 @@ bool FCommon::ResolveAlgebraicType(
         }
 
         // We can safely cast because the enums are properly mapped in their definition
-        AlgebraicOut.Tag = static_cast<SATS::EType>(Builtin.Tag);
+        AlgebraicOut.Type = static_cast<SATS::EType>(Builtin.Tag);
         AlgebraicOut.Builtin = MoveTemp(Builtin);
         return true;
     }

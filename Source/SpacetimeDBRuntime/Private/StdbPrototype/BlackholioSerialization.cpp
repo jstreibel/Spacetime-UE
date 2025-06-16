@@ -2,10 +2,11 @@
 
 #include "StdbPrototype/BlackholioSerialization.h"
 
-#include "BlackholioExportedTypes.stdbgen.h"
+// #include "BlackholioExportedTypes.stdbgen.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 
+/*
 void UBlackholioSerialization::SerializeCircleDecayTimer(const FCircleDecayTimer& Timer, FString& OutJsonPayload)
 {
 	const auto Writer = TJsonWriterFactory<>::Create(&OutJsonPayload);
@@ -51,3 +52,5 @@ void UBlackholioSerialization::SerializeCircleDecayTimer(const FCircleDecayTimer
 void UBlackholioSerialization::DeserializeCircleDecayTimer(const FCircleDecayTimer& Timer)
 {
 }
+
+*/

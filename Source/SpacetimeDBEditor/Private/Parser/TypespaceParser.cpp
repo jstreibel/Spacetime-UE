@@ -35,7 +35,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
         
         if (WrapperObj->HasField(TEXT("Product")))
         {
-            TypeEntry.Tag = SATS::EType::Product;
+            TypeEntry.Type = SATS::EType::Product;
 
             // Check consistency: in SATS, 'Product' is a tag for a single 'elements' Array. 
             const TSharedPtr<FJsonObject> ProductObj = WrapperObj->GetObjectField(TEXT("Product"));
@@ -63,7 +63,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             }
         }    
         else if (WrapperObj->HasField(TEXT("Sum"))) {
-            TypeEntry.Tag = SATS::EType::Sum;
+            TypeEntry.Type = SATS::EType::Sum;
 
             // Check consistency: in SATS 'Sum' is a tag for a single 'options' or 'branches' array.
             // For 'branches', we normalize it to 'options'.

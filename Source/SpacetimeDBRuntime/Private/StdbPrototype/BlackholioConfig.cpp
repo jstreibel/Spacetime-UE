@@ -1,2 +1,2 @@
-#include "StdbGenerated/BlackholioConfig.stdbgen.h"
+#include "StdbPrototype/BlackholioConfig.h"
 

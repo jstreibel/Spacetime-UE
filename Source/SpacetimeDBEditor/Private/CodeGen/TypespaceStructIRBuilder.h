@@ -11,37 +11,54 @@ struct FFunction
 	FString ReturnType;
 };
 
-struct FAttribute
+struct FDataMember
 {
 	FString Name;
 	FString Type;
 	SATS::FOptionalString DefaultValue;
 	TOptional<FString> Comment;
+
+	auto operator == (const FDataMember& DataMember) const
+	{
+		return Name == DataMember.Name
+			&& Type == DataMember.Type;
+	}
 };
 
 struct FTaggedUnion
 {
 	TArray<FString> OptionTags;
 
-	FString BaseName={};
-	TArray<FAttribute> Variants={};
+	FString Name={};
+	TArray<FDataMember> Variants={};
 	
 	bool bIsReflected;
 	FString SubCategory;
 
 	TOptional<FString> Comment;
+	bool operator==(const FTaggedUnion& TaggedUnion) const
+	{
+		return Name   == TaggedUnion.Name
+			&& Variants   == TaggedUnion.Variants
+			&& OptionTags == TaggedUnion.OptionTags;
+	};
 };
 
 struct FStruct
 {	
 	FString Name={};
-	TArray<FAttribute> Attributes={};
+	TArray<FDataMember> DataMembers={};
 	
 	bool bIsReflected=false;
 	TArray<FString> Specifiers={};
 	TMap<FString, FString> MetadataSpecifiers={};
 
 	TOptional<FString> Comment;
+	auto operator == (const FStruct& Struct) const
+	{
+		return Name		   == Struct.Name
+			&& DataMembers == Struct.DataMembers;
+	};
 };
 
 struct FHeader
@@ -68,13 +85,25 @@ struct FHeader
 	TArray<FInclude> Includes;
 	FString ApiMacro;
 
+	/**
+	 * Adds a structure to the header if it is not already present.
+	 * The structure is added along with its dependencies and is represented
+	 * as a header element in a topologically sorted collection for further processing.
+	 *
+	 * @param Struct The structure to be added. This includes its name, data members, and metadata.
+	 */
 	void AddStruct(FStruct Struct)
 	{
+		for (const auto &MemberStruct : Structs)
+		{
+			if (MemberStruct == Struct) return;
+		}
+		
 		FHeaderElement Element;
 		Element.Type = FHeaderElement::Struct;
 		Element.Index = Structs.Num();
 		Element.Name = Struct.Name;
-		for (const auto &Attribute : Struct.Attributes)
+		for (const auto &Attribute : Struct.DataMembers)
 		{
 			Element.Depends.Add(Attribute.Type);
 		}
@@ -85,10 +114,15 @@ struct FHeader
 
 	void AddTaggedUnion(FTaggedUnion TaggedUnion)
 	{
+		for (const auto &MemberUnion : TaggedUnions)
+		{
+			if (MemberUnion == TaggedUnion) return;
+		}
+		
 		FHeaderElement Element;
 		Element.Type = FHeaderElement::TaggedUnion;
 		Element.Index = TaggedUnions.Num();
-		Element.Name = "F" + TaggedUnion.BaseName;
+		Element.Name = "F" + TaggedUnion.Name;
 		for (const auto &Attribute : TaggedUnion.Variants)
 		{
 			Element.Depends.Add(Attribute.Type);
@@ -98,19 +132,12 @@ struct FHeader
 		TaggedUnions.Add(TaggedUnion);
 	}
 
-	const auto& GetTaggedUnions() const
-	{
-		return TaggedUnions;
-	}
-	const auto& GetStructs() const
-	{
-		return Structs;
-	}
+	const auto& GetTaggedUnions() const{ return TaggedUnions; }
+	const auto& GetStructs() const{ return Structs; }
 	const TArray<FHeaderElement>& GetHeaderElements() const { return HeaderElements; }
 
-	auto TopoSortElements() const
+	auto GetTopoSortedElements() const
 	{
-
 		const int32 N = HeaderElements.Num();
 		// map name -> position in In[]
 		TMap<FString,int32> NameToPos;
@@ -195,7 +222,7 @@ private:
 	static bool GenerateNewTaggedUnion(
 		const FString& ModuleName,
 		const TArray<SATS::FExportedType>& ExportedTypes,
-		const SATS::FOptionalString& UnionName,
+		const FString& UnionName,
 		const SATS::FSumType& Sum,
 		FTaggedUnion& OutTaggedUnion,
 		FHeader &OutInlineHeader, FString &OutError);
@@ -203,7 +230,7 @@ private:
 	static bool GenerateNewStruct(
 		const FString& ModuleName,
 		const TArray<SATS::FExportedType>& ExportedTypes,
-		const SATS::FOptionalString& StructName,
+		const FString& StructName,
 		const SATS::FProductType& Product,
 		FStruct& OutStruct,
 		FHeader &OutInlineHeader,
