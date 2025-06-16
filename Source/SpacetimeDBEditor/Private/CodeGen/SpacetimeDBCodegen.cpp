@@ -196,9 +196,9 @@ void GOutputTaggedUnion(
     }
     OutHeaderCode += FString::Printf(TEXT("};\n"));
     OutHeaderCode += FString::Printf(TEXT("\n"));
-    OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\", meta=(SerializationKind=\"Sum\"))\n"),
+    OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"),
         *TaggedUnion.SubCategory);
-    OutHeaderCode += FString::Printf(TEXT("struct %ls F%ls \n"), *ApiMacroString, *TaggedUnion.Name);
+    OutHeaderCode += FString::Printf(TEXT("struct %ls F%ls : public FSpacetimeSum\n"), *ApiMacroString, *TaggedUnion.Name);
     OutHeaderCode += FString::Printf(TEXT("{\n"));
     OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n\n"));
     OutHeaderCode += TabString + FString::Printf(TEXT("// The current active payload\n"));
@@ -250,9 +250,10 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
 
         OutHeaderCode.RemoveFromEnd(", ");
 
-        OutHeaderCode += ", meta=(SerializationKind=\"Product\"))\n";
+        OutHeaderCode += ")\n";
     }
-    OutHeaderCode += TEXT("struct ") + ApiMacro + " " + Name + " {\n\n";
+    OutHeaderCode += TEXT("struct ") + ApiMacro + " " + Name + " : public FSpacetimeProduct\n"
+    "{\n\n";
 
     if (bIsReflected)
     {
