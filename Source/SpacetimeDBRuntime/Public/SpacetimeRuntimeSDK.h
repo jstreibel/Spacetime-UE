@@ -23,7 +23,7 @@ struct FSpacetimeProduct
 };
 
 
-/* Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection. */
+/* Provides SATS-JSON U256 support; Unreal UBT lacks uint128 reflection. */
 USTRUCT(BlueprintType, Category="SpacetimeDB")
 struct SPACETIMEDBRUNTIME_API FUInt128 : public FSpacetimeProduct {
 
@@ -68,7 +68,11 @@ class SPACETIMEDBRUNTIME_API USpacetimeSerialization : public UObject
 	GENERATED_BODY()
 
 public:
-	// UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-	// static FString SerializeToJson(const UScriptStruct* SpacetimeType, FString &JsonPayload);
-	
+	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
+	static FString SerializeProductToJson(const FSpacetimeProduct& SpacetimeProduct, FString &JsonPayload);
+
+	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
+	static FString SerializeSumToJson(const FSpacetimeSum& SpacetimeSum, FString &JsonPayload);
+
+		
 };
