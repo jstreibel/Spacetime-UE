@@ -210,15 +210,6 @@ public:
 		FString& OutError);
 
 private:
-	/*
-	 * Builds a topologically sorted header elements list
-	 */
-	static bool BuildAndSortElementList(
-		const TArray<FTaggedUnion>& TaggedUnions,
-		const TArray<FStruct>& Structs,
-		TArray<FHeader::FHeaderElement>& OutElements,
-		FString& OutError);
-	
 	static bool GenerateNewTaggedUnion(
 		const FString& ModuleName,
 		const TArray<SATS::FExportedType>& ExportedTypes,
@@ -236,13 +227,5 @@ private:
 		FHeader &OutInlineHeader,
 		FString &OutError);
 
-public:
-	static bool BuildTypespaceHeader_Deprecated(
-		const FString& ModuleName,
-		const FString& HeaderBaseName,
-		const SATS::FTypespace& Typespace,
-		const TArray<SATS::FExportedType>& ExportedTypes,
-		FHeader& OutHeader,
-		FString& OutError);
 	
 };

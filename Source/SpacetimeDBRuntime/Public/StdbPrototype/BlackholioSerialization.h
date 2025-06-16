@@ -3,13 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BlackholioExportedTypes.stdbgen.h"
+// #include "BlackholioExportedTypes.stdbgen.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "BlackholioSerialization.generated.h"
 
-/**
- * 
- */
+/*
 UCLASS()
 class SPACETIMEDBRUNTIME_API UBlackholioSerialization : public UBlueprintFunctionLibrary
 {
@@ -22,3 +20,4 @@ public:
 	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Blackholio")
 	static void DeserializeCircleDecayTimer(const FCircleDecayTimer& Timer);
 };
+*/

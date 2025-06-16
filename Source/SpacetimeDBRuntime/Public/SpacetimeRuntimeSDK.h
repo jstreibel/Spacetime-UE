@@ -6,27 +6,28 @@
 #include "UObject/Object.h"
 #include "SpacetimeRuntimeSDK.generated.h"
 
-/**
- * 
- */
-UCLASS()
-class SPACETIMEDBRUNTIME_API UAlgebraicSum : public UObject
-{
-	GENERATED_BODY()
 
-public:
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-	void Serialize(FString& OutJsonPayload) const;
+/* Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection. */
+USTRUCT(BlueprintType, Category="SpacetimeDB")
+struct SPACETIMEDBRUNTIME_API FUInt256 {
+
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite)
+	FString Value;
+
 };
 
-UCLASS()
-class SPACETIMEDBRUNTIME_API UAlgebraicProduct : public UObject
-{
+
+/* Provides SATS-JSON I256 support; Unreal UBT lacks int256 reflection. */
+USTRUCT(BlueprintType, Category="SpacetimeDB")
+struct SPACETIMEDBRUNTIME_API FInt256 {
+
 	GENERATED_BODY()
 
-public:
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-	void Serialize(FString& OutJsonPayload) const;
+	UPROPERTY(BlueprintReadWrite)
+	FString Value;
+
 };
 
 

@@ -168,7 +168,7 @@ bool FTypespaceStructIRBuilder::GenerateNewStruct(
 		if (AlgebraicKind == SATS::EType::Sum)
 		{
 			const auto DataMemberName = FCommon::ToPascalCase(RawName);
-			const auto DataMemberType = "F" + DataMemberName;
+			const auto DataMemberType = DataMemberName;
 			
 			const auto &SumElement = DataMemberAlgebraicType->Sum;
 			FTaggedUnion NewTaggedUnion;
@@ -181,7 +181,7 @@ bool FTypespaceStructIRBuilder::GenerateNewStruct(
 				return false;
 			}
 			
-			OutStruct.DataMembers.Add({DataMemberName,  DataMemberType});
+			OutStruct.DataMembers.Add({DataMemberName,  "F" + DataMemberType});
 			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
 
 			continue;
@@ -283,7 +283,7 @@ bool FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
 		if (Tag == SATS::EType::Sum)
 		{
 			const auto DataMemberName = FCommon::ToPascalCase(RawName);
-			const auto DataMemberType = "F" + DataMemberName;
+			const auto DataMemberType = DataMemberName;
 			
 			const auto &SumElement = VariantAlgebraicType->Sum;
 			FTaggedUnion NewTaggedUnion;
@@ -292,7 +292,7 @@ bool FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
 				return false;
 			}
 			
-			OutTaggedUnion.Variants.Add({DataMemberName, DataMemberType});
+			OutTaggedUnion.Variants.Add({DataMemberName, "F" + DataMemberType});
 			OutTaggedUnion.OptionTags.Add(DataMemberType);
 			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
 
@@ -358,14 +358,15 @@ bool FTypespaceStructIRBuilder::BuildTypesHeaders(
 	const FString ExportedTypesHeaderName = FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName);
 	const FString InlineTypesHeaderName = FSpacetimeConfig::MakeInlineTypesCodeFileName(ModuleName);
 
+	OutInline.ApiMacro = FSpacetimeConfig::ApiMacroString;
 	OutInline.Includes.Add({"CoreMinimal.h", true});
+	OutInline.Includes.Add({"SpacetimeRuntimeSDK.h", true});
 	OutInline.Includes.Add({InlineTypesHeaderName + ".generated.h", true});
-	
+
+	OutExported.ApiMacro = FSpacetimeConfig::ApiMacroString;
 	OutExported.Includes.Add({"CoreMinimal.h", true});
 	OutExported.Includes.Add({InlineTypesHeaderName + ".h", true});
 	OutExported.Includes.Add({ExportedTypesHeaderName + ".generated.h", true});
-
-	AddMissingBuiltIns(OutInline);
 
 	for (const auto& Type : ExportedTypes)
 	{
@@ -395,70 +396,5 @@ bool FTypespaceStructIRBuilder::BuildTypesHeaders(
 		OutExported.AddStruct(Struct);
 	}
 		
-	return true;
-}
-
-bool FTypespaceStructIRBuilder::BuildTypespaceHeader_Deprecated(
-	const FString& ModuleName,
-	const FString& HeaderBaseName,
-	const SATS::FTypespace& Typespace,
-	const TArray<SATS::FExportedType>& ExportedTypes,
-	FHeader& OutHeader,
-	FString& OutError)
-{
-	TArray<SATS::FExportedType> Types = ExportedTypes;
-	Algo::Sort(Types, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
-	{
-		return EntryA.TypeRef < EntryB.TypeRef;
-	});
-	
-	const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
-	
-	if (Typespace.TypeEntries.Num() != Types.Num())
-	{
-		OutError = FString::Printf(
-			TEXT("Inconsistent number of entries in "
-			"'typespace' (%i entries) and "
-			"'types' (%i entries) "
-			"in RawModuleDef"),
-			Typespace.TypeEntries.Num(),
-			Types.Num());
-		return false;
-	}
-	// TODO: also check if types <-> typespace (if they have 1:1 matching)
-	
-	OutHeader.Includes.Add({"CoreMinimal.h", true});
-	OutHeader.Includes.Add({HeaderBaseName + ".generated.h", true});
-
-	AddMissingBuiltIns(OutHeader);
-
-	for (const auto& Type : Types)
-	{
-		const auto Index = Type.TypeRef;
-		const auto &AlgebraicType = Typespace.TypeEntries[Index];
-
-		if (AlgebraicType.Type != SATS::EType::Product)
-		{
-			OutError = FString::Printf(TEXT("Header generation for types in 'typespace' other than C++ structs "
-				"(i.e. 'Product' Sats-Type) not implemented - problem occured with type '%i'"), Index);
-			return false;
-		}
-		
-		FStruct Struct;
-		Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
-
-		if (FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
-			!GenerateNewStruct(
-				ModuleName,
-				Types, StructName,
-				AlgebraicType.Product,
-				Struct, OutHeader, OutError))
-		{
-			return false;
-		}
-		
-		OutHeader.AddStruct(Struct);
-	}
-	
 	return true;
 }

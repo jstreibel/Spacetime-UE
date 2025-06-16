@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
 #include "StdbPrototype/BlackholioSerialization.h"
 
 #include "BlackholioExportedTypes.stdbgen.h"
@@ -51,3 +52,4 @@ void UBlackholioSerialization::SerializeCircleDecayTimer(const FCircleDecayTimer
 void UBlackholioSerialization::DeserializeCircleDecayTimer(const FCircleDecayTimer& Timer)
 {
 }
+*/

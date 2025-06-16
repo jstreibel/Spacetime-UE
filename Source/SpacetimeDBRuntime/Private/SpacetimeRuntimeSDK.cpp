@@ -3,7 +3,8 @@
 
 #include "SpacetimeRuntimeSDK.h"
 
-void UAlgebraicSum::Serialize(FString& OutJsonPayload) const
+/*
+void USpacetimeSum::SerializeToSatsJson(FString& OutJsonPayload) const
 {
 	for (TFieldIterator<FProperty> It(this->GetClass()); It; ++It)
 	{
@@ -11,10 +12,11 @@ void UAlgebraicSum::Serialize(FString& OutJsonPayload) const
 	}
 }
 
-void UAlgebraicProduct::Serialize(FString& OutJsonPayload) const
+void USpacetimeProduct::SerializeToSatsJson(FString& OutJsonPayload) const
 {
 	for (TFieldIterator<FProperty> It(this->GetClass()); It; ++It)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Property: %s"), *It->GetName());
 	}
 }
+*/

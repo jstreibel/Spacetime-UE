@@ -188,7 +188,7 @@ namespace SATS
         if (BuiltinName == "I64")          return "int64";
         if (BuiltinName == "U64")          return force ? "uint64" : "int64";    // Unreal does not reflect uint64
         if (BuiltinName == "I256")         return force ? "int256" : "FInt256";  // These are hand-added USTRUCTs
-        if (BuiltinName == "U256")         return force ? "uin256" : "FUInt256"; // These are hand-added USTRUCTs
+        if (BuiltinName == "U256")         return force ? "uint256" : "FUInt256"; // These are hand-added USTRUCTs
         if (BuiltinName == "F32")          return "float";
         if (BuiltinName == "F64")          return "double";
         if (BuiltinName == "String")       return "FString";

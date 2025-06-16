@@ -57,6 +57,4 @@ public:
 
 private:
 	static FString ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind);
-	// Sanitize identifier and convert to PascalCase
-	static FString ToPascalCase(const FString& InString);
 };

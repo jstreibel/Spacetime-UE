@@ -5,49 +5,6 @@
 #include "Parser/Common.h"
 #include "../Config.h"
 
-// Converts any snake_case, kebab-case, space separated, or camelCase string
-// into PascalCase (e.g. "chat_message" → "ChatMessage", "sendMessage" → "SendMessage").
-FString FSpacetimeDBCodeGen::ToPascalCase(const FString& InString)
-{
-    FString Result;
-    bool bCapNext = true;
-
-    const int32 Len = InString.Len();
-    for (int32 i = 0; i < Len; ++i)
-    {
-        const TCHAR Ch = InString[i];
-
-        if (FChar::IsAlnum(Ch))
-        {
-            // If we see an uppercase letter in the middle of a word that follows a lowercase letter,
-            // treat it as the start of a new PascalCase word.
-            if (!bCapNext 
-                && FChar::IsUpper(Ch) 
-                && i > 0 
-                && FChar::IsLower(InString[i - 1]))
-            {
-                bCapNext = true;
-            }
-
-            if (bCapNext)
-            {
-                Result += FChar::ToUpper(Ch);
-                bCapNext = false;
-            }
-            else
-            {
-                Result += FChar::ToLower(Ch);
-            }
-        }
-        else
-        {
-            // Any non‐alphanumeric (underscore, dash, space, etc.) triggers a new word
-            bCapNext = true;
-        }
-    }
-
-    return Result;
-}
 
 FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind)
 {
@@ -87,7 +44,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
             return false;
         }
 
-        FString StructName = TEXT("F") + ToPascalCase(Table.Name) + TEXT("Row");
+        FString StructName = TEXT("F") + FCommon::ToPascalCase(Table.Name) + TEXT("Row");
         OutHeaderText += TEXT("USTRUCT(BlueprintType)");
         OutHeaderText += TEXT("\nstruct ") + FSpacetimeConfig::ApiMacroString + " " + StructName + TEXT(" {\n\n"
             "    GENERATED_BODY()\n\n");
@@ -109,7 +66,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
             
             FString Prop = FString::Printf(
                 TEXT("    UPROPERTY(BlueprintReadWrite) %s %s;\n"),
-                *CxxTypeString, *ToPascalCase(Name)
+                *CxxTypeString, *FCommon::ToPascalCase(Name)
             );
             
             OutHeaderText += Prop;
@@ -165,7 +122,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
         for (const auto& [Name, AlgebraicType] : ReducerDef.Params)
         {            
             // FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Argument.TypeRef].Builtin);
-            FString ArgName = Name.IsSet() ? ToPascalCase(*Name) : FCommon::CreateUniqueName();
+            FString ArgName = Name.IsSet() ? FCommon::ToPascalCase(*Name) : FCommon::CreateUniqueName();
 
             FString UEType;
             
@@ -193,14 +150,14 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
         FString Prefix = TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB|" + ModuleName + "\")"); 
         FString Sig = Prefix + FString::Printf(
             TEXT("\n    static void %s(%s);\n\n"),
-            *ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", "))
+            *FCommon::ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", "))
         );
         HeaderText += Sig;
 
         // Implementation stub
         FString Suffix = FString::Printf(
             TEXT("::%s(%s)\n{\n    // TODO: call SpacetimeDB client reducer '%s'\n}\n\n"),
-            *ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", ")),
+            *FCommon::ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", ")),
             *ReducerDef.Name
         );
         FString Impl = "void " + ClassName + Suffix;
@@ -213,14 +170,20 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     return true;
 }
 
-void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
+void GOutputTaggedUnion(
+    const FTaggedUnion &TaggedUnion,
+    const FString &ApiMacroString,
+    FString &OutHeaderCode)
 {
     const auto TabString = FSpacetimeConfig::TabString;
     
-    const auto TaggedUnionOptionProperty = TabString +
-        FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\")\n"),
+    const auto TaggedUnionTagProperty = TabString +
+        FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\", meta=(SumTag=true))\n"),
             *TaggedUnion.SubCategory);
-    const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.Name.RightChop(1));
+    const auto TaggedUnionOptionProperty = TabString + 
+        FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\", meta=(SumPayload=true))\n"),
+            *TaggedUnion.SubCategory);
+    const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.Name);
     
     OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
     OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
@@ -233,13 +196,13 @@ void GOutputTaggedUnion(const FTaggedUnion &TaggedUnion, FString &OutHeaderCode)
     }
     OutHeaderCode += FString::Printf(TEXT("};\n"));
     OutHeaderCode += FString::Printf(TEXT("\n"));
-    OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"), *TaggedUnion.SubCategory);
-    OutHeaderCode += FString::Printf(TEXT("struct %ls\n"), *TaggedUnion.Name);
+    OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\", meta=(SerializationKind=\"Sum\"))\n"),
+        *TaggedUnion.SubCategory);
+    OutHeaderCode += FString::Printf(TEXT("struct %ls F%ls \n"), *ApiMacroString, *TaggedUnion.Name);
     OutHeaderCode += FString::Printf(TEXT("{\n"));
-    OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n"));
-    OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-    OutHeaderCode += TabString + FString::Printf(TEXT("// Active payload\n"));
-    OutHeaderCode += TaggedUnionOptionProperty;
+    OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n\n"));
+    OutHeaderCode += TabString + FString::Printf(TEXT("// The current active payload\n"));
+    OutHeaderCode += TaggedUnionTagProperty;
     OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
 
     for (const auto& Option : TaggedUnion.Variants)
@@ -287,31 +250,36 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
 
         OutHeaderCode.RemoveFromEnd(", ");
 
-        OutHeaderCode += ")\n";
+        OutHeaderCode += ", meta=(SerializationKind=\"Product\"))\n";
     }
     OutHeaderCode += TEXT("struct ") + ApiMacro + " " + Name + " {\n\n";
 
     if (bIsReflected)
     {
-        OutHeaderCode += TabString + "GENERATED_BODY();\n\n";
+        OutHeaderCode += TabString + "GENERATED_BODY()\n\n";
     }
 
-    for (const auto &Attribute : Attributes)
+    for (const auto & [
+        Name,
+        Type,
+        DefaultValue,
+        Comment]
+        : Attributes)
     {
-        if (Attribute.Comment.IsSet())
+        if (Comment.IsSet())
         {
-            OutHeaderCode += TabString + "/* " + Attribute.Comment.GetValue() + TEXT(" */\n");
+            OutHeaderCode += TabString + "/* " + Comment.GetValue() + TEXT(" */\n");
         }
             
         if (bIsReflected)
         {
             OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
         }
-        OutHeaderCode += TabString + Attribute.Type + " " + Attribute.Name;
+        OutHeaderCode += TabString + Type + " " + Name;
 
-        if (Attribute.DefaultValue.IsSet())
+        if (DefaultValue.IsSet())
         {
-            OutHeaderCode += " = " + Attribute.DefaultValue.GetValue();
+            OutHeaderCode += " = " + DefaultValue.GetValue();
         }
 
         OutHeaderCode += ";\n\n";
@@ -395,7 +363,7 @@ bool GRenderHeaderToCode(const FHeader& Header, FString &OutCode, FString &OutEr
             }
             
             const auto& TaggedUnion = ExportedTaggedUnions[Index];
-            GOutputTaggedUnion(TaggedUnion, OutCode);
+            GOutputTaggedUnion(TaggedUnion, Header.ApiMacro, OutCode);
 
             continue;
         }
