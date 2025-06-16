@@ -2,7 +2,7 @@
 
 #include "StdbPrototype/BlackholioSerialization.h"
 
-// #include "BlackholioExportedTypes.stdbgen.h"
+#include "BlackholioExportedTypes.stdbgen.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -21,7 +21,7 @@ void UBlackholioSerialization::SerializeCircleDecayTimer(const FCircleDecayTimer
 		{
 			switch (Timer.ScheduledAt.Tag)
 			{
-			case ESum00_Tags::Product01: // Interval
+			case EScheduledAt_Tags::Interval: // Interval
 				// Product:
 				Writer->WriteArrayStart("Interval");
 				{
@@ -30,14 +30,14 @@ void UBlackholioSerialization::SerializeCircleDecayTimer(const FCircleDecayTimer
 				Writer->WriteArrayEnd();
 				
 				break;
-			case ESum00_Tags::Product02: // Time
+			case EScheduledAt_Tags::Time: // Time
 				// Product:
 				Writer->WriteArrayStart("Time");
 				{
 					Writer->WriteValue(Timer.ScheduledAt.Time.TimestampMicrosSinceUnixEpoch);
 				}
 				Writer->WriteArrayEnd();
-			case ESum00_Tags::None:
+			case EScheduledAt_Tags::None:
 				UE_LOG(LogTemp, Error, TEXT("Unhandled internal error: invalid scheduled_at tag"));
 				break;
 			}
@@ -50,4 +50,4 @@ void UBlackholioSerialization::SerializeCircleDecayTimer(const FCircleDecayTimer
 
 void UBlackholioSerialization::DeserializeCircleDecayTimer(const FCircleDecayTimer& Timer)
 {
-} 
+}
