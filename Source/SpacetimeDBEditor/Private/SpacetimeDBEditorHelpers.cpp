@@ -339,7 +339,7 @@ bool RawModuleDefFromHttp(
 	return true;
 	*/
 
-	UE_LOG(LogTemp, Error, TEXT("RawModuleDefFromHttp not implemented"))
+	// UE_LOG(LogTemp, Error, TEXT("RawModuleDefFromHttp not implemented"))
 	
-	return false;
+	// return false;
 }

@@ -221,17 +221,17 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
     const auto TabString = FSpacetimeConfig::TabString;
     
     const auto & [
-            Name,
+            StructName,
             Attributes,
             bIsReflected,
             Specifiers,
             MetadataSpecifiers,
-            Comment]
+            StructComment]
     = Struct;
     
-    if (Comment.IsSet())
+    if (StructComment.IsSet())
     {
-        OutHeaderCode += "/* " + Comment.GetValue() + " */\n";
+        OutHeaderCode += "/* " + StructComment.GetValue() + " */\n";
     }
         
     if (bIsReflected)
@@ -252,7 +252,7 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
 
         OutHeaderCode += ")\n";
     }
-    OutHeaderCode += TEXT("struct ") + ApiMacro + " " + Name + " : public FSpacetimeProduct\n"
+    OutHeaderCode += TEXT("struct ") + ApiMacro + " " + StructName + " : public FSpacetimeProduct\n"
     "{\n\n";
 
     if (bIsReflected)
@@ -261,22 +261,22 @@ void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutH
     }
 
     for (const auto & [
-        Name,
+        AttributeName,
         Type,
         DefaultValue,
-        Comment]
+        AttributeComment]
         : Attributes)
     {
-        if (Comment.IsSet())
+        if (StructComment.IsSet())
         {
-            OutHeaderCode += TabString + "/* " + Comment.GetValue() + TEXT(" */\n");
+            OutHeaderCode += TabString + "/* " + AttributeComment.GetValue() + TEXT(" */\n");
         }
             
         if (bIsReflected)
         {
             OutHeaderCode += TabString + "UPROPERTY(BlueprintReadWrite)\n";
         }
-        OutHeaderCode += TabString + Type + " " + Name;
+        OutHeaderCode += TabString + Type + " " + AttributeName;
 
         if (DefaultValue.IsSet())
         {
