@@ -1,6 +1,6 @@
-#include "TypespaceParser.h"
+#include "Parser/TypespaceParser.h"
 
-#include "Common.h"
+#include "Parser/Common.h"
 
 bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDefJson,
                                       SATS::FTypespace& TypespaceOutput, FString& OutError)

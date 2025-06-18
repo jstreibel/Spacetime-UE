@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+#include <type_traits>
 #include "SpacetimeRuntimeSDK.generated.h"
 
 
@@ -59,20 +60,18 @@ struct SPACETIMEDBRUNTIME_API FInt256 : public FSpacetimeProduct {
 };
 
 
-/**
- * 
- */
-UCLASS()
-class SPACETIMEDBRUNTIME_API USpacetimeSerialization : public UObject
+using FJsonWriterRef = TSharedRef<TJsonWriter<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>>;
+
+template<typename T>
+void SerializeNumber(const T& Number, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
 {
-	GENERATED_BODY()
-
-public:
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-	static FString SerializeProductToJson(const FSpacetimeProduct& SpacetimeProduct, FString &JsonPayload);
-
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB")
-	static FString SerializeSumToJson(const FSpacetimeSum& SpacetimeSum, FString &JsonPayload);
-
-		
-};
+	if (Key.IsSet())
+	{
+		const auto TagString = Key.GetValue();
+		Writer->WriteValue(*TagString, Number);
+	}
+	else
+	{
+		Writer->WriteValue(Number);
+	}
+}

@@ -6,8 +6,8 @@ public class SpacetimeDBEditor : ModuleRules
     public SpacetimeDBEditor(ReadOnlyTargetRules target) : base(target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-
-        var list = new List<string>
+        
+        PublicDependencyModuleNames.AddRange(new string[]
         {
             "Core",
             "CoreUObject",
@@ -17,10 +17,9 @@ public class SpacetimeDBEditor : ModuleRules
             "JsonUtilities",
             "SpacetimeDBRuntime",
             "Blutility"
-        };
-        PublicDependencyModuleNames.AddRange(list.AsReadOnly());
-
-        var list1 = new List<string>
+        });
+        
+        PrivateDependencyModuleNames.AddRange(new string[]
         {
             "Slate",
             "SlateCore",
@@ -29,8 +28,9 @@ public class SpacetimeDBEditor : ModuleRules
             "LevelEditor",
             "ToolMenus",
             "PropertyEditor",
-            "Projects"
-        };
-        PrivateDependencyModuleNames.AddRange(list1.AsReadOnly());
+            "Projects",
+            
+            "SpacetimeDBCore"
+        });
     }
 }

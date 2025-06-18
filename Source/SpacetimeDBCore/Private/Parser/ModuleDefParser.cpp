@@ -1,7 +1,7 @@
-#include "ModuleDefParser.h"
+#include "Parser/ModuleDefParser.h"
 
-#include "Common.h"
-#include "TypespaceParser.h"
+#include "Parser/Common.h"
+#include "Parser/TypespaceParser.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Serialization/JsonReader.h"

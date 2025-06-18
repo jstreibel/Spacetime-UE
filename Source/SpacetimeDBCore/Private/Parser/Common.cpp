@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "Parser/Common.h"
 
 const TArray<FString> FCommon::ReservedNames = {
 	"Player"

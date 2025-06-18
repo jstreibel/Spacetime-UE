@@ -11,7 +11,6 @@ public class SpacetimeDBCore : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				// ... add other private include paths required here ...
 			}
 			);
 			
@@ -20,7 +19,6 @@ public class SpacetimeDBCore : ModuleRules
 			new string[]
 			{
 				"Core",
-				// ... add other public dependencies that you statically link with here ...
 			}
 			);
 			
@@ -33,8 +31,8 @@ public class SpacetimeDBCore : ModuleRules
 				// "Slate",
 				// "SlateCore",
 				"HTTP",
-				"Json",			// Add Unreal JSON parser for std output from Spacetime CLI...
-				"JsonUtilities" // ... and a couple extra helpers
+				"Json",
+				"JsonUtilities"
 			}
 			);
 		

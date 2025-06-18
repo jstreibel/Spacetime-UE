@@ -1,7 +1,7 @@
 #pragma once
 #include "Schema/RawModuleDefSchema.h"
 
-class FCommon
+class SPACETIMEDBCORE_API FCommon
 {
 public:
 	// List of Unreal reserver class/struct/etc names

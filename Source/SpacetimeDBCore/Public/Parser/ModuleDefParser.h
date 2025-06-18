@@ -7,7 +7,7 @@
 /**
  * Parses a RawModuleDef JSON string into schema models for tables and reducers.
  */
-class FModuleDefParser
+class SPACETIMEDBCORE_API FModuleDefParser
 {
 public:
 	/**

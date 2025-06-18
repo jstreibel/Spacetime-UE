@@ -1,5 +1,5 @@
 #pragma once
-#include "SEditorViewportToolBarMenu.h"
+
 #include "Schema/RawModuleDefSchema.h"
 
 struct FFunction

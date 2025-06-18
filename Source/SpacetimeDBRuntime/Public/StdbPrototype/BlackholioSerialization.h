@@ -3,21 +3,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
-// #include "BlackholioExportedTypes.stdbgen.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
-#include "BlackholioSerialization.generated.h"
+#include "BlackholioExportedTypes.stdbgen.h"
+#include "Schema/RawModuleDefSchema.h"
 
-/*
-UCLASS()
-class SPACETIMEDBRUNTIME_API UBlackholioSerialization : public UBlueprintFunctionLibrary
-{
-	GENERATED_BODY()
+void SerializeLastSplitTime(
+	const FLastSplitTime& SpacetimeProduct,
+	const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key = {});
 
-public:
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Blackholio")
-	static void SerializeCircleDecayTimer(const FCircleDecayTimer& Timer, FString& OutJsonPayload);
- 
-	UFUNCTION(BlueprintCallable, Category="SpacetimeDB|Blackholio")
-	static void DeserializeCircleDecayTimer(const FCircleDecayTimer& Timer);
-};
-*/
+void SerializeInterval(
+	const FInterval& SpacetimeProduct,
+	const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key = {});
+
+void SerializeTime(
+	const FTime& SpacetimeProduct,
+	const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key = {});
+
+void SerializeScheduledAt(
+	const FScheduledAt& SpacetimeSum,
+	const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key = {});
+
+void SerializeCircleDecayTimer(
+	const FCircleDecayTimer& Timer,
+	const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key = {});
+
+void DeserializeCircleDecayTimer(
+	FCircleDecayTimer& Timer,
+	FJsonWriterRef Writer);

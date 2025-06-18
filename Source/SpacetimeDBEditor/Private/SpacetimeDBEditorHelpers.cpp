@@ -8,12 +8,8 @@
 #include "HAL/PlatformProcess.h"
 #include "IO/CodeFileWriter.h"
 #include "Parser/ModuleDefParser.h"
-#include "Schema/SchemaModels.h"
-
-#include <SpacetimeDBEditorHelpers.h>
 
 #include "Config.h"
-#include "CodeGen/TypespaceStructIRBuilder.h"
 
 bool RawModuleDefFromCli(
 	const FString &DatabaseName,

@@ -19,14 +19,11 @@ public class SpacetimeDBRuntime : ModuleRules
 		PrivateIncludePaths.Add(projectGenPrivatePath);
 		
 		PublicIncludePaths.AddRange(new string[] {
-			// TODO automatically add this?
 			Path.Combine(ModuleDirectory, "Public/StdbGenerated") 
-			// ... add public include paths required here ...
 		});
 		
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
-			// ... add other public dependencies that we statically link with here ...
 		});
 			
 		
@@ -36,7 +33,8 @@ public class SpacetimeDBRuntime : ModuleRules
 			// "Slate",
 			// "SlateCore",
 			"Json",			// Add Unreal JSON parser for std output from Spacetime CLI...
-			"JsonUtilities" // ... and a couple extra helpers
+			"JsonUtilities", // ... and a couple extra helpers
+			"SpacetimeDBCore"
 		});
 	}
 }
