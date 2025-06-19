@@ -13,4 +13,5 @@ struct FSpacetimeConfig
 	
 	static FString MakeInlineTypesCodeFileName(const FString& ModuleName);
 	static FString MakeExportedTypesCodeFileName(const FString& ModuleName);
+	static FString MakeSerializationCodeFileName(const FString& ModuleName);
 };

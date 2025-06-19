@@ -63,29 +63,53 @@ struct SPACETIMEDBRUNTIME_API FInt256 : public FSpacetimeProduct {
 using FJsonWriterRef = TSharedRef<TJsonWriter<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>>;
 using FWriterFactory = TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>;
 
-template<typename T>
-void SerializeNumber(const T& Number, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+inline void ProductStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
 {
 	if (Key.IsSet())
 	{
 		const auto TagString = Key.GetValue();
-		Writer->WriteValue(*TagString, Number);
+		Writer->WriteArrayStart(*TagString);
 	}
 	else
 	{
-		Writer->WriteValue(Number);
+		Writer->WriteArrayStart();
 	}
 }
 
-inline void StdbSerializeString(const FString& String, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+inline void ProductEnd(const FJsonWriterRef& Writer, TOptional<FString> Key)
+{
+	Writer->WriteArrayEnd();
+}
+
+inline void SumStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
 {
 	if (Key.IsSet())
 	{
 		const auto TagString = Key.GetValue();
-		Writer->WriteValue(*TagString, String);
+		Writer->WriteObjectStart(*TagString);
+	}
+
+	else
+	{
+		Writer->WriteObjectStart();
+	}
+}
+
+inline void SumEnd(const FJsonWriterRef& Writer, const TOptional<FString>& Key)
+{
+	Writer->WriteObjectEnd();
+}
+
+template<typename T>
+void SerializeNumberOrString(const T& NumberOrString, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+{
+	if (Key.IsSet())
+	{
+		const auto TagString = Key.GetValue();
+		Writer->WriteValue(*TagString, NumberOrString);
 	}
 	else
 	{
-		Writer->WriteValue(String);
+		Writer->WriteValue(NumberOrString);
 	}
 }

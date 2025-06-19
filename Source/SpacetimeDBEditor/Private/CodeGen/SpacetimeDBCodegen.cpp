@@ -1,6 +1,7 @@
 #include "SpacetimeDBCodegen.h"
 
-#include "TypespaceStructIRBuilder.h"
+#include "SerializationCodegen.h"
+#include "TypesHeadersIRBuilder.h"
 #include "Containers/UnrealString.h"
 #include "Parser/Common.h"
 #include "../Config.h"
@@ -21,7 +22,7 @@ FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebr
     }    
 }
 
-bool FSpacetimeDBCodeGen::GenerateTableStructs(
+bool FSpacetimeDBCodeGen::GenerateTablesCode(
     const SATS::FRawModuleDef& ModuleDef,
     const FString& HeaderName,
     FString& OutHeader,
@@ -81,7 +82,7 @@ bool FSpacetimeDBCodeGen::GenerateTableStructs(
     return false;
 }
 
-bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
+bool FSpacetimeDBCodeGen::GenerateReducersCode(
     const FString& ModuleName,
     const SATS::FRawModuleDef& ModuleDef,
     FString& OutHeader,
@@ -91,7 +92,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
 {
     const FString& HeaderName = FSpacetimeConfig::MakeReducerCodeFileName(ModuleName); 
     
-    TArray<SATS::FExportedType> SortedRefs = ModuleDef.Types;
+    TArray<SATS::FExportedType> SortedRefs = ModuleDef.ExportedTypes;
     Algo::Sort(SortedRefs, [](const SATS::FExportedType& EntryA, const  SATS::FExportedType& EntryB)
     {
         return EntryA.TypeRef < EntryB.TypeRef;
@@ -135,7 +136,7 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
         for (const auto& [ArgumentName, ArgumentAlgebraicTypes] : ReducerDef.Params)
         {            
             // FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Argument.TypeRef].Builtin);
-            FString ArgName = ArgumentName.IsSet() ? FCommon::ToPascalCase(*ArgumentName) : FCommon::CreateUniqueName();
+            FString ArgName = ArgumentName.IsSet() ? FCommon::ToPascalCase(*ArgumentName) : FCommon::MakeAnonymousDataMemberName();
 
             FString UEType;
             
@@ -207,6 +208,18 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
     OutHeader = MoveTemp(HeaderText);
     OutSource = MoveTemp(Src);
     return true;
+}
+
+bool FSpacetimeDBCodeGen::GenerateTypesSerializationCode(
+    const SATS::FRawModuleDef& ModuleDef,
+    const FString& ModuleName,
+    FString& OutSource,
+    FString& OutHeader,
+    FString& OutError)
+{
+    return
+    FSerializationCodegen::GenerateSerializationCode(
+        ModuleDef, ModuleName, OutSource, OutHeader, OutError);
 }
 
 void GOutputTaggedUnion(
@@ -414,7 +427,7 @@ bool GRenderHeaderToCode(const FHeader& Header, FString &OutCode, FString &OutEr
     return true;
 }
 
-bool FSpacetimeDBCodeGen::GenerateTypespaceCode(
+bool FSpacetimeDBCodeGen::GenerateTypesCode(
     const SATS::FRawModuleDef& ModuleDef,
     const FString& ModuleName,
     FString& OutExportedTypesCode,
@@ -427,7 +440,7 @@ bool FSpacetimeDBCodeGen::GenerateTypespaceCode(
     if (!FTypespaceStructIRBuilder::BuildTypesHeaders(
         ModuleName,
         ModuleDef.Typespace,
-        ModuleDef.Types,
+        ModuleDef.ExportedTypes,
         ExportedTypesHeader,
         InlineTypesHeader,
         OutError))

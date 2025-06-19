@@ -102,6 +102,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
         return false;
     }
 
+	
 	// 2. Ensure output directory exists
 	const FString OutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/<Public&Private>") / GeneratedDirectory;
 	const FString HeaderOutputDir = FPaths::ProjectDir() / TEXT("Plugins/SpacetimeDB/Source/SpacetimeDBRuntime/Public") / GeneratedDirectory;
@@ -113,8 +114,8 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
         UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
         return false;
     }
-	
 
+	
 	// 3. Generate typespace structs
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating SATS-JSON Typespace Unreal-reflected C++ structs"));
@@ -122,7 +123,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		FString ExportedTypesHeaderCode;
 		FString InlineTypesHeaderCode;
 		// const FString BaseSpacetimeHeaderName = FString::Printf(TEXT("%sTypespace"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateTypespaceCode(
+		if (!FSpacetimeDBCodeGen::GenerateTypesCode(
 			RawModule,						DatabaseName,
 			ExportedTypesHeaderCode,		InlineTypesHeaderCode,
 			OutError))
@@ -160,16 +161,52 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Typespace code output success"));
 		
 	}
+
+
+	// 4. Generate serialization functions (header and source)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating serialization functions"));
+		
+		FString SerializationHeader, SerializationSource;
+		if (!FSpacetimeDBCodeGen::GenerateTypesSerializationCode(
+			RawModule, DatabaseName, 
+			SerializationSource,
+			SerializationHeader,
+			OutError))
+		{
+			OutError = TEXT("Serialization function generation failed: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+			return false;
+		}
+
+		const FString SerializationFilename = FSpacetimeConfig::MakeSerializationCodeFileName(DatabaseName); 		
+		const FString SerializationHeaderPath = HeaderOutputDir / SerializationFilename + ".h";
+		const FString SerializationSourcePath = SourceOutputDir / SerializationFilename + ".cpp";
+		
+		if (!FCodeFileWriter::WriteFile(SerializationHeaderPath, SerializationHeader, OutError))
+		{
+			OutError = TEXT("Failed to write serialization header file: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write serialization header '%s': %s"), *SerializationHeaderPath, *OutError);
+			return false;
+		}
+
+		if (!FCodeFileWriter::WriteFile(SerializationSourcePath, SerializationSource, OutError))
+		{
+			OutError = TEXT("Failed to write serialization source file: ") + OutError;
+			UE_LOG(LogTemp, Error, TEXT("[spacetime] Failed to write serialization source '%s': %s"), *SerializationSourcePath, *OutError);
+			return false;
+		}
+	}
 	
 	
-    // 4. Generate table structs header
+    // 5. Generate table structs header
 	if (0)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating SATS-JSON Tables' Unreal-reflected C++ structs"));
 		
 		FString TablesHeader;
 		const FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateTableStructs(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
+		if (!FSpacetimeDBCodeGen::GenerateTablesCode(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
 		{
 			OutError = TEXT("Table struct generation failed: ") + OutError;
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
@@ -186,12 +223,12 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	} 
 
 	
-    // 5. Generate STDB Reducer functions (header + source)
+    // 6. Generate STDB Reducer functions (header + source)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
 		
 		FString ReducersHeader, ReducersSource;
-		if (!FSpacetimeDBCodeGen::GenerateReducerFunctions(
+		if (!FSpacetimeDBCodeGen::GenerateReducersCode(
 			DatabaseNamePascal,
 			RawModule,
 			ReducersHeader,
@@ -232,7 +269,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 	}
 
 	
-    // 6. Success
+    // 7. Success
     OutFullPath = OutputDir;
 	FPaths::ConvertRelativePathToFull(OutFullPath);
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Code generation completed for SpacetimeDB Module '%s'"), *DatabaseName);

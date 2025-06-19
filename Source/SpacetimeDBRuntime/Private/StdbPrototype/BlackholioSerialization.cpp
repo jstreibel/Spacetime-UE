@@ -8,43 +8,6 @@
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 
-void ProductStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
-{
-	if (Key.IsSet())
-	{
-		const auto TagString = Key.GetValue();
-		Writer->WriteArrayStart(*TagString);
-	}
-	else
-	{
-		Writer->WriteArrayStart();
-	}
-}
-
-void ProductEnd(const FJsonWriterRef& Writer, TOptional<FString> Key)
-{
-	Writer->WriteArrayEnd();
-}
-
-void SumStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
-{
-	if (Key.IsSet())
-	{
-		const auto TagString = Key.GetValue();
-		Writer->WriteObjectStart(*TagString);
-	}
-
-	else
-	{
-		Writer->WriteObjectStart();
-	}
-}
-
-void SumEnd(const FJsonWriterRef& Writer, const TOptional<FString>& Key)
-{
-	Writer->WriteObjectEnd();
-}
-
 void SerializeLastSplitTime(
 	const FLastSplitTime& SpacetimeProduct,
 	const FJsonWriterRef& Writer,
@@ -55,7 +18,7 @@ void SerializeLastSplitTime(
 	
 	{
 		// I64
-		SerializeNumber(SpacetimeProduct.TimestampMicrosSinceUnixEpoch, Writer);
+		SerializeNumberOrString(SpacetimeProduct.TimestampMicrosSinceUnixEpoch, Writer);
 	}
 	
 	ProductEnd(Writer, Key);
@@ -71,7 +34,7 @@ void SerializeInterval(
 
 	{
 		// I64
-		SerializeNumber(SpacetimeProduct.TimeDurationMicros, Writer);
+		SerializeNumberOrString(SpacetimeProduct.TimeDurationMicros, Writer);
 	}
 
 	ProductEnd(Writer, Key);
@@ -87,7 +50,7 @@ void SerializeTime(
 	
 	{
 		// I64
-		SerializeNumber(SpacetimeProduct.TimestampMicrosSinceUnixEpoch, Writer);
+		SerializeNumberOrString(SpacetimeProduct.TimestampMicrosSinceUnixEpoch, Writer);
 	}
 	
 	ProductEnd(Writer, Key);
@@ -104,10 +67,10 @@ void SerializeScheduledAt(
 	switch (SpacetimeSum.Tag)
 	{
 	case EScheduledAt_Tags::Interval: // Interval
-		SerializeInterval(SpacetimeSum.Interval, Writer,FString("interval"));
+		SerializeInterval(SpacetimeSum.Interval, Writer,FString("Interval"));
 		break;
 	case EScheduledAt_Tags::Time: // Time
-		SerializeTime	 (SpacetimeSum.Time,	 Writer,FString("time"));
+		SerializeTime	 (SpacetimeSum.Time,	 Writer,FString("Time"));
 		break;
 	case EScheduledAt_Tags::None:
 		UE_LOG(LogTemp, Error, TEXT("Unhandled internal error: invalid scheduled_at tag"));
@@ -126,7 +89,7 @@ void SerializeCircleDecayTimer(
 	
 	{
 		// U64
-		SerializeNumber(SpacetimeProduct.ScheduledId, Writer);
+		SerializeNumberOrString(SpacetimeProduct.ScheduledId, Writer);
 
 		// Sum
 		SerializeScheduledAt(SpacetimeProduct.ScheduledAt, Writer);

@@ -12,7 +12,7 @@ public:
 	
 	static FString ArrayToString(const TArray<FString>& StringArray);
 	
-	static FString CreateUniqueName();
+	static FString MakeAnonymousDataMemberName();
 	
 	// Unwraps an Option<String> JSON object ({ some: val } or { none: [] })
 	static SATS::FOptionalString GetOptionalString(const TSharedPtr<FJsonObject>& OptionalString);

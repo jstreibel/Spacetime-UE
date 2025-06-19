@@ -52,3 +52,8 @@ FString FSpacetimeConfig::MakeExportedTypesCodeFileName(const FString& ModuleNam
 {
 	return FCommon::ToPascalCase(ModuleName) + "ExportedTypes.stdbgen";
 }
+
+FString FSpacetimeConfig::MakeSerializationCodeFileName(const FString& ModuleName)
+{
+	return FCommon::ToPascalCase(ModuleName) + "Serialization.stdbgen";
+}

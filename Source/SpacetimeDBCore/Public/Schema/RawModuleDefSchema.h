@@ -5,6 +5,7 @@
 namespace SATS
 {
     using FOptionalString = TOptional<FString>;
+
     
     enum class EBuiltinType : uint8
     {
@@ -17,6 +18,7 @@ namespace SATS
         U32,    // { "U32": [] }
         I64,    // { "I64": [] }
         U64,    // { "U64": [] }
+        // TODO: Add I128 and U128
         I256,   // { "I256": [] }
         U256,   // { "U256": [] }
         F32,    // { "F32": [] }
@@ -39,6 +41,7 @@ namespace SATS
         U32,      // { "U32": [] }
         I64,      // { "I64": [] }
         U64,      // { "U64": [] }
+        // TODO: Add I128 and U128
         I256,     // { "I256": [] }
         U256,     // { "U256": [] }
         F32,      // { "F32": [] }
@@ -73,6 +76,7 @@ namespace SATS
             case EBuiltinType::U32:    return "U32";
             case EBuiltinType::I64:    return "I64";
             case EBuiltinType::U64:    return "U64";
+            // TODO: Add I128 and U128
             case EBuiltinType::I256:   return "I256";
             case EBuiltinType::U256:   return "U256";
             case EBuiltinType::F32:    return "F32";
@@ -104,6 +108,7 @@ namespace SATS
             case EType::U32:      return "U32";
             case EType::I64:      return "I64";
             case EType::U64:      return "U64";
+            // TODO: Add I128 and U128
             case EType::I256:     return "I256";
             case EType::U256:     return "U256";
             case EType::F32:      return "F32";
@@ -132,6 +137,7 @@ namespace SATS
         if (Kind == "U32")          return EType::U32;
         if (Kind == "I64")          return EType::I64;
         if (Kind == "U64")          return EType::U64;
+        // TODO: Add I128 and U128
         if (Kind == "I256")         return EType::I256;
         if (Kind == "U256")         return EType::U256;
         if (Kind == "F32")          return EType::F32;
@@ -164,6 +170,7 @@ namespace SATS
         if (Kind == "U32")          return EBuiltinType::U32;
         if (Kind == "I64")          return EBuiltinType::I64;
         if (Kind == "U64")          return EBuiltinType::U64;
+        // TODO: Add I128 and U128
         if (Kind == "I256")         return EBuiltinType::I256;
         if (Kind == "U256")         return EBuiltinType::U256;
         if (Kind == "F32")          return EBuiltinType::F32;
@@ -187,6 +194,7 @@ namespace SATS
         if (BuiltinName == "U32")          return force ? "uint32" : "int32";    // Unreal does not reflect uint32
         if (BuiltinName == "I64")          return "int64";
         if (BuiltinName == "U64")          return force ? "uint64" : "int64";    // Unreal does not reflect uint64
+        // TODO: Add I128 and U128
         if (BuiltinName == "I256")         return force ? "int256" : "FInt256";  // These are hand-added USTRUCTs
         if (BuiltinName == "U256")         return force ? "uint256" : "FUInt256"; // These are hand-added USTRUCTs
         if (BuiltinName == "F32")          return "float";
@@ -205,6 +213,7 @@ namespace SATS
         if (InType == EType::U16)          return false;
         if (InType == EType::U32)          return false;
         if (InType == EType::U64)          return false;
+        // TODO: Add I128 and U128
         if (InType == EType::I256)         return false;
         if (InType == EType::U256)         return false;
 
@@ -224,6 +233,7 @@ namespace SATS
             "U32",
             "I64",
             "U64",
+            // TODO: Add I128 and U128
             "I256",
             "U256",
             "F32",
@@ -243,7 +253,8 @@ namespace SATS
         int8,  uint8,
         int16, uint16,
         int32, uint32,
-        int64, uint64, 
+        int64, uint64,
+        // TODO: Add I128 and U128
         int256, /*uint256,*/
         float, double,
         FString
@@ -257,26 +268,6 @@ namespace SATS
     {
         EBuiltinType Tag = EBuiltinType::Invalid;
         VBuiltinType Value;
-        
-		/*bool Bool;
-        int8 Int8;
-  		uint8 UInt8;
-        int16 Int16;
-		uint16 UInt16;
-        int32 Int32;
-		uint32 UInt32;
-		int64 Int64;
-        uint64 UInt64;
-        std::array<char,7> I128;
-        std::array<char,7> U128;
-        float F32;
-        double F64;
-        FString String;
-        // TODO: Resolve below: TMap and TArray need sizeof<FAlgebraicType>,
-        // but here FAlgebraicType is forward declared. 
-        // , TArray<struct FAlgebraicType>
-        // , TMap<struct FAlgebraicType, struct FAlgebraicType>
-        */
     };
     
     struct FRefType {
@@ -294,9 +285,9 @@ namespace SATS
         
     };
 
-    struct FSumType {
-        FString Tag;
-        TMap<FOptionalString, TSharedPtr<FAlgebraicType>> Options;
+    struct FSumType {        
+        struct FVariant {FOptionalString Tag; TSharedPtr<FAlgebraicType> AlgebraicType;};
+        TArray<FVariant> Options;
     };
 
     struct FAlgebraicType {
@@ -371,7 +362,7 @@ namespace SATS
         FTypespace Typespace;
         TArray<struct FTableDef>        Tables;
         TArray<struct FReducerDef>      Reducers;
-        TArray<struct FExportedType>    Types;
+        TArray<struct FExportedType>    ExportedTypes;
         TArray<struct FMiscExport>      MiscExports;
         TArray<struct FRlsPolicy>       RowLevelSecurity;
     };

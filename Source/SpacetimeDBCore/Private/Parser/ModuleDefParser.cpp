@@ -186,7 +186,7 @@ bool FModuleDefParser::ParseRawModuleDef(
     }
 
     // --- exported types ---
-    if (!ParseTypes(RawModuleDefJson, OutDef.Types, OutError))
+    if (!ParseTypes(RawModuleDefJson, OutDef.ExportedTypes, OutError))
     {
         OutError = TEXT("On 'types' parsing: ") + OutError;
         return false;

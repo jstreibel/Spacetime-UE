@@ -25,7 +25,7 @@ FString FCommon::ArrayToString(const TArray<FString>& StringArray)
 	return "[" + Result.LeftChop(2) + "]";
 }
 
-FString FCommon::CreateUniqueName()
+FString FCommon::MakeAnonymousDataMemberName()
 {
 	static int32 UniqueNameCounter = 0;
 	return FString::Printf(TEXT("Unnamed%d"), UniqueNameCounter++);
