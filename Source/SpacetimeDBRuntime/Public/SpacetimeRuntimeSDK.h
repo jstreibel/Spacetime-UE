@@ -24,7 +24,7 @@ struct FSpacetimeProduct
 };
 
 
-/* Provides SATS-JSON U256 support; Unreal UBT lacks uint128 reflection. */
+/* Provides SATS-JSON U128 support; Unreal UBT lacks uint128 reflection. */
 USTRUCT(BlueprintType, Category="SpacetimeDB")
 struct SPACETIMEDBRUNTIME_API FUInt128 : public FSpacetimeProduct {
 

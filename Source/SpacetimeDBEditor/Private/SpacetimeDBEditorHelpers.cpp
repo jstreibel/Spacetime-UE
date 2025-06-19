@@ -95,7 +95,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 
 	// 1. Parse into SATS model
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing RawModuleDef JSON"));
-    SATS::FRawModuleDef RawModule;
+    SpacetimeDB::FRawModuleDef RawModule;
 	if (FModuleDefParser Parser; !Parser.Parse(RawModuleDefString, RawModule, OutError))
     {
         UE_LOG(LogTemp, Error, TEXT("[spacetime] RawModuleDef parse failed: %s"), *OutError);
@@ -123,7 +123,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		FString ExportedTypesHeaderCode;
 		FString InlineTypesHeaderCode;
 		// const FString BaseSpacetimeHeaderName = FString::Printf(TEXT("%sTypespace"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateTypesCode(
+		if (!SpacetimeDB::FSpacetimeDBCodeGen::GenerateTypesCode(
 			RawModule,						DatabaseName,
 			ExportedTypesHeaderCode,		InlineTypesHeaderCode,
 			OutError))
@@ -168,7 +168,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating serialization functions"));
 		
 		FString SerializationHeader, SerializationSource;
-		if (!FSpacetimeDBCodeGen::GenerateTypesSerializationCode(
+		if (!SpacetimeDB::FSpacetimeDBCodeGen::GenerateTypesSerializationCode(
 			RawModule, DatabaseName, 
 			SerializationSource,
 			SerializationHeader,
@@ -206,7 +206,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		
 		FString TablesHeader;
 		const FString BaseTablesHeaderName = FString::Printf(TEXT("%sTables"), *DatabaseNamePascal);
-		if (!FSpacetimeDBCodeGen::GenerateTablesCode(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
+		if (!SpacetimeDB::FSpacetimeDBCodeGen::GenerateTablesCode(RawModule, BaseTablesHeaderName, TablesHeader, OutError))
 		{
 			OutError = TEXT("Table struct generation failed: ") + OutError;
 			UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
@@ -228,7 +228,7 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		UE_LOG(LogTemp, Log, TEXT("[spacetime] Generating reducer Blueprint nodes"));
 		
 		FString ReducersHeader, ReducersSource;
-		if (!FSpacetimeDBCodeGen::GenerateReducersCode(
+		if (!SpacetimeDB::FSpacetimeDBCodeGen::GenerateReducersCode(
 			DatabaseNamePascal,
 			RawModule,
 			ReducersHeader,

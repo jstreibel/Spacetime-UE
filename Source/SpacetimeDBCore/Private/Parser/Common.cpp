@@ -31,9 +31,9 @@ FString FCommon::MakeAnonymousDataMemberName()
 	return FString::Printf(TEXT("Unnamed%d"), UniqueNameCounter++);
 }
 
-SATS::FOptionalString FCommon::GetOptionalString(const TSharedPtr<FJsonObject>& OptionalString)
+SpacetimeDB::FOptionalString FCommon::GetOptionalString(const TSharedPtr<FJsonObject>& OptionalString)
 {
-	SATS::FOptionalString ReturnValue;
+	SpacetimeDB::FOptionalString ReturnValue;
 	if ( OptionalString->HasField(TEXT("some")) )
 	{
 		ReturnValue = OptionalString->GetStringField(TEXT("some"));
@@ -146,8 +146,8 @@ bool FCommon::ParseRequiredString(const TSharedPtr<FJsonObject>& Parent,
 
 bool FCommon::ParseNameAndAlgebraicType(
 	const TSharedPtr<FJsonObject>& NameAndAlgTypePair,
-	SATS::FOptionalString &OptionalName,
-	SATS::FAlgebraicType& AlgebraicOut,
+	SpacetimeDB::FOptionalString &OptionalName,
+	SpacetimeDB::FAlgebraicType& AlgebraicOut,
 	FString& OutError)
 {
 	if (!NameAndAlgTypePair.IsValid() || NameAndAlgTypePair->Values.Num() != 2)
@@ -215,7 +215,7 @@ bool FCommon::ParseNameAndAlgebraicType(
 
 bool FCommon::ValidateAlgebraicTypeAndGetSatsKind(
 	const TSharedPtr<FJsonObject>& TypeObj,
-	SATS::EType &SatsKind, FString& OutError)
+	SpacetimeDB::EType &SatsKind, FString& OutError)
 {        
 	TArray<FString> Keys;
 	TypeObj->Values.GetKeys(Keys);
@@ -227,9 +227,9 @@ bool FCommon::ValidateAlgebraicTypeAndGetSatsKind(
 		return false;
 	}
 	
-	SatsKind = SATS::StringToType(Keys[0]);
+	SatsKind = SpacetimeDB::StringToType(Keys[0]);
 
-	if (SatsKind == SATS::EType::Invalid)
+	if (SatsKind == SpacetimeDB::EType::Invalid)
 	{
 		OutError = FString::Printf(
 			TEXT("Invalid entry in SATS-JSON 'algebraic_type' object; expected SATS Algebraic Type, found '%s'"),
@@ -241,7 +241,7 @@ bool FCommon::ValidateAlgebraicTypeAndGetSatsKind(
 }
 
 bool FCommon::ParseSum(const TArray<TSharedPtr<FJsonValue>>& Variants,
-        SATS::FSumType& SumOut, FString& OutError)
+        SpacetimeDB::FSumType& SumOut, FString& OutError)
 {
     // Clear any existing options
     SumOut.Options.Empty();
@@ -255,7 +255,7 @@ bool FCommon::ParseSum(const TArray<TSharedPtr<FJsonValue>>& Variants,
             return false;
         }
 
-        TSharedPtr<SATS::FAlgebraicType> AlgebraicType = MakeShared<SATS::FAlgebraicType>();
+        TSharedPtr<SpacetimeDB::FAlgebraicType> AlgebraicType = MakeShared<SpacetimeDB::FAlgebraicType>();
         TOptional<FString> NameString;
         if (!ParseNameAndAlgebraicType(OptionObj, NameString, *AlgebraicType, OutError))
         {
@@ -269,7 +269,7 @@ bool FCommon::ParseSum(const TArray<TSharedPtr<FJsonValue>>& Variants,
 }
 
 bool FCommon::ParseBuiltin(const TSharedPtr<FJsonObject>& BuiltinObj,
-    SATS::FBuiltinType &BuiltinOut, FString& OutError)
+    SpacetimeDB::FBuiltinType &BuiltinOut, FString& OutError)
 {
     TArray<FString> Keys;
     BuiltinObj->Values.GetKeys(Keys);
@@ -281,8 +281,8 @@ bool FCommon::ParseBuiltin(const TSharedPtr<FJsonObject>& BuiltinObj,
     }
 
     const FString BuiltinTypeStr = Keys[0];
-    BuiltinOut.Tag = SATS::StringToBuiltinType(BuiltinTypeStr);
-    if (BuiltinOut.Tag == SATS::EBuiltinType::Array || BuiltinOut.Tag == SATS::EBuiltinType::Map)
+    BuiltinOut.Tag = SpacetimeDB::StringToBuiltinType(BuiltinTypeStr);
+    if (BuiltinOut.Tag == SpacetimeDB::EBuiltinType::Array || BuiltinOut.Tag == SpacetimeDB::EBuiltinType::Map)
     {
         OutError = FString::Printf(TEXT("SATS parsing of builtin types Array|Map not implemented"));
         return false;
@@ -294,10 +294,10 @@ bool FCommon::ParseBuiltin(const TSharedPtr<FJsonObject>& BuiltinObj,
 
 bool FCommon::ResolveAlgebraicType(
 	const TSharedPtr<FJsonObject>& SatsJsonObject,
-    SATS::FAlgebraicType& AlgebraicOut,
+    SpacetimeDB::FAlgebraicType& AlgebraicOut,
     FString& OutError)
 {
-    SATS::EType SatsKind;
+    SpacetimeDB::EType SatsKind;
     if (!ValidateAlgebraicTypeAndGetSatsKind(SatsJsonObject, SatsKind, OutError))
     {
     	OutError = TEXT("While resolving Algebraic Type of a SATS-JSON TypeDef: ") + OutError;
@@ -306,14 +306,14 @@ bool FCommon::ResolveAlgebraicType(
 
 	AlgebraicOut.Type = SatsKind;
 
-	if (SatsKind == SATS::EType::Invalid)
+	if (SatsKind == SpacetimeDB::EType::Invalid)
 	{
 		OutError = TEXT("Internal inconsistency found while parsing SATS-JSON TypeDef; "
 					  "expected validated SATS-JSON Type, found invalid type");
 		return false;
 	}
     
-    if (SatsKind == SATS::EType::Product)
+    if (SatsKind == SpacetimeDB::EType::Product)
     {
     	auto ProductObject = SatsJsonObject->GetObjectField(TEXT("Product"));
     	if (!ProductObject.IsValid())
@@ -329,7 +329,7 @@ bool FCommon::ResolveAlgebraicType(
             OutError = TEXT("Invalid entry in SATS-JSON Product Algebraic Type. Expected 'elements' array field");
             return false;
         }
-        SATS::FProductType Product;
+        SpacetimeDB::FProductType Product;
         if (!ParseProduct(*Elements, Product, OutError))
         {
             return false;
@@ -339,7 +339,7 @@ bool FCommon::ResolveAlgebraicType(
         return true;                    
     }
 
-    if (SatsKind == SATS::EType::Sum)
+    if (SatsKind == SpacetimeDB::EType::Sum)
     {
     	auto SumObject = SatsJsonObject->GetObjectField(TEXT("Sum"));
     	if (!SumObject.IsValid())
@@ -357,7 +357,7 @@ bool FCommon::ResolveAlgebraicType(
             return false;
         }
         
-        SATS::FSumType Sum;
+        SpacetimeDB::FSumType Sum;
         if (!ParseSum(*Variants, Sum, OutError))
         {
             return false;
@@ -367,7 +367,7 @@ bool FCommon::ResolveAlgebraicType(
         return true;
     }
 
-    if (SatsKind == SATS::EType::Ref)
+    if (SatsKind == SpacetimeDB::EType::Ref)
     {        
     	AlgebraicOut.Ref.Index = SatsJsonObject->GetIntegerField(TEXT("Ref"));
     	return true;
@@ -377,7 +377,7 @@ bool FCommon::ResolveAlgebraicType(
     // "if SatsKind \in {SATS Builtin}
     {
         const TSharedPtr<FJsonObject>& BuiltinObj = SatsJsonObject;
-        SATS::FBuiltinType Builtin;
+        SpacetimeDB::FBuiltinType Builtin;
         if (!ParseBuiltin(BuiltinObj, Builtin, OutError))
         {
         	OutError = TEXT("While resolving Algebraic Type of a SATS-JSON BuiltIn: ") + OutError;
@@ -385,14 +385,14 @@ bool FCommon::ResolveAlgebraicType(
         }
 
         // We can safely cast because the enums are properly mapped in their definition
-        AlgebraicOut.Type = static_cast<SATS::EType>(Builtin.Tag);
+        AlgebraicOut.Type = static_cast<SpacetimeDB::EType>(Builtin.Tag);
         AlgebraicOut.Builtin = MoveTemp(Builtin);
         return true;
     }
 }
 
 bool FCommon::ParseProduct(const TArray<TSharedPtr<FJsonValue>>& Elements,
-    SATS::FProductType& ProductOut, FString& OutError)
+    SpacetimeDB::FProductType& ProductOut, FString& OutError)
 {
 	
     for (const auto& Element : Elements)
@@ -405,8 +405,8 @@ bool FCommon::ParseProduct(const TArray<TSharedPtr<FJsonValue>>& Elements,
             return false;
         }
 
-        TSharedPtr<SATS::FAlgebraicType> AlgebraicType = MakeShared<SATS::FAlgebraicType>();
-        SATS::FOptionalString NameString;
+        TSharedPtr<SpacetimeDB::FAlgebraicType> AlgebraicType = MakeShared<SpacetimeDB::FAlgebraicType>();
+        SpacetimeDB::FOptionalString NameString;
         if (!ParseNameAndAlgebraicType(ElementObj, NameString, *AlgebraicType, OutError))
         {
         	int ElementIdx = ProductOut.Elements.Num();

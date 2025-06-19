@@ -15,7 +15,7 @@ public:
 	static FString MakeAnonymousDataMemberName();
 	
 	// Unwraps an Option<String> JSON object ({ some: val } or { none: [] })
-	static SATS::FOptionalString GetOptionalString(const TSharedPtr<FJsonObject>& OptionalString);
+	static SpacetimeDB::FOptionalString GetOptionalString(const TSharedPtr<FJsonObject>& OptionalString);
 
 	// Converts any snake_case, kebab-case, space separated, or camelCase string
 	// into PascalCase (e.g. "chat_message" → "ChatMessage", "sendMessage" → "SendMessage").
@@ -41,23 +41,23 @@ public:
 	
 	static bool ParseNameAndAlgebraicType(
 		const TSharedPtr<FJsonObject>& NameAndAlgTypePair,
-		SATS::FOptionalString &OptionalName,
-		SATS::FAlgebraicType& AlgebraicOut,
+		SpacetimeDB::FOptionalString &OptionalName,
+		SpacetimeDB::FAlgebraicType& AlgebraicOut,
 		FString& OutError);
 
 	static bool ParseProduct(
 		const TArray<TSharedPtr<FJsonValue>>& Elements, 
-		SATS::FProductType& ProductOut,
+		SpacetimeDB::FProductType& ProductOut,
 		FString& OutError);
 
 	static bool ParseSum(
 		const TArray<TSharedPtr<FJsonValue>>& Variants,
-		SATS::FSumType& SumOut,
+		SpacetimeDB::FSumType& SumOut,
 		FString& OutError);
 
 	static bool ParseBuiltin(
 		const TSharedPtr<FJsonObject>& BuiltinObj,
-		SATS::FBuiltinType &BuiltinOut,
+		SpacetimeDB::FBuiltinType &BuiltinOut,
 		FString& OutError);
 
 	/**
@@ -69,10 +69,10 @@ public:
 	 */
 	static bool ResolveAlgebraicType(
 		const TSharedPtr<FJsonObject>& SatsJsonObject,
-		SATS::FAlgebraicType& AlgebraicOut,
+		SpacetimeDB::FAlgebraicType& AlgebraicOut,
 		FString& OutError);
 
 private:
 	static bool ValidateAlgebraicTypeAndGetSatsKind(const TSharedPtr<FJsonObject>& TypeObj,
-		SATS::EType &SatsKind, FString& OutError);
+		SpacetimeDB::EType &SatsKind, FString& OutError);
 };

@@ -19,29 +19,29 @@ public:
 	 */
 	static bool Parse(
 		const FString& RawJson,
-		SATS::FRawModuleDef &RawModule,
+		SpacetimeDB::FRawModuleDef &RawModule,
 		FString& OutError
 	);
 
 private:
 	static bool ParseTypespace(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		SATS::FTypespace& TypespaceOutput,
+		SpacetimeDB::FTypespace& TypespaceOutput,
 		FString& OutError);
 	static bool ParseTypes(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		TArray<SATS::FExportedType>& TypesOutput,
+		TArray<SpacetimeDB::FExportedType>& TypesOutput,
 		FString& OutError);
 	static bool ParseTables(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		TArray<SATS::FTableDef>& TablesOutput,
+		TArray<SpacetimeDB::FTableDef>& TablesOutput,
 		FString& OutError);
 	static bool ParseReducers(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		TArray<SATS::FReducerDef>& ReducersOutput,
+		TArray<SpacetimeDB::FReducerDef>& ReducersOutput,
 		FString& OutError);
 	static bool ParseRawModuleDef(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		SATS::FRawModuleDef& OutDef,
+		SpacetimeDB::FRawModuleDef& OutDef,
 		FString& OutError);
 };

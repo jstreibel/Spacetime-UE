@@ -12,7 +12,7 @@
 
 bool FModuleDefParser::Parse(
     const FString& RawJson,
-    SATS::FRawModuleDef &RawModule,
+    SpacetimeDB::FRawModuleDef &RawModule,
     FString& OutError
 )
 {
@@ -31,7 +31,7 @@ bool FModuleDefParser::Parse(
 
 bool FModuleDefParser::ParseTypespace(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
-    SATS::FTypespace& TypespaceOutput,
+    SpacetimeDB::FTypespace& TypespaceOutput,
     FString& OutError)
 {
     return FTypespaceParser::ParseTypespace(RawModuleDefJson, TypespaceOutput, OutError);
@@ -39,7 +39,7 @@ bool FModuleDefParser::ParseTypespace(
 
 bool FModuleDefParser::ParseTypes(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
-    TArray<SATS::FExportedType>& TypesOutput,
+    TArray<SpacetimeDB::FExportedType>& TypesOutput,
     FString& OutError)
 {
     return FTypespaceParser::ParseTypes(RawModuleDefJson, TypesOutput, OutError);
@@ -47,7 +47,7 @@ bool FModuleDefParser::ParseTypes(
 
 bool FModuleDefParser::ParseTables(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
-    TArray<SATS::FTableDef>& TablesOutput,
+    TArray<SpacetimeDB::FTableDef>& TablesOutput,
     FString& OutError)
 {
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing tables"));
@@ -57,7 +57,7 @@ bool FModuleDefParser::ParseTables(
         TablesOutput.Empty();
         for (auto& V : *Tables) {
             const auto Obj = V->AsObject();
-            SATS::FTableDef T;
+            SpacetimeDB::FTableDef T;
             T.Name = Obj->GetStringField(TEXT("name"));
             T.ProductTypeRef = Obj->GetIntegerField(TEXT("product_type_ref"));
             // primary_key
@@ -80,7 +80,7 @@ bool FModuleDefParser::ParseTables(
 
 bool FModuleDefParser::ParseReducers(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
-    TArray<SATS::FReducerDef> &ReducersOutput,
+    TArray<SpacetimeDB::FReducerDef> &ReducersOutput,
     FString& OutError)
 {
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing reducers"));
@@ -106,7 +106,7 @@ bool FModuleDefParser::ParseReducers(
             return false;
         }
 
-        SATS::FReducerDef ReducerDef;
+        SpacetimeDB::FReducerDef ReducerDef;
 
         // Name
         {
@@ -149,8 +149,8 @@ bool FModuleDefParser::ParseReducers(
                     return false;
                 }
 
-                SATS::FOptionalString ParamName;
-                SATS::FAlgebraicType AlgebraicType;
+                SpacetimeDB::FOptionalString ParamName;
+                SpacetimeDB::FAlgebraicType AlgebraicType;
                 if (!FCommon::ParseNameAndAlgebraicType(ParamObj, ParamName, AlgebraicType, OutError))
                 {
                     OutError = FString::Printf(TEXT("While parsing 'name' and 'algebraic_type' for reducer '%i': "),
@@ -175,7 +175,7 @@ bool FModuleDefParser::ParseReducers(
 
 bool FModuleDefParser::ParseRawModuleDef(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
-    SATS::FRawModuleDef& OutDef,
+    SpacetimeDB::FRawModuleDef& OutDef,
     FString& OutError)
 {
     // --- typespace ---

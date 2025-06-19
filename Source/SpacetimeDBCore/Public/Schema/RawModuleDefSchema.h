@@ -2,7 +2,7 @@
 #include "Math/BigInt.h"
 
 // Spacetime Algebraic Type System
-namespace SATS
+namespace SpacetimeDB
 {
     using FOptionalString = TOptional<FString>;
 
@@ -222,7 +222,7 @@ namespace SATS
     
     inline bool IsBuiltinWithNativeRepresentation(const EType& Type)
     {
-        const FString& TypeName = SATS::TypeToString(Type);
+        const FString& TypeName = SpacetimeDB::TypeToString(Type);
         const TSet<FString> BuiltinsWithNativeRepresentations = {
             "Bool",
             "I8",

@@ -6,12 +6,12 @@ class FTypespaceParser
 public:
 	static bool ParseTypespace(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		SATS::FTypespace& TypespaceOutput,
+		SpacetimeDB::FTypespace& TypespaceOutput,
 		FString& OutError);
 	
 	static bool ParseTypes(
 		const TSharedPtr<FJsonObject>& RawModuleDefJson,
-		TArray<SATS::FExportedType>& TypesOutput,
+		TArray<SpacetimeDB::FExportedType>& TypesOutput,
 		FString& OutError);
 	
 };

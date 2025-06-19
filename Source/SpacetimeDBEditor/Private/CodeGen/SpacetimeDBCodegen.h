@@ -2,64 +2,68 @@
 #include "CoreMinimal.h"
 #include "Schema/RawModuleDefSchema.h"
 
-/**
- * Generates Unreal C++ code (USTRUCTs & Blueprint nodes) from SATS::RawModuleDef.
- */
-class FSpacetimeDBCodeGen
+
+namespace SpacetimeDB
 {
-public:
 	/**
-	 * Emit a single header containing all table USTRUCTs.
-	 * @param ModuleDef  Parsed RawModuleDef
-	 * @param HeaderName The header name, without '.h'
-	 * @param OutHeader  Generated .h code
-	 * @param OutError   Error, if any, description
+	 * Generates Unreal C++ code (USTRUCTs & Blueprint nodes) from SATS::RawModuleDef.
 	 */
-	static bool GenerateTablesCode(
-		const SATS::FRawModuleDef& ModuleDef,
-		const FString& HeaderName,
-		FString& OutHeader,
-		FString& OutError);
+	class FSpacetimeDBCodeGen
+	{
+	public:
+		/**
+		 * Emit a single header containing all table USTRUCTs.
+		 * @param ModuleDef  Parsed RawModuleDef
+		 * @param HeaderName The header name, without '.h'
+		 * @param OutHeader  Generated .h code
+		 * @param OutError   Error, if any, description
+		 */
+		static bool GenerateTablesCode(
+			const FRawModuleDef& ModuleDef,
+			const FString& HeaderName,
+			FString& OutHeader,
+			FString& OutError);
 
-	/**
-	 * Emit a Blueprint function library header + source for all reducers.
-	 * @param ModuleName The module's name as present in the Spacetime server
-	 * @param ModuleDef  Parsed RawModuleDef
-	 * @param OutHeader  Generated Reducers.h code
-	 * @param OutSource  Generated Reducers.cpp code
-	 * @param OutError   Error message, in case of 'false' return value
-	 */
-	static bool GenerateReducersCode(
-		const FString& ModuleName,
-		const SATS::FRawModuleDef& ModuleDef,
-		FString& OutHeader,
-		FString& OutSource,
-		FString& OutError
-	);
+		/**
+		 * Emit a Blueprint function library header + source for all reducers.
+		 * @param ModuleName The module's name as present in the Spacetime server
+		 * @param ModuleDef  Parsed RawModuleDef
+		 * @param OutHeader  Generated Reducers.h code
+		 * @param OutSource  Generated Reducers.cpp code
+		 * @param OutError   Error message, in case of 'false' return value
+		 */
+		static bool GenerateReducersCode(
+			const FString& ModuleName,
+			const SpacetimeDB::FRawModuleDef& ModuleDef,
+			FString& OutHeader,
+			FString& OutSource,
+			FString& OutError
+		);
 
-	static bool GenerateTypesSerializationCode(
-		const SATS::FRawModuleDef& ModuleDef,
-		const FString& ModuleName,
-		FString& OutSource,
-		FString& OutHeader,
-		FString& OutError);
+		static bool GenerateTypesSerializationCode(
+			const SpacetimeDB::FRawModuleDef& ModuleDef,
+			const FString& ModuleName,
+			FString& OutSource,
+			FString& OutHeader,
+			FString& OutError);
 
-	/**
-	 * Generates headers for Typespace Products, which map to C/C++ structs.
-	 * @param ModuleDef
-	 * @param ModuleName 
-	 * @param OutExportedTypesCode
-	 * @param OutInlineTypesCode 
-	 * @param OutError 
-	 * @return 
-	 */
-	static bool GenerateTypesCode(
-		const SATS::FRawModuleDef& ModuleDef,
-		const FString& ModuleName,
-		FString& OutExportedTypesCode,
-		FString& OutInlineTypesCode,
-		FString& OutError);
+		/**
+		 * Generates headers for Typespace Products, which map to C/C++ structs.
+		 * @param ModuleDef
+		 * @param ModuleName 
+		 * @param OutExportedTypesCode
+		 * @param OutInlineTypesCode 
+		 * @param OutError 
+		 * @return 
+		 */
+		static bool GenerateTypesCode(
+			const SpacetimeDB::FRawModuleDef& ModuleDef,
+			const FString& ModuleName,
+			FString& OutExportedTypesCode,
+			FString& OutInlineTypesCode,
+			FString& OutError);
 
-private:
-	static FString ResolveAlgebraicTypeToUnrealCxx(const SATS::FAlgebraicType& AlgebraicKind);
-};
+	private:
+		static FString ResolveAlgebraicTypeToUnrealCxx(const SpacetimeDB::FAlgebraicType& AlgebraicKind);
+	};
+}

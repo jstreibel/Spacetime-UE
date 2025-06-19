@@ -11,33 +11,33 @@ FString FSpacetimeConfig::MakeReducerCodeFileName(const FString& ModuleName)
 	return FCommon::ToPascalCase(ModuleName) + FString(TEXT("Reducers.stdbgen"));
 }
 
-SATS::FOptionalString FSpacetimeConfig::GetDefaultValueForType(const SATS::EType& Type)
+SpacetimeDB::FOptionalString FSpacetimeConfig::GetDefaultValueForType(const SpacetimeDB::EType& Type)
 {
-	const auto NoValue = SATS::FOptionalString();
+	const auto NoValue = SpacetimeDB::FOptionalString();
 	
 	switch (Type)
 	{
-	case SATS::EType::Bool:   return FString("true");
-	case SATS::EType::I8:     return FString("0");
-	case SATS::EType::U8:     return FString("0");
-	case SATS::EType::I16:    return FString("0");
-	case SATS::EType::U16:    return FString("0");
-	case SATS::EType::I32:    return FString("0");
-	case SATS::EType::U32:    return FString("0");
-	case SATS::EType::I64:    return FString("0");
-	case SATS::EType::U64:    return FString("0");
-	case SATS::EType::I256:   return NoValue;	// type is a generated struct
-	case SATS::EType::U256:   return NoValue;	// type is a generated struct
-	case SATS::EType::F32:    return FString("0");
-	case SATS::EType::F64:    return FString("0");
-	case SATS::EType::String: return FString("\"\"");
-	case SATS::EType::Array:  return FString("{}");
-	case SATS::EType::Map:    return FString("{}");
+	case SpacetimeDB::EType::Bool:   return FString("true");
+	case SpacetimeDB::EType::I8:     return FString("0");
+	case SpacetimeDB::EType::U8:     return FString("0");
+	case SpacetimeDB::EType::I16:    return FString("0");
+	case SpacetimeDB::EType::U16:    return FString("0");
+	case SpacetimeDB::EType::I32:    return FString("0");
+	case SpacetimeDB::EType::U32:    return FString("0");
+	case SpacetimeDB::EType::I64:    return FString("0");
+	case SpacetimeDB::EType::U64:    return FString("0");
+	case SpacetimeDB::EType::I256:   return NoValue;	// type is a generated struct
+	case SpacetimeDB::EType::U256:   return NoValue;	// type is a generated struct
+	case SpacetimeDB::EType::F32:    return FString("0");
+	case SpacetimeDB::EType::F64:    return FString("0");
+	case SpacetimeDB::EType::String: return FString("\"\"");
+	case SpacetimeDB::EType::Array:  return FString("{}");
+	case SpacetimeDB::EType::Map:    return FString("{}");
 	
-	case SATS::EType::Product:
-	case SATS::EType::Sum:		
-	case SATS::EType::Ref:		
-	case SATS::EType::Invalid:;
+	case SpacetimeDB::EType::Product:
+	case SpacetimeDB::EType::Sum:		
+	case SpacetimeDB::EType::Ref:		
+	case SpacetimeDB::EType::Invalid:;
 	}
 
 	return NoValue;

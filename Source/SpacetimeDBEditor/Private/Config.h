@@ -9,7 +9,7 @@ struct FSpacetimeConfig
 
 	static FString MakeReducerCodeFileName(const FString& ModuleName);
 
-	static SATS::FOptionalString GetDefaultValueForType(const SATS::EType& Type);
+	static SpacetimeDB::FOptionalString GetDefaultValueForType(const SpacetimeDB::EType& Type);
 	
 	static FString MakeInlineTypesCodeFileName(const FString& ModuleName);
 	static FString MakeExportedTypesCodeFileName(const FString& ModuleName);

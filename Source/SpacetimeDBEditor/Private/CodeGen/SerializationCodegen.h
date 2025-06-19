@@ -1,45 +1,49 @@
 #pragma once
-#include "TypesHeadersIRBuilder.h"
+#include "TypesIRBuilder.h"
 
-class FSerializationCodegen
+
+namespace SpacetimeDB
 {
-	
-public:
-	static bool GenerateSerializationCode(
-		const SATS::FRawModuleDef& ModuleDef,
-		const FString& ModuleName,
-		FString& OutSource,
-		FString& OutHeader,
-		FString& OutError);
-
-private:
-	struct FSerializationInfo
+	class FSerializationCodegen
 	{
-		const FString &TypeName;
-		FString &OutHeader;
-		FString &OutSource;		
-	};
 	
-	static bool SerializeAlgebraicType(
-		const SATS::FAlgebraicType& TypeEntry,
-		FSerializationInfo &SerializationInfo,		
-		FString &OutError);
+	public:
+		static bool GenerateSerializationCode(
+			const FRawModuleDef& ModuleDef,
+			const FString& ModuleName,
+			FString& OutSource,
+			FString& OutHeader,
+			FString& OutError);
 
-	static void GenerateProductSerializationCode(
-		const SATS::FProductType& Product,
-		const FSerializationInfo &SerializationInfo);
+	private:
+		struct FSerializationInfo
+		{
+			const FString &TypeName;
+			FString &OutHeader;
+			FString &OutSource;		
+		};
+	
+		static bool SerializeAlgebraicType(
+			const SpacetimeDB::FAlgebraicType& TypeEntry,
+			FSerializationInfo &SerializationInfo,		
+			FString &OutError);
 
-	static void GenerateSumSerializationCode(const SATS::FSumType& Sum, const FSerializationInfo& SerializationInfo);
+		static void GenerateProductSerializationCode(
+			const SpacetimeDB::FProductType& Product,
+			const FSerializationInfo &SerializationInfo);
 
-	enum class EFieldKind
-	{
-		Product,
-		Sum
+		static void GenerateSumSerializationCode(const SpacetimeDB::FSumType& Sum, const FSerializationInfo& SerializationInfo);
+
+		enum class EFieldKind
+		{
+			Product,
+			Sum
+		};
+		static void GenerateFunctionCall(
+			const SpacetimeDB::FProductType::FField& ProductField,
+			FString& OutSource,
+			const EFieldKind Kind,
+			const TOptional<FString> &Tag = {},
+			const int Indent = 1);
 	};
-	static void GenerateFunctionCall(
-		const SATS::FProductType::FField& ProductField,
-		FString& OutSource,
-		const EFieldKind Kind,
-		const TOptional<FString> &Tag = {},
-		const int Indent = 1);
-};
+}

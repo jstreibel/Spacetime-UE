@@ -3,7 +3,7 @@
 #include "Parser/Common.h"
 
 bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDefJson,
-                                      SATS::FTypespace& TypespaceOutput, FString& OutError)
+                                      SpacetimeDB::FTypespace& TypespaceOutput, FString& OutError)
 {
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing typespace"));
     
@@ -31,11 +31,11 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             return false;
         }
         
-        SATS::FAlgebraicType TypeEntry;
+        SpacetimeDB::FAlgebraicType TypeEntry;
         
         if (WrapperObj->HasField(TEXT("Product")))
         {
-            TypeEntry.Type = SATS::EType::Product;
+            TypeEntry.Type = SpacetimeDB::EType::Product;
 
             // Check consistency: in SATS, 'Product' is a tag for a single 'elements' Array. 
             const TSharedPtr<FJsonObject> ProductObj = WrapperObj->GetObjectField(TEXT("Product"));
@@ -63,7 +63,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             }
         }    
         else if (WrapperObj->HasField(TEXT("Sum"))) {
-            TypeEntry.Type = SATS::EType::Sum;
+            TypeEntry.Type = SpacetimeDB::EType::Sum;
 
             // Check consistency: in SATS 'Sum' is a tag for a single 'options' or 'branches' array.
             // For 'branches', we normalize it to 'options'.
@@ -117,7 +117,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
 
 bool FTypespaceParser::ParseTypes(
     const TSharedPtr<FJsonObject>& RawModuleDefJson,
-    TArray<SATS::FExportedType>& TypesOutput,
+    TArray<SpacetimeDB::FExportedType>& TypesOutput,
     FString& OutError)
 {
     UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing types"));
@@ -134,7 +134,7 @@ bool FTypespaceParser::ParseTypes(
     {
         const auto &TypeJsonObj = TypeJsonValue->AsObject();
 
-        SATS::FExportedType Type;
+        SpacetimeDB::FExportedType Type;
         // TODO: check everything below
         
         const auto &TypeNameJsonObj = TypeJsonObj->GetObjectField(TEXT("name"));
