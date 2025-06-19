@@ -9,16 +9,13 @@ public class SpacetimeDBRuntime : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		
-		var projectGenPublicPath = Path.GetFullPath(Path.Combine(
-			ModuleDirectory, "Public", "StdbGenerated"
-		));
-		var projectGenPrivatePath = Path.GetFullPath(Path.Combine(
-			ModuleDirectory, "Private", "StdbGenerated"
-		));
-		PublicIncludePaths.Add(projectGenPublicPath);
-		PrivateIncludePaths.Add(projectGenPrivatePath);
+		PrivateIncludePaths.AddRange(new string[]
+		{
+			Path.Combine(ModuleDirectory, "Private/StdbGenerated")
+		});
 		
 		PublicIncludePaths.AddRange(new string[] {
+			// Path.GetFullPath(Path.Combine(ModuleDirectory, "Public", "StdbGenerated")),
 			Path.Combine(ModuleDirectory, "Public/StdbGenerated") 
 		});
 		

@@ -2,6 +2,8 @@
 
 #include "StdbPrototype/BlackholioSerialization.h"
 
+#ifdef BLACKHOLIO_SERIALIZATION_ENABLED
+
 #include "BlackholioExportedTypes.stdbgen.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
@@ -133,7 +135,32 @@ void SerializeCircleDecayTimer(
 	ProductEnd(Writer, Key);
 }
 
+void SerializeConsumeEntityTimer(const FConsumeEntityTimer& Timer, const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key)
+{
+	UE_LOG(LogTemp, Error, TEXT("Not implemented"));
+}
+
+void SerializeMoveAllPlayersTimer(const FMoveAllPlayersTimer& Timer, const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key)
+{
+	UE_LOG(LogTemp, Error, TEXT("Not implemented"));
+}
+
+void SerializeSpawnFoodTimer(const FSpawnFoodTimer& Timer, const FJsonWriterRef& Writer,
+	const SATS::FOptionalString& Key)
+{
+	UE_LOG(LogTemp, Error, TEXT("Not implemented"));
+}
+
+void SerializeDbVector2(const FDbVector2& Vector, const FJsonWriterRef& Writer, const SATS::FOptionalString& Key)
+{
+	UE_LOG(LogTemp, Error, TEXT("Not implemented"));
+}
+
 void DeserializeCircleDecayTimer(FCircleDecayTimer& Timer, FJsonWriterRef Writer)
 {
 	UE_LOG(LogTemp, Error, TEXT("Not implemented"));
 }
+
+#endif

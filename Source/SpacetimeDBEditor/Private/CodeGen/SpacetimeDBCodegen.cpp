@@ -105,62 +105,101 @@ bool FSpacetimeDBCodeGen::GenerateReducerFunctions(
                 "#include \"Kismet/BlueprintFunctionLibrary.h\"\n"
                 "#include \"CoreMinimal.h\"\n"
                 "#include \"" + FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName) + ".h" + "\"\n"
-                "#include \"" + HeaderName + ".generated.h" + "\"\n\n\n");
+                "#include \"" + HeaderName + ".generated.h" + "\"\n"
+                "\n"
+                "\n");
     HeaderText += TEXT("UCLASS()\n"
-                "class " + FSpacetimeConfig::ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary {\n\n"
-                "   GENERATED_BODY()\n\npublic:\n\n");
+                "class " + FSpacetimeConfig::ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary\n"
+                "{\n"
+                "\n"
+                "   GENERATED_BODY()\n"
+                "\n"
+                "public:\n"
+                "\n");
 
     // Source
     FString Src;
     const FString HeaderFileRelativePath = FSpacetimeConfig::GeneratedDirectory + "/" + HeaderName + ".h";
-    Src += "#include \"" + HeaderFileRelativePath + "\"\n\n\n";
+    Src += "\n"
+           "#include \"" + HeaderFileRelativePath + "\"\n"
+           "\n"
+           "#include \"StdbPrototype/BlackholioSerialization.h\"\n"
+           "\n";    
 
     for (const auto& ReducerDef : ModuleDef.Reducers)
     {
         // Function signature
-        TArray<FString> Params;
-        for (const auto& [Name, AlgebraicType] : ReducerDef.Params)
+        TArray<FString> FunctionArguments;
+        struct FArg {FString ArgName, ArgType;};
+        TArray<FArg> FunctionArgumentsTypes;
+        for (const auto& [ArgumentName, ArgumentAlgebraicTypes] : ReducerDef.Params)
         {            
             // FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Argument.TypeRef].Builtin);
-            FString ArgName = Name.IsSet() ? FCommon::ToPascalCase(*Name) : FCommon::CreateUniqueName();
+            FString ArgName = ArgumentName.IsSet() ? FCommon::ToPascalCase(*ArgumentName) : FCommon::CreateUniqueName();
 
             FString UEType;
             
-            if (IsBuiltinWithNativeRepresentation(AlgebraicType.Type))
+            if (IsBuiltinWithNativeRepresentation(ArgumentAlgebraicTypes.Type))
             {
-                UEType = ResolveAlgebraicTypeToUnrealCxx(AlgebraicType);
+                UEType = ResolveAlgebraicTypeToUnrealCxx(ArgumentAlgebraicTypes);
             }
-            else if (AlgebraicType.Type == SATS::EType::Ref)
+            else if (ArgumentAlgebraicTypes.Type == SATS::EType::Ref)
             {
-                const auto Index = AlgebraicType.Ref.Index;
+                const auto Index = ArgumentAlgebraicTypes.Ref.Index;
                 const auto TypeName = SortedRefs[Index].Name.Name;
 
                 UEType = FCommon::MakeStructName(TypeName, ModuleName);
             }            
             else
             {
-                UE_LOG(LogTemp, Error, TEXT("SpacetimeDB Reducer Unreal codegen currently supports only 'BuiltIn' and 'Ref' SATS-JSON Types"));
+                UE_LOG(LogTemp, Error, TEXT("[spacetime] SpacetimeDB Reducer Unreal codegen currently supports only 'BuiltIn' and 'Ref' SATS-JSON Types"));
             }
             
             const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
+            FunctionArgumentsTypes.Add({ArgName, UEType});
             
-            Params.Add(ParamArgString);
+            FunctionArguments.Add(ParamArgString);
         }
 
         FString Prefix = TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB|" + ModuleName + "\")"); 
         FString Sig = Prefix + FString::Printf(
             TEXT("\n    static void %s(%s);\n\n"),
-            *FCommon::ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", "))
+            *FCommon::ToPascalCase(ReducerDef.Name), *FString::Join(FunctionArguments, TEXT(", "))
         );
         HeaderText += Sig;
 
         // Implementation stub
-        FString Suffix = FString::Printf(
-            TEXT("::%s(%s)\n{\n    // TODO: call SpacetimeDB client reducer '%s'\n}\n\n"),
-            *FCommon::ToPascalCase(ReducerDef.Name), *FString::Join(Params, TEXT(", ")),
-            *ReducerDef.Name
+        FString ImplPrefix = FString::Printf(
+            TEXT("::%s(%s)\n{\n"),
+            *FCommon::ToPascalCase(ReducerDef.Name),
+            *FString::Join(FunctionArguments, TEXT(", "))
         );
-        FString Impl = "void " + ClassName + Suffix;
+
+        FString Implementation;
+        if (FunctionArgumentsTypes.Num() != 0)
+        {
+            Implementation +=
+                "    FString OutJsonPayload;\n"
+                "    const auto WriterRef = FWriterFactory::Create(&OutJsonPayload);\n"
+                "\n";
+
+            for (const auto& Arg : FunctionArgumentsTypes)
+            {
+                Implementation += FString::Printf(TEXT(
+                    "    Serialize%s(%s, WriterRef);\n"
+                    "    WriterRef->Close();\n"), *Arg.ArgType.RightChop(1), *Arg.ArgName);
+            }
+        }
+                
+        FString ImplSuffix = FString::Printf(
+        TEXT("\n"
+                 "\n"
+                 "    // TODO: call SpacetimeDB client reducer '%s'\n"
+                 "}\n"
+                 "\n"),
+            *ReducerDef.Name);
+        
+        FString Impl = "void " + ClassName + ImplPrefix + Implementation + ImplSuffix;
         Src += "\n" + Impl;
     }
     HeaderText += TEXT("};\n");

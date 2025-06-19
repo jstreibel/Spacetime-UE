@@ -61,6 +61,7 @@ struct SPACETIMEDBRUNTIME_API FInt256 : public FSpacetimeProduct {
 
 
 using FJsonWriterRef = TSharedRef<TJsonWriter<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>>;
+using FWriterFactory = TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>;
 
 template<typename T>
 void SerializeNumber(const T& Number, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
@@ -73,5 +74,18 @@ void SerializeNumber(const T& Number, const FJsonWriterRef& Writer, TOptional<FS
 	else
 	{
 		Writer->WriteValue(Number);
+	}
+}
+
+inline void StdbSerializeString(const FString& String, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+{
+	if (Key.IsSet())
+	{
+		const auto TagString = Key.GetValue();
+		Writer->WriteValue(*TagString, String);
+	}
+	else
+	{
+		Writer->WriteValue(String);
 	}
 }
