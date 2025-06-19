@@ -91,7 +91,7 @@ void FSerializationCodegen::GenerateProductSerializationCode(
 
 	OutSource += FunctionSignature + ")\n"
 	"{\n"
-	"    // Product:\n"
+	"\n"
 	"    ProductStart(Writer, Key);\n"
 	"\n";
 
@@ -101,7 +101,10 @@ void FSerializationCodegen::GenerateProductSerializationCode(
 	}
 
 	OutSource +=
+	"\n"
+	"\n"
 	"    ProductEnd(Writer, Key);\n"
+	"\n"
 	"}"
 	"\n"
 	"\n";
@@ -172,21 +175,25 @@ void FSerializationCodegen::GenerateFunctionCall(
 	const EFieldKind Kind,
 	const TOptional<FString> &Tag,
 	const int Indent)
-{	
+{
+	
 	if (!ProductField.Name.IsSet())
 	{
+		// TODO:
+		// Ideally, we would use FCommon::MakeAnonymousDataMemberName() here, but it's not possible.
+		// We can't handle usage of FCommon::MakeAnonymousDataMemberName() in case of anonymous fields,
+		// since the name would differ from the name of the field generated in other parts of the code.
+		// This is because the other parts would refer to the same type, but with different names generated
+		// by the same FCommon::MakeAnonymousDataMemberName() call (this function produces a unique name
+		// each time it's called'). Also TODO: make this explanation shorter.
+		
 		UE_LOG(LogTemp, Error, TEXT("[spacetime] Internal error: unhandled missing name for field in product type"));
 		return;
 	}
 
 	const FString Name = ProductField.Name.GetValue();
-	// TODO:
-	// Ideally, we would use FCommon::MakeAnonymousDataMemberName() here, but it's not possible.
-	// We can't handle usage of FCommon::MakeAnonymousDataMemberName() in case of anonymous fields,
-	// since the name would differ from the name of the field generated in other parts of the code.
-	// This is because the other parts would refer to the same type, but with different names generated
-	// by the same FCommon::MakeAnonymousDataMemberName() call (this function produces a unique name
-	// each time it's called'). Also TODO: make this explanation shorter.
+
+	const auto NormalizedName = FCommon::ToPascalCase(Name);
 
 	FString FunctionName = "Serialize";
 
@@ -204,8 +211,10 @@ void FSerializationCodegen::GenerateFunctionCall(
 
 		FunctionName += "NumberOrString";
 	}
-
-	const auto NormalizedName = FCommon::ToPascalCase(Name);
+	else
+	{
+		FunctionName += NormalizedName;
+	}
 
 	OutSource += "    \n";
 	for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
