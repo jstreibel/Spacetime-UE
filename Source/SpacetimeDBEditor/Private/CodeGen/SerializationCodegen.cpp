@@ -2,231 +2,195 @@
 
 #include "Config.h"
 #include "Parser/Common.h"
-#include "Schema/RawModuleDefSchema.h"
 
 
-namespace SpacetimeDB
+void SpacetimeDB::FSerializationCodegen::EmitCode(
+	const FTypesIR& ExportedTypesIR,
+	const FTypesIR& InlineTypesIR,
+	const FString& ModuleName,
+	FString& OutHeader,
+	FString& OutSource)
 {
-	bool FSerializationCodegen::GenerateSerializationCode(
-		const FRawModuleDef& ModuleDef,
-		const FString& ModuleName,
-		FString& OutSource,
-		FString& OutHeader,
-		FString& OutError)
-	{
-		const FString ModuleNamePascalCase = FCommon::ToPascalCase(ModuleName);
+	const FString ModuleNamePascalCase = FCommon::ToPascalCase(ModuleName);
     
-		OutHeader = TEXT("#pragma once\n"
-						 "\n"
-						 "#include \"CoreMinimal.h\"\n"
-						 "#include \"SpacetimeRuntimeSDK.h\"\n"
-						 "#include \"" + ModuleNamePascalCase + "ExportedTypes.stdbgen.h\"\n"
-						 "\n"
-						 "\n"
-						 "namespace " + ModuleNamePascalCase + " {\n\n");
+	OutHeader = TEXT("#pragma once\n"
+					 "\n"
+					 "#include \"CoreMinimal.h\"\n"
+					 "#include \"SpacetimeRuntimeSDK.h\"\n"
+					 "#include \"" + ModuleNamePascalCase + "ExportedTypes.stdbgen.h\"\n"
+					 "\n"
+					 "\n"
+					 "namespace " + ModuleNamePascalCase + " {\n\n");
 
-		OutSource = TEXT("#include \"" + ModuleNamePascalCase + "Serialization.stdbgen.h\"\n"
-						 "\n"
-						 "\n"
-						 "namespace " + ModuleNamePascalCase + " {\n\n");
+	OutSource = TEXT("#include \"" + ModuleNamePascalCase + "Serialization.stdbgen.h\"\n"
+					 "\n"
+					 "\n"
+					 "namespace " + ModuleNamePascalCase + " {\n\n");
 
-		for (const auto &ExportedType : ModuleDef.ExportedTypes)
-		{
-			const auto Ref = ExportedType.TypeRef;
-			const auto TypeName = ExportedType.Name.Name;
+	EmitTypesIRCode(InlineTypesIR, OutHeader, OutSource);
+	EmitTypesIRCode(ExportedTypesIR, OutHeader, OutSource);	
 
-			const auto& TypeEntry = ModuleDef.Typespace.TypeEntries[Ref];
+	OutHeader += TEXT("}\n\n");
+	OutSource += TEXT("}\n\n");
+}
 
-			if (auto SerializationInfo = FSerializationInfo{TypeName, OutHeader, OutSource};
-				!SerializeAlgebraicType(TypeEntry, SerializationInfo, OutError))
-			{
-				return false;
-			}
-		}
-
-		OutHeader += TEXT("}\n\n");
-
-		OutSource += TEXT("}\n\n");
-    
-		return true;
-	}
-
-	bool FSerializationCodegen::SerializeAlgebraicType(
-		const SpacetimeDB::FAlgebraicType& TypeEntry,
-		FSerializationInfo &SerializationInfo,
-		FString &OutError)
-	{	
-		switch (TypeEntry.Type)
-		{
-		case SpacetimeDB::EType::Product:
-			GenerateProductSerializationCode(TypeEntry.Product, SerializationInfo);
-			break;
-		case SpacetimeDB::EType::Sum:
-			GenerateSumSerializationCode(TypeEntry.Sum, SerializationInfo);
-			break;
-
-		default:
-			SerializationInfo.OutHeader += TEXT("/* Unsupported type: " + SpacetimeDB::TypeToString(TypeEntry.Type) + " */\n");
-			UE_LOG(LogTemp, Error, TEXT("[spacetime] Unsupported type: %s"), *SpacetimeDB::TypeToString(TypeEntry.Type));
-			break;
-		}
-
-		return true;
-	}
-
-	void FSerializationCodegen::GenerateProductSerializationCode(
-		const FProductType& Product,
-		const FSerializationInfo& SerializationInfo)
+void SpacetimeDB::FSerializationCodegen::EmitTypesIRCode(
+	const FTypesIR& TypesIR,
+	FString& OutHeader,
+	FString& OutSource)
+{
+	const auto& Products = TypesIR.GetStructs();
+	const auto& Sums = TypesIR.GetTaggedUnions();
+	
+	for (const auto& TypeReference : TypesIR.GetAllElements())
 	{
-	
-		auto &OutHeader = SerializationInfo.OutHeader;
-		auto &OutSource = SerializationInfo.OutSource;
-
-		const auto &TypeName = SerializationInfo.TypeName;
-
-		const auto FunctionSignature = "void Serialize" + TypeName + "(\n"
-			"    const F" + TypeName + "& SpacetimeProduct,\n"
-			"    const FJsonWriterRef& Writer,\n"
-			"    const TOptional<FString>& Key"; 
-
-		OutHeader += FunctionSignature + "= {});\n\n";
-
-		OutSource += FunctionSignature + ")\n"
-		"{\n"
-		"\n"
-		"    ProductStart(Writer, Key);\n"
-		"\n";
-
-		for (const auto& Element : Product.Elements)
+		if (TypeReference.Type == FTypesIR::FHeaderElement::TaggedUnion)
 		{
-			GenerateFunctionCall(Element, OutSource, EFieldKind::Product);
+			const auto& Sum = Sums[TypeReference.Index];
+			GenerateSumSerializationCode(Sum, OutHeader, OutSource);
 		}
-
-		OutSource +=
-		"\n"
-		"\n"
-		"    ProductEnd(Writer, Key);\n"
-		"\n"
-		"}"
-		"\n"
-		"\n";
-	}
-
-	void FSerializationCodegen::GenerateSumSerializationCode(
-		const SpacetimeDB::FSumType& Sum,
-		const FSerializationInfo& SerializationInfo)
-	{
-		auto &OutHeader = SerializationInfo.OutHeader;
-		auto &OutSource = SerializationInfo.OutSource;
-
-		const auto &TypeName = SerializationInfo.TypeName;
-		const auto NormalizedTypeName = FCommon::ToPascalCase(TypeName);
-
-		const auto FunctionSignature =
-			"void Serialize" + TypeName + "(\n"
-			"    const F" + TypeName + "& SpacetimeSum,\n"
-			"    const FJsonWriterRef& Writer,\n"
-			"    const TOptional<FString>& Key"; 
-
-		OutHeader += FunctionSignature + "= {});\n\n";
-
-		OutSource += FunctionSignature + ")\n"
-		"{\n"
-		"    // Sum:\n"
-		"    SumStart(Writer, Key);\n"
-		"\n"
-		"    switch(SpacetimeSum.Tag)\n"
-		"    {\n";
-
-		{	
-			uint8 OptionNumber = 0;
-
-			const FString TagEnumName = "E" + NormalizedTypeName + "_Tags";
-	
-			for (const auto & [Tag, AlgebraicType] : Sum.Options)
-			{
-				// TODO: test consistency of anonymous Tagging
-				const auto Name = Tag.IsSet() ? Tag.GetValue() : FString::FromInt(OptionNumber++);
-
-				SpacetimeDB::FProductType::FField Field;
-				Field.Name = Name;
-				Field.AlgebraicType = AlgebraicType;
-				OutSource +=
-				"    case " + TagEnumName + "::" + Name + ":\n";
-
-				const FString Key = TypeName;
-
-				GenerateFunctionCall(Field, SerializationInfo.OutSource, EFieldKind::Sum, Key, 2);
-
-				OutSource += "        break;\n";
-			}
-		}
-
-		OutSource +=
-		"    }\n"
-		"    SumEnd(Writer, Key);\n"
-		"}"
-		"\n"
-		"\n";
-	
-	}
-
-	void FSerializationCodegen::GenerateFunctionCall(
-		const SpacetimeDB::FProductType::FField& ProductField,
-		FString& OutSource,
-		const EFieldKind Kind,
-		const TOptional<FString> &Tag,
-		const int Indent)
-	{
-	
-		if (!ProductField.Name.IsSet())
-		{
-			// TODO:
-			// Ideally, we would use FCommon::MakeAnonymousDataMemberName() here, but it's not possible.
-			// We can't handle usage of FCommon::MakeAnonymousDataMemberName() in case of anonymous fields,
-			// since the name would differ from the name of the field generated in other parts of the code.
-			// This is because the other parts would refer to the same type, but with different names generated
-			// by the same FCommon::MakeAnonymousDataMemberName() call (this function produces a unique name
-			// each time it's called'). Also TODO: make this explanation shorter.
 		
-			UE_LOG(LogTemp, Error, TEXT("[spacetime] Internal error: unhandled missing name for field in product type"));
+		else if (TypeReference.Type == FTypesIR::FHeaderElement::Struct)
+		{
+			const auto& Struct = Products[TypeReference.Index];
+			GenerateProductSerializationCode(Struct, OutHeader, OutSource);
+		}
+	}
+}
+
+
+void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
+	const FTaggedUnion& Sum,
+	FString& OutHeader,
+	FString& OutSource)
+{
+	const auto &TypeName = Sum.Name;
+	
+	const auto FunctionSignature =
+			"void Serialize" + TypeName + "(\n"
+			"    const F" + TypeName + "& Value,\n"
+			"    const FJsonWriterRef& Writer,\n"
+			"    const TOptional<FString>& Key"; 
+
+	OutHeader += FunctionSignature + "= {});\n\n";
+
+	OutSource += FunctionSignature + ")\n"
+	"{\n"
+	"    // Sum:\n"
+	"    SumStart(Writer, Key);\n"
+	"\n"
+	"    switch(Value.Tag)\n"
+	"    {\n";
+
+	{
+		const FString TagEnumName = "E" + TypeName + "_Tags";
+		
+		for (const auto& Variant: Sum.Variants)
+		{
+			// TODO: test consistency of anonymous Tagging
+			// const auto Name = Tag.IsSet() ? Tag.GetValue() : FString::FromInt(OptionNumber++);
+
+			const auto& TagValue = Variant.Name;
+			const FString Key = TypeName;
+			
+			OutSource += "    case " + TagEnumName + "::" + TagValue + ":\n";
+			
+			EmitFunctionCall(Variant, OutSource, Key, 2);
+
+			OutSource += "        break;\n";
+		}
+	}
+
+	OutSource +=
+	"    }\n"
+	"    SumEnd(Writer, Key);\n"
+	"}"
+	"\n"
+	"\n";
+}
+
+
+void SpacetimeDB::FSerializationCodegen::GenerateProductSerializationCode(
+	const FStruct& Struct,
+	FString& OutHeader,
+	FString& OutSource)
+{
+	const auto &TypeName = Struct.Name;
+	const auto TypeNameClear = TypeName.RightChop(1); // remove the leading 'F'
+
+	const auto FunctionSignature = "void Serialize" + TypeNameClear + "(\n"
+		"    const " + TypeName + "& Value,\n"
+		"    const FJsonWriterRef& Writer,\n"
+		"    const TOptional<FString>& Key"; 
+
+	OutHeader += FunctionSignature + "= {});\n\n";
+
+	OutSource += FunctionSignature + ")\n"
+	"{\n"
+	"\n"
+	"    ProductStart(Writer, Key);\n";
+
+	for (const auto& Element : Struct.DataMembers)
+	{
+		EmitFunctionCall(Element, OutSource);
+	}
+
+	OutSource +=
+	"\n"
+	"    ProductEnd(Writer, Key);\n"
+	"\n"
+	"}"
+	"\n"
+	"\n";
+}
+
+void SpacetimeDB::FSerializationCodegen::EmitFunctionCall(
+	const FDataMember& ToType,
+	FString& OutSource,
+	TOptional<FString> Tag,
+	const int Indent)
+{
+	const auto& Name = ToType.Name;
+	const auto& TypeString = ToType.Type;
+	FString FunctionName = "Serialize";
+	
+	const auto AlgebraicKind = ToType.Origin->Type;
+	if (IsBuiltIn(AlgebraicKind))
+	{
+		if (AlgebraicKind == EType::Array
+		  | AlgebraicKind == EType::Map)
+		{
+			OutSource += "    // Unimplemented serialization of Map and Array Spacetime Builtin types.";
+			OutSource += "    UE_LOG(LogTemp, Error, Skipping codegen of '" + TypeString + "' function call; "
+						 "unimplemented serialization of Map and Array Spacetime Builtin types.\n";
 			return;
 		}
 
-		const FString Name = ProductField.Name.GetValue();
-
-		const auto NormalizedName = FCommon::ToPascalCase(Name);
-
-		FString FunctionName = "Serialize";
-
-		const auto AlgebraicKind = ProductField.AlgebraicType->Type;
-		if (SpacetimeDB::IsBuiltIn(AlgebraicKind))
+		if (HasNativeUnrealRepresentation(AlgebraicKind))
 		{
-			if (AlgebraicKind == SpacetimeDB::EType::Array
-			  | AlgebraicKind == SpacetimeDB::EType::Map)
-			{
-				OutSource += "    // Unimplemented serialization of Map and Array Spacetime Builtin types.";
-				OutSource += "    UE_LOG(LogTemp, Error, Skipping serialization of '" + Name + "'; "
-							 "unimplemented serialization of Map and Array Spacetime Builtin types.\n";
-				return;
-			}
-
 			FunctionName += "NumberOrString";
+		}
+		else if (IsBuiltInAdded(AlgebraicKind))
+		{
+			FunctionName += "BuiltIn_Added";
 		}
 		else
 		{
-			FunctionName += NormalizedName;
+			FunctionName += "<unknown BuiltIn Kind>";
 		}
-
-		OutSource += "    \n";
-		for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
-		OutSource += "// " + SpacetimeDB::TypeToString(AlgebraicKind) + ":\n";
-		for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
-		const FString KindString = Kind == EFieldKind::Product ? "Product" : "Sum";
-		OutSource += FunctionName + "(Spacetime" + KindString + "." + NormalizedName + ", Writer";
-
-		if (Tag.IsSet()) OutSource += ", FString(\"" + Tag.GetValue() + "\")";
-
-		OutSource += ");\n";
 	}
+	else
+	{
+		FunctionName += TypeString.RightChop(1); // Remove the leading 'F'
+	}
+
+	OutSource += "    \n";
+	for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
+	OutSource += "// " + TypeToString(AlgebraicKind) + ":\n";
+	for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
+	OutSource += FunctionName + "(Value" + "." + Name + ", Writer";
+
+	if (Tag.IsSet()) OutSource += ", FString(\"" + Tag.GetValue() + "\")";
+
+	OutSource += ");\n";
 }

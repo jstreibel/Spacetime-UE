@@ -240,8 +240,10 @@ bool FCommon::ValidateAlgebraicTypeAndGetSatsKind(
 	return true;
 }
 
-bool FCommon::ParseSum(const TArray<TSharedPtr<FJsonValue>>& Variants,
-        SpacetimeDB::FSumType& SumOut, FString& OutError)
+bool FCommon::ParseSum(
+	const TArray<TSharedPtr<FJsonValue>>& Variants,
+	SpacetimeDB::FSumType& SumOut,
+	FString& OutError)
 {
     // Clear any existing options
     SumOut.Options.Empty();
@@ -255,7 +257,7 @@ bool FCommon::ParseSum(const TArray<TSharedPtr<FJsonValue>>& Variants,
             return false;
         }
 
-        TSharedPtr<SpacetimeDB::FAlgebraicType> AlgebraicType = MakeShared<SpacetimeDB::FAlgebraicType>();
+        TSharedRef<SpacetimeDB::FAlgebraicType> AlgebraicType = MakeShared<SpacetimeDB::FAlgebraicType>();
         TOptional<FString> NameString;
         if (!ParseNameAndAlgebraicType(OptionObj, NameString, *AlgebraicType, OutError))
         {
@@ -405,7 +407,7 @@ bool FCommon::ParseProduct(const TArray<TSharedPtr<FJsonValue>>& Elements,
             return false;
         }
 
-        TSharedPtr<SpacetimeDB::FAlgebraicType> AlgebraicType = MakeShared<SpacetimeDB::FAlgebraicType>();
+        TSharedRef<SpacetimeDB::FAlgebraicType> AlgebraicType = MakeShared<SpacetimeDB::FAlgebraicType>();
         SpacetimeDB::FOptionalString NameString;
         if (!ParseNameAndAlgebraicType(ElementObj, NameString, *AlgebraicType, OutError))
         {

@@ -5,7 +5,7 @@
 bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDefJson,
                                       SpacetimeDB::FTypespace& TypespaceOutput, FString& OutError)
 {
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing typespace"));
+    UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Parsing typespace"));
     
 	const TSharedPtr<FJsonObject>* TypespaceObj;
     if (!RawModuleDefJson->TryGetObjectField(TEXT("typespace"), TypespaceObj)) {
@@ -50,7 +50,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
             {
                 
                 OutError = TEXT("Unexpected type entry: expected 'elements' key for ProductType, could not find");
-                UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+                UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *OutError);
                 return false;
             }
 
@@ -78,7 +78,7 @@ bool FTypespaceParser::ParseTypespace(const TSharedPtr<FJsonObject>& RawModuleDe
                   || SumObj->TryGetArrayField(TEXT("variants"), SumTerms)))
             {
                 OutError = TEXT("Unexpected type entry: expected single options' or 'branches' array for SumType, found multiple");
-                UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+                UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *OutError);
                 return false;
             }
 
@@ -120,7 +120,7 @@ bool FTypespaceParser::ParseTypes(
     TArray<SpacetimeDB::FExportedType>& TypesOutput,
     FString& OutError)
 {
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing types"));
+    UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Parsing types"));
     
     if (!RawModuleDefJson->HasTypedField(TEXT("types"), EJson::Array))
     {

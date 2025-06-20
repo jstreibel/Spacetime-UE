@@ -1,4 +1,4 @@
-#include "SpacetimeDBCodegen.h"
+#include "CodeGen.h"
 
 #include "SerializationCodegen.h"
 #include "TypesIRBuilder.h"
@@ -9,22 +9,24 @@
 
 namespace SpacetimeDB
 {
-    FString FSpacetimeDBCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SpacetimeDB::FAlgebraicType& AlgebraicKind)
+    FString FCodeGen::ResolveAlgebraicTypeToUnrealCxx(const SpacetimeDB::FAlgebraicType& AlgebraicKind)
     {
         switch (AlgebraicKind.Type)
         {
-        case SpacetimeDB::EType::Product:  return "// Product placeholder";
-        case SpacetimeDB::EType::Sum:      return "// Sum placeholder";
-        case SpacetimeDB::EType::Ref:      return "// Ref placeholder";
-
+            case EType::Product:  return "// Product placeholder";
+            case EType::Sum:      return "// Sum placeholder";
+            case EType::Ref:      return "// Ref placeholder";
+            
             // case BuiltIn:
-        case SpacetimeDB::EType::Array:    return TEXT("// TArray placeholder");
-        case SpacetimeDB::EType::Map:      return TEXT("// TMap placeholder");
-        default:   /* BuiltIn */    return SpacetimeDB::MapBuiltinToUnreal(SpacetimeDB::TypeToString(AlgebraicKind.Type), false);
+            case EType::Array:    return TEXT("// TArray placeholder");
+            case EType::Map:      return TEXT("// TMap placeholder");
+
+            default:   /* BuiltIn */
+            return SpacetimeDB::MapBuiltinToUnreal(SpacetimeDB::TypeToString(AlgebraicKind.Type), MapToUnrealNativeRepresentation);
         }    
     }
 
-    bool FSpacetimeDBCodeGen::GenerateTablesCode(
+    bool FCodeGen::GenerateTablesCode(
         const SpacetimeDB::FRawModuleDef& ModuleDef,
         const FString& HeaderName,
         FString& OutHeader,
@@ -84,7 +86,7 @@ namespace SpacetimeDB
         return false;
     }
 
-    bool FSpacetimeDBCodeGen::GenerateReducersCode(
+    bool FCodeGen::GenerateReducersCode(
         const FString& ModuleName,
         const SpacetimeDB::FRawModuleDef& ModuleDef,
         FString& OutHeader,
@@ -92,7 +94,8 @@ namespace SpacetimeDB
         FString& OutError
     )
     {
-        const FString& HeaderName = FSpacetimeConfig::MakeReducerCodeFileName(ModuleName); 
+        const FString& HeaderName = FSpacetimeConfig::MakeReducerCodeFileName(ModuleName);
+        const FString& ModuleNameNormalized = FCommon::ToPascalCase(ModuleName);
     
         TArray<SpacetimeDB::FExportedType> SortedRefs = ModuleDef.ExportedTypes;
         Algo::Sort(SortedRefs, [](const SpacetimeDB::FExportedType& EntryA, const  SpacetimeDB::FExportedType& EntryB)
@@ -111,6 +114,7 @@ namespace SpacetimeDB
                     "#include \"" + HeaderName + ".generated.h" + "\"\n"
                     "\n"
                     "\n");
+        
         HeaderText += TEXT("UCLASS()\n"
                     "class " + FSpacetimeConfig::ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary\n"
                     "{\n"
@@ -126,7 +130,7 @@ namespace SpacetimeDB
         Src += "\n"
                "#include \"" + HeaderFileRelativePath + "\"\n"
                "\n"
-               "#include \"StdbPrototype/BlackholioSerialization.h\"\n"
+               "#include \"StdbGenerated/" + ModuleNameNormalized + "Serialization.stdbgen.h\"\n"
                "\n";    
 
         for (const auto& ReducerDef : ModuleDef.Reducers)
@@ -142,7 +146,7 @@ namespace SpacetimeDB
 
                 FString UEType;
             
-                if (IsBuiltinWithNativeRepresentation(ArgumentAlgebraicTypes.Type))
+                if (HasNativeUnrealRepresentation(ArgumentAlgebraicTypes.Type))
                 {
                     UEType = ResolveAlgebraicTypeToUnrealCxx(ArgumentAlgebraicTypes);
                 }
@@ -155,7 +159,7 @@ namespace SpacetimeDB
                 }            
                 else
                 {
-                    UE_LOG(LogTemp, Error, TEXT("[spacetime] SpacetimeDB Reducer Unreal codegen currently supports only 'BuiltIn' and 'Ref' SATS-JSON Types"));
+                    UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] SpacetimeDB Reducer Unreal codegen currently supports only 'BuiltIn' and 'Ref' SATS-JSON Types"));
                 }
             
                 const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
@@ -189,8 +193,8 @@ namespace SpacetimeDB
                 for (const auto& Arg : FunctionArgumentsTypes)
                 {
                     Implementation += FString::Printf(TEXT(
-                        "    Serialize%s(%s, WriterRef);\n"
-                        "    WriterRef->Close();\n"), *Arg.ArgType.RightChop(1), *Arg.ArgName);
+                        "    %s::Serialize%s(%s, WriterRef);\n"
+                        "    WriterRef->Close();\n"), *ModuleNameNormalized, *Arg.ArgType.RightChop(1), *Arg.ArgName);
                 }
             }
                 
@@ -212,23 +216,31 @@ namespace SpacetimeDB
         return true;
     }
 
-    bool FSpacetimeDBCodeGen::GenerateTypesSerializationCode(
-        const SpacetimeDB::FRawModuleDef& ModuleDef,
+    bool FCodeGen::GenerateTypesSerializationCode(
+        const FTypesIR& ExportedTypesIR,
+        const FTypesIR& InlineTypesIR,
         const FString& ModuleName,
         FString& OutSource,
         FString& OutHeader,
         FString& OutError)
     {
-        return
-        FSerializationCodegen::GenerateSerializationCode(
-            ModuleDef, ModuleName, OutSource, OutHeader, OutError);
+        
+        // return
+        // FSerializationCodegen_deprecated::GenerateSerializationCode(
+        //     ModuleDef, ModuleName, OutSource, OutHeader, OutError);
+
+        FSerializationCodegen::EmitCode(ExportedTypesIR, InlineTypesIR, ModuleName, OutHeader, OutSource);
+
+        return true;
     }
 
-    void GOutputTaggedUnion(
+    void OutputTaggedUnion(
         const FTaggedUnion &TaggedUnion,
         const FString &ApiMacroString,
         FString &OutHeaderCode)
     {
+        constexpr  bool bAdd_None_Tag = false;
+        
         const auto TabString = FSpacetimeConfig::TabString;
     
         const auto TaggedUnionTagProperty = TabString +
@@ -242,11 +254,14 @@ namespace SpacetimeDB
         OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
         OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
         OutHeaderCode += FString::Printf(TEXT("{\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
+        if constexpr (bAdd_None_Tag)
+            OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
         for (const auto& Option : TaggedUnion.OptionTags)
         {
             FString OptionName = Option.RightChop(1);
-            OutHeaderCode += TabString + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"), *OptionName, *OptionName);
+            OutHeaderCode += TabString
+            + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"),
+                *OptionName, *OptionName);
         }
         OutHeaderCode += FString::Printf(TEXT("};\n"));
         OutHeaderCode += FString::Printf(TEXT("\n"));
@@ -257,7 +272,23 @@ namespace SpacetimeDB
         OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n\n"));
         OutHeaderCode += TabString + FString::Printf(TEXT("// The current active payload\n"));
         OutHeaderCode += TaggedUnionTagProperty;
-        OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
+        
+        if constexpr (bAdd_None_Tag)
+            OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
+        if constexpr (!bAdd_None_Tag)
+        {
+            if (TaggedUnion.OptionTags.Num() != 0)
+            {
+                OutHeaderCode += TabString
+                + FString::Printf(TEXT("// %ls Tag = %ls::%s;\n"),
+                    *TagName, *TagName, *TaggedUnion.OptionTags[0].RightChop(1));
+            }
+            else
+            {
+                OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"), *TagName, *TagName, TEXT("<no tags available>"));
+            }
+        }
+        
 
         for (const auto& Option : TaggedUnion.Variants)
         {
@@ -270,7 +301,7 @@ namespace SpacetimeDB
         OutHeaderCode += FString::Printf(TEXT("};\n\n\n"));
     }
 
-    void GOutputStruct(const FStruct& Struct, const FString& ApiMacro, FString &OutHeaderCode)
+    void OutputProduct(const FStruct& Struct, const FString& ApiMacro, FString &OutHeaderCode)
     {
         const auto TabString = FSpacetimeConfig::TabString;
     
@@ -316,6 +347,7 @@ namespace SpacetimeDB
         }
 
         for (const auto & [
+            Origin,
             Name,
             Type,
             DefaultValue,
@@ -344,16 +376,16 @@ namespace SpacetimeDB
         OutHeaderCode += "};\n\n\n";
     }
 
-    bool GRenderHeaderToCode(const FTypesIR& Header, FString &OutCode, FString &OutError, const bool TopoSort=false)
+    bool RenderTypesIRToCode(const FTypesIR& TypesIR, FString &OutCode, FString &OutError, const bool TopoSort=false)
     {    
         // Cleanup
         OutCode = "";
 
         // TODO: add license
     
-        if (Header.bPragmaOnce) OutCode += TEXT("#pragma once\n\n");
+        if (TypesIR.bPragmaOnce) OutCode += TEXT("#pragma once\n\n");
     
-        for (auto [Path, bIsLocal] : Header.Includes)
+        for (auto [Path, bIsLocal] : TypesIR.Includes)
         {
         
             OutCode += TEXT("#include ");
@@ -376,18 +408,18 @@ namespace SpacetimeDB
         TArray<FTypesIR::FHeaderElement> Elements;
         if (TopoSort)
         {
-            Elements = Header.GetTopoSortedElements();
+            Elements = TypesIR.GetTopoSortedElements();
         }
         else
         {
-            Elements = Header.GetHeaderElements();
+            Elements = TypesIR.GetAllElements();
         }
     
         for (const auto& Element : Elements)
         {
             if (Element.Type == FTypesIR::FHeaderElement::Struct)
             {
-                const auto& ExportedStructs = Header.GetStructs();
+                const auto& ExportedStructs = TypesIR.GetStructs();
                 const auto Index = Element.Index;
             
                 if (Index >= ExportedStructs.Num())
@@ -399,14 +431,14 @@ namespace SpacetimeDB
                     return false;
                 }
                 const auto& Struct = ExportedStructs[Index];
-                GOutputStruct(Struct, Header.ApiMacro, OutCode);
+                OutputProduct(Struct, TypesIR.ApiMacro, OutCode);
 
                 continue;
             }
 
             if (Element.Type == FTypesIR::FHeaderElement::TaggedUnion)
             {
-                const auto& ExportedTaggedUnions = Header.GetTaggedUnions();
+                const auto& ExportedTaggedUnions = TypesIR.GetTaggedUnions();
                 const auto Index = Element.Index;
             
                 if (Index >= ExportedTaggedUnions.Num())
@@ -419,7 +451,7 @@ namespace SpacetimeDB
                 }
             
                 const auto& TaggedUnion = ExportedTaggedUnions[Index];
-                GOutputTaggedUnion(TaggedUnion, Header.ApiMacro, OutCode);
+                OutputTaggedUnion(TaggedUnion, TypesIR.ApiMacro, OutCode);
 
                 continue;
             }
@@ -430,41 +462,26 @@ namespace SpacetimeDB
         return true;
     }
 
-    bool FSpacetimeDBCodeGen::GenerateTypesCode(
-        const SpacetimeDB::FRawModuleDef& ModuleDef,
-        const FString& ModuleName,
+    bool FCodeGen::GenerateTypesCode(
+        const FTypesIR& ExportedTypesIR,
+        const FTypesIR& InlineTypesIR,
         FString& OutExportedTypesCode,
         FString& OutInlineTypesCode,
         FString& OutError)
     {
-        FTypesIR ExportedTypesHeader;
-        FTypesIR InlineTypesHeader;
-    
-        if (!FTypespaceStructIRBuilder::BuildTypesHeaders(
-            ModuleName,
-            ModuleDef.Typespace,
-            ModuleDef.ExportedTypes,
-            ExportedTypesHeader,
-            InlineTypesHeader,
-            OutError))
-        {
-            OutError = TEXT("Failed to generate header data from typespace: ") + OutError;
-            return false;
-        }
+        UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Successfully built header layout from IR"));
 
-        UE_LOG(LogTemp, Log, TEXT("[spacetime] Successfully built header layout from IR"));
-
-        if (!GRenderHeaderToCode(ExportedTypesHeader, OutExportedTypesCode, OutError, true))
+        if (!RenderTypesIRToCode(ExportedTypesIR, OutExportedTypesCode, OutError, true))
         {
             return false;
         }
     
-        if (!GRenderHeaderToCode(InlineTypesHeader, OutInlineTypesCode, OutError))
+        if (!RenderTypesIRToCode(InlineTypesIR, OutInlineTypesCode, OutError))
         {
             return false;
         }
 
-        UE_LOG(LogTemp, Log, TEXT("[spacetime] Successfully rendered header layout to files"));
+        UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Successfully rendered header layout to files"));
     
         return true;
     }

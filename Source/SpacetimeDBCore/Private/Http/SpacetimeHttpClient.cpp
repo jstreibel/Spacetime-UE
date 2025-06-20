@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "SpacetimeHttpClient.h"
+#include "Http/SpacetimeHttpClient.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "HttpModule.h"
 #include "Dom/JsonObject.h"
@@ -55,7 +55,7 @@ void USpacetimeHttpClient::HandleResponse(FHttpRequestPtr Request, FHttpResponse
 				{
 					FIdentityInfo Info;
 					Info.Id    = Root->GetStringField(TEXT("identity"));
-					Info.Token = Root->GetStringField(TEXT("token"));
+					Info.AuthToken = Root->GetStringField(TEXT("token"));
 					OnSuccess.Broadcast(Info);
 				}
 				else

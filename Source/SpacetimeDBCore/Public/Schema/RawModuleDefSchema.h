@@ -18,7 +18,8 @@ namespace SpacetimeDB
         U32,    // { "U32": [] }
         I64,    // { "I64": [] }
         U64,    // { "U64": [] }
-        // TODO: Add I128 and U128
+        I128,
+        U128,
         I256,   // { "I256": [] }
         U256,   // { "U256": [] }
         F32,    // { "F32": [] }
@@ -41,7 +42,8 @@ namespace SpacetimeDB
         U32,      // { "U32": [] }
         I64,      // { "I64": [] }
         U64,      // { "U64": [] }
-        // TODO: Add I128 and U128
+        I128,
+        U128,
         I256,     // { "I256": [] }
         U256,     // { "U256": [] }
         F32,      // { "F32": [] }
@@ -58,9 +60,76 @@ namespace SpacetimeDB
         Ref,      // { ? }
     };
 
-    inline bool IsBuiltIn(const EType &Type)
+    inline bool IsBuiltIn(const EType &Type) { return Type < EType::Invalid; }
+
+    inline bool IsBuiltInAdded(const EType &Type)
     {
-        return Type < EType::Invalid;
+        switch (Type)
+        {
+            case EType::I256:
+            case EType::U256:
+            case EType::I128:
+            case EType::U128:
+                return true;
+        
+            default:
+                return false;
+        }
+    }
+    
+    inline bool HasNativeUnrealRepresentation(const EType& Type)
+    {
+        switch (Type)
+        {
+            case EType::Bool:
+            case EType::I8:
+            case EType::U8:
+            case EType::I16:
+            case EType::U16:
+            case EType::I32:
+            case EType::U32:
+            case EType::I64:
+            case EType::U64:
+            // case EType::I128:
+            // case EType::U128:
+            // case EType::I256:
+            // case EType::U256:
+            case EType::F32:
+            case EType::F64:
+            case EType::String:
+                return true;
+        
+            default:
+                return false;
+        }
+    }
+
+    
+    inline bool IsNativeBlueprintSupported(const EType& Type)
+    {
+        switch (Type)
+        {
+            case EType::Bool:
+            // case EType::I8:
+            case EType::U8:
+            // case EType::I16:
+            // case EType::U16:
+            case EType::I32:
+            // case EType::U32:
+            case EType::I64:
+            // case EType::U64:
+            // case EType::I128:
+            // case EType::U128:
+            // case EType::I256:
+            // case EType::U256:
+            case EType::F32:
+            case EType::F64:
+            case EType::String:
+                return true;
+
+            default:
+                return false;
+        }
     }
     
     inline FString BuiltinTypeToString(const EBuiltinType Type)
@@ -76,7 +145,8 @@ namespace SpacetimeDB
             case EBuiltinType::U32:    return "U32";
             case EBuiltinType::I64:    return "I64";
             case EBuiltinType::U64:    return "U64";
-            // TODO: Add I128 and U128
+            case EBuiltinType::I128:   return "I128";
+            case EBuiltinType::U128:   return "U128";
             case EBuiltinType::I256:   return "I256";
             case EBuiltinType::U256:   return "U256";
             case EBuiltinType::F32:    return "F32";
@@ -108,7 +178,8 @@ namespace SpacetimeDB
             case EType::U32:      return "U32";
             case EType::I64:      return "I64";
             case EType::U64:      return "U64";
-            // TODO: Add I128 and U128
+            case EType::I128:     return "I128";
+            case EType::U128:     return "U128";
             case EType::I256:     return "I256";
             case EType::U256:     return "U256";
             case EType::F32:      return "F32";
@@ -137,7 +208,8 @@ namespace SpacetimeDB
         if (Kind == "U32")          return EType::U32;
         if (Kind == "I64")          return EType::I64;
         if (Kind == "U64")          return EType::U64;
-        // TODO: Add I128 and U128
+        if (Kind == "I128")         return EType::I128;
+        if (Kind == "U128")         return EType::U128;
         if (Kind == "I256")         return EType::I256;
         if (Kind == "U256")         return EType::U256;
         if (Kind == "F32")          return EType::F32;
@@ -170,7 +242,8 @@ namespace SpacetimeDB
         if (Kind == "U32")          return EBuiltinType::U32;
         if (Kind == "I64")          return EBuiltinType::I64;
         if (Kind == "U64")          return EBuiltinType::U64;
-        // TODO: Add I128 and U128
+        if (Kind == "I128")         return EBuiltinType::I128;
+        if (Kind == "U128")         return EBuiltinType::U128;
         if (Kind == "I256")         return EBuiltinType::I256;
         if (Kind == "U256")         return EBuiltinType::U256;
         if (Kind == "F32")          return EBuiltinType::F32;
@@ -183,20 +256,29 @@ namespace SpacetimeDB
 
     }
 
-    inline FString MapBuiltinToUnreal(const FString& BuiltinName, bool force)
+    enum EMappingOption : uint8
     {
+        MapToUnrealAvailableReflected,
+        MapToUnrealNativeRepresentation,
+    };
+    
+    inline FString MapBuiltinToUnreal(const FString& BuiltinName, const EMappingOption Option)
+    {
+        const auto bNative = Option == MapToUnrealNativeRepresentation;
+        
         if (BuiltinName == "Bool")         return "bool";
-        if (BuiltinName == "I8")           return force ? "int8"   : "uint8";    // Unreal does not reflect int8
+        if (BuiltinName == "I8")           return bNative ? "int8"    : "uint8";    // Unreal does not reflect int8
         if (BuiltinName == "U8")           return "uint8"; 
-        if (BuiltinName == "I16")          return force ? "int16"  : "int32";    // Unreal does not reflect int16
-        if (BuiltinName == "U16")          return force ? "uint16" : "int32";    // Unreal does not reflect uint16
+        if (BuiltinName == "I16")          return bNative ? "int16"   : "int32";    // Unreal does not reflect int16
+        if (BuiltinName == "U16")          return bNative ? "uint16"  : "int32";    // Unreal does not reflect uint16
         if (BuiltinName == "I32")          return "int32"; 
-        if (BuiltinName == "U32")          return force ? "uint32" : "int32";    // Unreal does not reflect uint32
+        if (BuiltinName == "U32")          return bNative ? "uint32"  : "int32";    // Unreal does not reflect uint32
         if (BuiltinName == "I64")          return "int64";
-        if (BuiltinName == "U64")          return force ? "uint64" : "int64";    // Unreal does not reflect uint64
-        // TODO: Add I128 and U128
-        if (BuiltinName == "I256")         return force ? "int256" : "FInt256";  // These are hand-added USTRUCTs
-        if (BuiltinName == "U256")         return force ? "uint256" : "FUInt256"; // These are hand-added USTRUCTs
+        if (BuiltinName == "U64")          return bNative ? "uint64"  : "int64";    // Unreal does not reflect uint64
+        if (BuiltinName == "I128")         return bNative ? "int128"  : "int64";    // Unreal does not reflect int128
+        if (BuiltinName == "U128")         return bNative ? "uint128" : "FUInt256";    // These are hand-added USTRUCTs
+        if (BuiltinName == "I256")         return bNative ? "int256"  : "FInt256";  // These are hand-added USTRUCTs
+        if (BuiltinName == "U256")         return bNative ? "uint256" : "FUInt256"; // These are hand-added USTRUCTs
         if (BuiltinName == "F32")          return "float";
         if (BuiltinName == "F64")          return "double";
         if (BuiltinName == "String")       return "FString";
@@ -205,24 +287,34 @@ namespace SpacetimeDB
     
         return FString::Printf(TEXT("// unknown SATS BuiltIn '%s'"), *BuiltinName);
     }
-
-    inline bool IsReflectedInUnreal(const EType& InType)
+    
+    inline bool IsBlueprintSupported(const EType& InType)
     {
         if (InType == EType::I8)           return false;
         if (InType == EType::I16)          return false;
         if (InType == EType::U16)          return false;
         if (InType == EType::U32)          return false;
         if (InType == EType::U64)          return false;
-        // TODO: Add I128 and U128
+        if (InType == EType::I128)         return false;
+        if (InType == EType::U128)         return false;
         if (InType == EType::I256)         return false;
         if (InType == EType::U256)         return false;
 
         return true;
     }
-    
+
+    /**
+     * 
+     * @param Type The Spacetime Algebraic Type (including al subtypes of BuiltIn type)
+     * @return 'True` if the type is a BuiltIn type AND has a native representation in Unreal, including non-reflected and implemented types.
+     *         'False' if the type is a BuiltIn type and it has no native representation in Unreal.
+     *         'False' if the type is not a BuiltIn type.
+     *
+     */
+    /*
     inline bool IsBuiltinWithNativeRepresentation(const EType& Type)
     {
-        const FString& TypeName = SpacetimeDB::TypeToString(Type);
+        const FString& TypeName = TypeToString(Type);
         const TSet<FString> BuiltinsWithNativeRepresentations = {
             "Bool",
             "I8",
@@ -233,7 +325,8 @@ namespace SpacetimeDB
             "U32",
             "I64",
             "U64",
-            // TODO: Add I128 and U128
+            "I128",
+            "U128",            
             "I256",
             "U256",
             "F32",
@@ -245,6 +338,7 @@ namespace SpacetimeDB
     
         return BuiltinsWithNativeRepresentations.Contains(TypeName);
     }
+    */
     
     struct FAlgebraicType;
     
@@ -273,20 +367,14 @@ namespace SpacetimeDB
     struct FRefType {
         uint32 Index;  // e.g. "other_module.SomeType"
     };
-
+    
     struct FProductType {
-        
-        struct FField
-        {
-            FOptionalString Name;
-            TSharedPtr<FAlgebraicType> AlgebraicType;
-        };
-        TArray<FField> Elements;
-        
+        struct FField { FOptionalString Name; TSharedRef<FAlgebraicType> AlgebraicType; };
+        TArray<FField> Elements;        
     };
 
     struct FSumType {        
-        struct FVariant {FOptionalString Tag; TSharedPtr<FAlgebraicType> AlgebraicType;};
+        struct FVariant {FOptionalString Tag; TSharedRef<FAlgebraicType> AlgebraicType;};
         TArray<FVariant> Options;
     };
 

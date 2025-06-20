@@ -24,7 +24,7 @@ bool USpacetimeAuthSubsystem::LoadIdentity(FIdentityInfo& Identity)
 			const auto Id = **Table.get_as<std::string>("id");
 			const auto Token = **Table.get_as<std::string>("token");
 			Identity.Id = StringCast<TCHAR>(Id.c_str());
-			Identity.Token = StringCast<TCHAR>(Token.c_str());
+			Identity.AuthToken = StringCast<TCHAR>(Token.c_str());
 
 			UE_LOG(LogTemp, Log, TEXT("Parsed TOML → User id=\"%s\""), *Identity.Id);
 		}
@@ -53,7 +53,7 @@ bool USpacetimeAuthSubsystem::SaveIdentity(const FIdentityInfo& Identity)
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
 
 	std::string Id = TCHAR_TO_UTF8(*Identity.Id);
-	std::string Token = TCHAR_TO_UTF8(*Identity.Token);
+	std::string Token = TCHAR_TO_UTF8(*Identity.AuthToken);
 	
 	toml::table Table;	
 	Table.insert("id", Id);

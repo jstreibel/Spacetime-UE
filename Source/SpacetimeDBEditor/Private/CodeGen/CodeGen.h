@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "TypesIRBuilder.h"
 #include "Schema/RawModuleDefSchema.h"
 
 
@@ -8,7 +9,7 @@ namespace SpacetimeDB
 	/**
 	 * Generates Unreal C++ code (USTRUCTs & Blueprint nodes) from SATS::RawModuleDef.
 	 */
-	class FSpacetimeDBCodeGen
+	class FCodeGen
 	{
 	public:
 		/**
@@ -34,14 +35,15 @@ namespace SpacetimeDB
 		 */
 		static bool GenerateReducersCode(
 			const FString& ModuleName,
-			const SpacetimeDB::FRawModuleDef& ModuleDef,
+			const FRawModuleDef& ModuleDef,
 			FString& OutHeader,
 			FString& OutSource,
 			FString& OutError
 		);
 
 		static bool GenerateTypesSerializationCode(
-			const SpacetimeDB::FRawModuleDef& ModuleDef,
+			const FTypesIR& ExportedTypesIR,
+			const FTypesIR& InlineTypesIR,
 			const FString& ModuleName,
 			FString& OutSource,
 			FString& OutHeader,
@@ -49,16 +51,16 @@ namespace SpacetimeDB
 
 		/**
 		 * Generates headers for Typespace Products, which map to C/C++ structs.
-		 * @param ModuleDef
-		 * @param ModuleName 
+		 * @param ExportedTypesIR
+		 * @param InlineTypesIR 
 		 * @param OutExportedTypesCode
 		 * @param OutInlineTypesCode 
 		 * @param OutError 
 		 * @return 
 		 */
 		static bool GenerateTypesCode(
-			const SpacetimeDB::FRawModuleDef& ModuleDef,
-			const FString& ModuleName,
+			const FTypesIR& ExportedTypesIR,
+			const FTypesIR& InlineTypesIR,
 			FString& OutExportedTypesCode,
 			FString& OutInlineTypesCode,
 			FString& OutError);

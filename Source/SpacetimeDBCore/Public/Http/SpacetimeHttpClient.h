@@ -22,9 +22,30 @@ struct FIdentityInfo
 
 	/** The authentication token for future requests */
 	UPROPERTY(BlueprintReadOnly, Category="SpacetimeDB|Auth")
-	FString Token;
+	FString AuthToken;
 };
 
+
+USTRUCT(BlueprintType)
+struct FConnectionContext
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category="SpacetimeDB|Connection")
+	FIdentityInfo IdentityIndo;
+
+	UPROPERTY(BlueprintReadOnly, Category="SpacetimeDB|Connection")
+	FString ServerURI;
+	FString ServerName;
+
+	// Some other info we might want to expose:
+	// FString ServerVersion;
+	// FString ServerDescription;
+	// FString ServerLicense;
+	// FString ServerLicenseURL;
+	// FString ServerLicenseType;
+	// FString ServerLicenseVersion;
+};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnIdentitySuccess, FIdentityInfo, Identity);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnIdentityError  , FString     , ErrorMessage);

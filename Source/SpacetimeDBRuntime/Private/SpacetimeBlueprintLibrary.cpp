@@ -30,7 +30,7 @@ static bool RunSpacetimeDB(const FString& Args, FString& OutFullOutput, int32& O
 
 	if (!StdErr.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Spacetime] CLI output:\n%s"), *StdOut);
+		UE_LOG(LogTemp, Warning, TEXT("[SpacetimeDB] CLI output:\n%s"), *StdOut);
 	}
 	
 	OutFullOutput = StdOut;
@@ -46,7 +46,7 @@ bool USpacetimeBlueprintLibrary::DescribeDatabase(
 	if (DatabaseName.IsEmpty())
 	{
 		OutError = TEXT("Database name is empty");
-		UE_LOG(LogTemp, Error, TEXT("[Spacetime] %s"), *OutError);
+		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *OutError);
 		
 		return false;
 	}
@@ -59,7 +59,7 @@ bool USpacetimeBlueprintLibrary::DescribeDatabase(
 	if (!RunSpacetimeDB(TEXT("describe --json ") + DatabaseName, FullOutput, ReturnCode))
 	{
 		OutError = FullOutput;
-		UE_LOG(LogTemp, Error, TEXT("[Spacetime] %s"), *OutError);
+		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *OutError);
 		return false;
 	}
 
@@ -74,24 +74,24 @@ bool USpacetimeBlueprintLibrary::DescribeDatabase(
 		const FString ErrorMessage = Reader->GetErrorMessage();
 		OutError = FString::Printf(
 			TEXT("JSON parse failed: %s"), *ErrorMessage);
-		UE_LOG(LogTemp, Error, TEXT("[Spacetime] %s"), *OutError);
-		UE_LOG(LogTemp, Error, TEXT("[Spacetime] While parsing JSON output from CLI:\n%s"), *JsonText);
+		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *OutError);
+		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] While parsing JSON output from CLI:\n%s"), *JsonText);
 		return false;
 	}
 
 	for (const auto& Entry : JsonObj->Values)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[Spacetime] DB entry: %s"), *Entry.Key);
+		UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] DB entry: %s"), *Entry.Key);
 	}
 	
 	if (!JsonObj->HasField(TEXT("tables")))
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Spacetime] JSON output from CLI does not contain 'tables' field"));
+		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] JSON output from CLI does not contain 'tables' field"));
 		return false;
 	}
 	if (!JsonObj->HasField(TEXT("reducers")))
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Spacetime] JSON output from CLI does not contain 'reducers' field"));
+		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] JSON output from CLI does not contain 'reducers' field"));
 		return false;
 	}
 

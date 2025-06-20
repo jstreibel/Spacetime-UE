@@ -22,7 +22,7 @@ bool FModuleDefParser::Parse(
     if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
     {
         OutError = TEXT("Failed to parse JSON module definition.");
-        UE_LOG(LogTemp, Error, TEXT("[spacetime] %s"), *OutError);
+        UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *OutError);
         return false;
     }
 
@@ -50,7 +50,7 @@ bool FModuleDefParser::ParseTables(
     TArray<SpacetimeDB::FTableDef>& TablesOutput,
     FString& OutError)
 {
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing tables"));
+    UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Parsing tables"));
     
     if (const TArray<TSharedPtr<FJsonValue>>* Tables;
         RawModuleDefJson->TryGetArrayField(TEXT("tables"), Tables)) {
@@ -83,7 +83,7 @@ bool FModuleDefParser::ParseReducers(
     TArray<SpacetimeDB::FReducerDef> &ReducersOutput,
     FString& OutError)
 {
-    UE_LOG(LogTemp, Log, TEXT("[spacetime] Parsing reducers"));
+    UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Parsing reducers"));
     
     // Clear any previous error state
     OutError.Empty();

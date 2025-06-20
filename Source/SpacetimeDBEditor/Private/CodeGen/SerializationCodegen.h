@@ -1,4 +1,5 @@
 #pragma once
+
 #include "TypesIRBuilder.h"
 
 
@@ -6,44 +7,37 @@ namespace SpacetimeDB
 {
 	class FSerializationCodegen
 	{
-	
+		
 	public:
-		static bool GenerateSerializationCode(
-			const FRawModuleDef& ModuleDef,
+		static void EmitCode(
+			const FTypesIR& ExportedTypesIR,
+			const FTypesIR& InlineTypesIR,
 			const FString& ModuleName,
-			FString& OutSource,
 			FString& OutHeader,
-			FString& OutError);
+			FString& OutSource);
 
 	private:
-		struct FSerializationInfo
-		{
-			const FString &TypeName;
-			FString &OutHeader;
-			FString &OutSource;		
-		};
-	
-		static bool SerializeAlgebraicType(
-			const SpacetimeDB::FAlgebraicType& TypeEntry,
-			FSerializationInfo &SerializationInfo,		
-			FString &OutError);
 
+		static void EmitTypesIRCode(
+			const FTypesIR& TypesIR,
+			FString& OutHeader,
+			FString& OutSource);
+
+		static void GenerateSumSerializationCode(
+			const FTaggedUnion& Sum,
+			FString& OutHeader,
+			FString& OutSource);
+		
 		static void GenerateProductSerializationCode(
-			const SpacetimeDB::FProductType& Product,
-			const FSerializationInfo &SerializationInfo);
+			const FStruct& Struct,
+			FString& OutHeader,
+			FString& OutSource);
 
-		static void GenerateSumSerializationCode(const SpacetimeDB::FSumType& Sum, const FSerializationInfo& SerializationInfo);
-
-		enum class EFieldKind
-		{
-			Product,
-			Sum
-		};
-		static void GenerateFunctionCall(
-			const SpacetimeDB::FProductType::FField& ProductField,
+		static void EmitFunctionCall(
+			const FDataMember& ToType,
 			FString& OutSource,
-			const EFieldKind Kind,
-			const TOptional<FString> &Tag = {},
+			TOptional<FString> Tag = {},
 			const int Indent = 1);
+	
 	};
 }

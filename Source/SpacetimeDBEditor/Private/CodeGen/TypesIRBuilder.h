@@ -7,9 +7,20 @@ namespace SpacetimeDB
 {
 	struct FDataMember
 	{
+		FDataMember() = delete;
+		FDataMember(const FDataMember& Other) = default;
+		FDataMember(FDataMember&& Other) = default;
+		FDataMember& operator=(const FDataMember& Other) = default;
+		FDataMember& operator=(FDataMember&& Other) = default;
+		~FDataMember() = default;
+
+		explicit FDataMember(const TSharedRef<FAlgebraicType>& Origin) : Origin(Origin) {}
+		
+		TSharedRef<FAlgebraicType> Origin;
+		
 		FString Name;
 		FString Type;
-		SpacetimeDB::FOptionalString DefaultValue;
+		FOptionalString DefaultValue;
 		TOptional<FString> Comment;
 
 		auto operator == (const FDataMember& DataMember) const
@@ -135,7 +146,7 @@ namespace SpacetimeDB
 
 		const auto& GetTaggedUnions() const{ return TaggedUnions; }
 		const auto& GetStructs() const{ return Structs; }
-		const TArray<FHeaderElement>& GetHeaderElements() const { return HeaderElements; }
+		const TArray<FHeaderElement>& GetAllElements() const { return HeaderElements; }
 
 		auto GetTopoSortedElements() const
 		{
@@ -182,9 +193,9 @@ namespace SpacetimeDB
 			}
 
 			// if we didn’t pick up everything, there’s a cycle!
-			if (Sorted.Num() == N)
+			if (Sorted.Num() != N)
 			{
-				UE_LOG(LogTemp, Error, TEXT("[spacetime] Cyclic dependency detected in RawModuleDef types/typespace"));
+				UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] Cyclic dependency detected in RawModuleDef types/typespace"));
 			}
 		
 			return Sorted;
@@ -203,31 +214,28 @@ namespace SpacetimeDB
 	class FTypespaceStructIRBuilder
 	{
 	public:	
-		static bool BuildTypesHeaders(
+		static bool BuildTypesIR(
 			const FString& ModuleName,
-			const SpacetimeDB::FTypespace& Typespace,
-			const TArray<SpacetimeDB::FExportedType>& ExportedTypes,
+			const FTypespace& Typespace,
+			const TArray<FExportedType>& ExportedTypes,
 			FTypesIR &OutExported,
 			FTypesIR &OutInline,
-			FString& OutError);
+			FString &OutError);
 
 	private:
-		static bool GenerateNewTaggedUnion(
+		static FTaggedUnion GenerateNewTaggedUnion(
 			const FString& ModuleName,
-			const TArray<SpacetimeDB::FExportedType>& ExportedTypes,
+			const TArray<FExportedType>& ExportedTypes,
 			const FString& UnionName,
-			const SpacetimeDB::FSumType& SumOrigin,
-			FTaggedUnion& OutTaggedUnion,
-			FTypesIR &OutInlineHeader, FString &OutError);
+			const FSumType& SumOrigin,
+			FTypesIR &OutInlineHeader);
 
-		static bool GenerateNewStruct(
+		static FStruct GenerateNewStruct(
 			const FString& ModuleName,
-			const TArray<SpacetimeDB::FExportedType>& ExportedTypes,
+			const TArray<FExportedType>& ExportedTypes,
 			const FString& StructName,
-			const SpacetimeDB::FProductType& ProductOrigin,
-			FStruct& OutStruct,
-			FTypesIR &OutInlineHeader,
-			FString &OutError);
+			const FProductType& ProductOrigin,
+			FTypesIR &OutInlineHeader);
 
 	
 	};

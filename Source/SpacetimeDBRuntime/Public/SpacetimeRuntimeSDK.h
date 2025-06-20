@@ -24,9 +24,16 @@ struct FSpacetimeProduct
 };
 
 
+USTRUCT(BlueprintType, Category="SpacetimeDB")
+struct FBuiltIn_Added : public FSpacetimeProduct
+{
+	GENERATED_BODY()
+};
+
+
 /* Provides SATS-JSON U128 support; Unreal UBT lacks uint128 reflection. */
 USTRUCT(BlueprintType, Category="SpacetimeDB")
-struct SPACETIMEDBRUNTIME_API FUInt128 : public FSpacetimeProduct {
+struct SPACETIMEDBRUNTIME_API FUInt128 : public FBuiltIn_Added {
 
 	GENERATED_BODY()
 	
@@ -38,7 +45,7 @@ struct SPACETIMEDBRUNTIME_API FUInt128 : public FSpacetimeProduct {
 
 /* Provides SATS-JSON U256 support; Unreal UBT lacks uint256 reflection. */
 USTRUCT(BlueprintType, Category="SpacetimeDB")
-struct SPACETIMEDBRUNTIME_API FUInt256 : public FSpacetimeProduct {
+struct SPACETIMEDBRUNTIME_API FUInt256 : public FBuiltIn_Added {
 
 	GENERATED_BODY()
 	
@@ -112,4 +119,13 @@ void SerializeNumberOrString(const T& NumberOrString, const FJsonWriterRef& Writ
 	{
 		Writer->WriteValue(NumberOrString);
 	}
+}
+
+
+template<typename T>
+void SerializeBuiltIn_Added(const T& Value, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+{
+	static_assert(std::is_base_of<FBuiltIn_Added, T>(), "This path must never be taken");
+	
+	SerializeNumberOrString(Value.Value, Writer, Key);
 }
