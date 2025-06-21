@@ -64,30 +64,39 @@ namespace SpacetimeDB
 			"    static " + Signature.HeaderSignature + ";\n\n};\n\n\n");
 
 		OutSource += Signature.SourceSignature + "\n"
-		"{\n"
-		"\n"
-		"    FString JsonPayload = \"[\"; // Payload is a Json array of serialized Algebraic types.\n";
-
-		for (const auto& [Name, Type] : ParamsList)
+		"{\n" 
+		"    constexpr auto ReducerName = TEXT(\"" + Reducer.Name + "\");\n"
+		"\n";
+		
+		if (ParamsList.Num() == 0)
 		{
-			const FString ChoppedType = Type.RightChop(1);
-			
-			OutSource += 
-			"    {\n"
-			"        FString JsonSerializedValue;\n"
-			"        const auto WriterRef = FWriterFactory::Create(&JsonSerializedValue);\n"
-			"        " + ModuleNameNormalized + "::Serialize" + ChoppedType + "(" + Name + ", WriterRef);\n"
-			"        WriterRef->Close();\n"
-			"        JsonPayload += JsonSerializedValue;\n"
-			"        JsonPayload += \",\";\n"
-			"    }\n";
+			OutSource +=
+			"    const FString JsonPayload = \"[]\"; // No args, just an empty Json array.\n";
 		}
+		else
+		{
+			OutSource +=
+			"    FString JsonPayload = \"[\"; // Payload is a Json array of serialized Algebraic types.\n";
 
+			for (const auto& [Name, Type] : ParamsList)
+			{
+				const FString ChoppedType = Type.RightChop(1);
+			
+				OutSource += 
+				"    {\n"
+				"        FString JsonSerializedValue;\n"
+				"        const auto WriterRef = FWriterFactory::Create(&JsonSerializedValue);\n"
+				"        " + ModuleNameNormalized + "::Serialize" + ChoppedType + "(" + Name + ", WriterRef);\n"
+				"        WriterRef->Close();\n"
+				"        JsonPayload += JsonSerializedValue;\n"
+				"        JsonPayload += \",\";\n"
+				"    }\n";
+			}
+
+			OutSource += "    JsonPayload = JsonPayload.LeftChop(1); // Remove last comma.\n";
+			OutSource += "    JsonPayload += \"]\";\n";
+		}
 		OutSource +=
-		"    JsonPayload = JsonPayload.LeftChop(1); // Remove last comma.\n"
-		"    JsonPayload += \"]\";\n"
-		"\n"
-		"    const FString ReducerName = TEXT(\"" + Reducer.Name + "\");\n"
 		"\n"
 		"    auto* Node = NewObject<" + ClassName + ">();\n"
 		"    Node->Setup(WorldContextObject, ReducerName, JsonPayload);\n"
