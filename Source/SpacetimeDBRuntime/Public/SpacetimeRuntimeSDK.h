@@ -65,65 +65,68 @@ struct SPACETIMEDBRUNTIME_API FInt256 : public FSpacetimeProduct {
 };
 
 
-using FJsonWriterRef = TSharedRef<TJsonWriter<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>>;
-using FWriterFactory = TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>;
-
-inline void ProductStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
+namespace SpacetimeDB
 {
-	if (Key.IsSet())
-	{
-		const auto TagString = Key.GetValue();
-		Writer->WriteArrayStart(*TagString);
-	}
-	else
-	{
-		Writer->WriteArrayStart();
-	}
-}
+	using FJsonWriterRef = TSharedRef<TJsonWriter<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>>;
+	using FWriterFactory = TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>;
 
-inline void ProductEnd(const FJsonWriterRef& Writer, TOptional<FString> Key)
-{
-	Writer->WriteArrayEnd();
-}
-
-inline void SumStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
-{
-	if (Key.IsSet())
+	inline void ProductStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
 	{
-		const auto TagString = Key.GetValue();
-		Writer->WriteObjectStart(*TagString);
+		if (Key.IsSet())
+		{
+			const auto TagString = Key.GetValue();
+			Writer->WriteArrayStart(*TagString);
+		}
+		else
+		{
+			Writer->WriteArrayStart();
+		}
 	}
 
-	else
+	inline void ProductEnd(const FJsonWriterRef& Writer, TOptional<FString> Key)
 	{
-		Writer->WriteObjectStart();
+		Writer->WriteArrayEnd();
 	}
-}
 
-inline void SumEnd(const FJsonWriterRef& Writer, const TOptional<FString>& Key)
-{
-	Writer->WriteObjectEnd();
-}
-
-template<typename T>
-void SerializeNumberOrString(const T& NumberOrString, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
-{
-	if (Key.IsSet())
+	inline void SumStart(const FJsonWriterRef& Writer, TOptional<FString> Key)
 	{
-		const auto TagString = Key.GetValue();
-		Writer->WriteValue(*TagString, NumberOrString);
+		if (Key.IsSet())
+		{
+			const auto TagString = Key.GetValue();
+			Writer->WriteObjectStart(*TagString);
+		}
+
+		else
+		{
+			Writer->WriteObjectStart();
+		}
 	}
-	else
+
+	inline void SumEnd(const FJsonWriterRef& Writer, const TOptional<FString>& Key)
 	{
-		Writer->WriteValue(NumberOrString);
+		Writer->WriteObjectEnd();
 	}
-}
+
+	template<typename T>
+	void SerializeNumberOrString(const T& NumberOrString, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+	{
+		if (Key.IsSet())
+		{
+			const auto TagString = Key.GetValue();
+			Writer->WriteValue(*TagString, NumberOrString);
+		}
+		else
+		{
+			Writer->WriteValue(NumberOrString);
+		}
+	}
 
 
-template<typename T>
-void SerializeBuiltIn_Added(const T& Value, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
-{
-	static_assert(std::is_base_of<FBuiltIn_Added, T>(), "This path must never be taken");
+	template<typename T>
+	void SerializeBuiltIn_Added(const T& Value, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
+	{
+		static_assert(std::is_base_of<FBuiltIn_Added, T>(), "This path must never be taken");
 	
-	SerializeNumberOrString(Value.Value, Writer, Key);
+		SerializeNumberOrString(Value.Value, Writer, Key);
+	}
 }

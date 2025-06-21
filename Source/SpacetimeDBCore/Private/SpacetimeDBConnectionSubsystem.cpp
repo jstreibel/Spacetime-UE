@@ -46,7 +46,14 @@ void USpacetimeAsyncReducerBase::Activate()
 		OnFailure.Broadcast(Msg);
 		SetReadyToDestroy();
 
-		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] Reducer call error: %s"), *Resp->GetContentAsString());
+		if (bWasSuccessful)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[SpacetimeDB] Reducer '%s' call error: %s"), *ReducerName, *Resp->GetContentAsString())
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] HTTP request for Reducer '%s' call error: %s"), *ReducerName, *Resp->GetContentAsString());
+		}
 	};	
 
 	const FString Endpoint = "/v1/database/" + Conn->SpacetimeDBModuleName + "/call/" + ReducerName;
@@ -79,7 +86,14 @@ void USpacetimeDBConnectionSubsystem::InvokeReducer(const FString& ReducerName, 
 	};
 	FOnHttpError OnError = [](const FHttpResponsePtr& Response, bool bWasSuccessful)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] %s"), *Response->GetContentAsString());
+		if (!bWasSuccessful)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] HTTP request failed. Response: %s"), *Response->GetContentAsString().Replace(TEXT("\n"), TEXT("")));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] HTTP request succeeded, but response is invalid. Response: %s"), *Response->GetContentAsString());
+		}
 	};
 	
 	// Note: JsonPayload must be an array of arguments (SATS-JSON) to the reducer

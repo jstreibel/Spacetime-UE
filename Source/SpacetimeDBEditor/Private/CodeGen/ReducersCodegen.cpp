@@ -36,9 +36,55 @@ namespace SpacetimeDB
 		
 		for (const auto& Reducer : ModuleDef.Reducers)
 		{
-			const auto ParamsList = BuildParamsList(TypesIR, Reducer, true);
+			const auto ParamsList = BuildParamsList(ModuleNameNormalized, TypesIR, Reducer, true);
 			EmitReducer(Reducer, ParamsList, ModuleNameNormalized,OutHeader, OutSource);
 		}		
+	}
+
+	FString FReducersCodegen::ResolveType(
+		const FTypesIR& ExportedTypesIR,
+		const FAlgebraicType& Type,
+		const FString& ReducerName)
+	{
+		const auto& ExportedElements = ExportedTypesIR.GetAllElements();
+		const auto& ExportedProducts = ExportedTypesIR.GetStructs();
+		const auto& ExportedSums = ExportedTypesIR.GetTaggedUnions();
+
+		FString TypeString;
+		if (Type.Type == EType::Ref)
+		{
+			// TODO: IMPORTANT QUESTION: are all reducer parameters exported types?
+			// If yes: are exported types mapped 1:1 to typespace?
+			const auto RefIndex = Type.Ref.Index;
+			const auto &Element = ExportedElements[RefIndex];
+
+			// TODO: can typespace contain anything other than Products and Sums/tagged unions?
+			if (Element.Type == FTypesIR::FHeaderElement::Struct)
+			{
+				const auto& Struct = ExportedProducts[RefIndex];
+				TypeString = Struct.Name;
+			}
+			else if (Element.Type == FTypesIR::FHeaderElement::TaggedUnion)
+			{
+				const auto& Sum = ExportedSums[RefIndex];
+				TypeString = Sum.Name;
+			}
+		}
+
+		else if (IsBuiltIn(Type.Type))
+		{
+			TypeString = MapBuiltinToUnreal(TypeToString(Type.Type), MapToUnrealAvailableReflected);
+		}
+		
+		else
+		{
+			TypeString = TypeToString(Type.Type);
+			UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] Spacetime Unreal integration currently does not support inline "
+							   "Sums and Product parameters in Reducers, only Refs and BuiltIns. "
+							"Problem occured with reducer '%s', type is '%s'"), *ReducerName, *TypeString);
+		}
+
+		return TypeString;
 	}
 	
 
@@ -78,15 +124,13 @@ namespace SpacetimeDB
 			OutSource +=
 			"    FString JsonPayload = \"[\"; // Payload is a Json array of serialized Algebraic types.\n";
 
-			for (const auto& [Name, Type] : ParamsList)
-			{
-				const FString ChoppedType = Type.RightChop(1);
-			
+			for (const auto& [Name, Type, SerializationType, SerializationNamespace] : ParamsList)
+			{			
 				OutSource += 
 				"    {\n"
 				"        FString JsonSerializedValue;\n"
-				"        const auto WriterRef = FWriterFactory::Create(&JsonSerializedValue);\n"
-				"        " + ModuleNameNormalized + "::Serialize" + ChoppedType + "(" + Name + ", WriterRef);\n"
+				"        const auto WriterRef = SpacetimeDB::FWriterFactory::Create(&JsonSerializedValue);\n"
+				"        " + SerializationNamespace + "::Serialize" + SerializationType + "(" + Name + ", WriterRef);\n"
 				"        WriterRef->Close();\n"
 				"        JsonPayload += JsonSerializedValue;\n"
 				"        JsonPayload += \",\";\n"
@@ -106,39 +150,39 @@ namespace SpacetimeDB
 		
 	}
 
+	
 
 	TArray<FReducersCodegen::FReducerParam> FReducersCodegen::BuildParamsList(
+		const FString& NormalizedModuleName,
 		const FTypesIR& ExportedTypesIR,
 		const FReducerDef& Reducer,
 		const bool bNormalizeNames)
 	{
-		const auto& ExportedElements = ExportedTypesIR.GetAllElements();
-		const auto& ExportedProducts = ExportedTypesIR.GetStructs();
-		const auto& ExportedSums = ExportedTypesIR.GetTaggedUnions();
-
+		
 		TArray<FReducerParam> ParamsList;
 		for (const auto& [Name, Type] : Reducer.Params)
 		{
-			if (Type.Type != EType::Ref)
-			{
-				UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] Spacetime Unreal integration currently only support Ref parameters in Reducers"));
-			}
+			const auto TypeString = ResolveType(ExportedTypesIR, Type, Reducer.Name);
+			FString SerializationType;
+			FString SerializationNamespace;
 
-			// TODO: IMPORTANT QUESTION: are all reducer parameters exported types?
-			// If yes: are exported types mapped 1:1 to typespace?
-			const auto RefIndex = Type.Ref.Index;
-			const auto &Element = ExportedElements[RefIndex];
-
-			FString TypeString;
-			if (Element.Type == FTypesIR::FHeaderElement::Struct)
+			if (IsBuiltIn(Type.Type))
 			{
-				const auto& Struct = ExportedProducts[RefIndex];
-				TypeString = Struct.Name;
+				SerializationNamespace = "SpacetimeDB";
+				
+				if (IsBuiltInAdded(Type.Type))
+				{
+					SerializationType = "BuiltIn_Added";
+				}
+				else
+				{
+					SerializationType = "NumberOrString";
+				}
 			}
-			else if (Element.Type == FTypesIR::FHeaderElement::TaggedUnion)
+			else
 			{
-				const auto& Sum = ExportedSums[RefIndex];
-				TypeString = Sum.Name;
+				SerializationNamespace = NormalizedModuleName;
+				SerializationType = TypeString.RightChop(1);
 			}
 
 			auto NameString = Name.IsSet() ? Name.GetValue() : "Value";
@@ -147,7 +191,7 @@ namespace SpacetimeDB
 				NameString = FCommon::ToPascalCase(NameString);
 			}
 
-			ParamsList.Add({ NameString, TypeString });
+			ParamsList.Add({ NameString, TypeString, SerializationType, SerializationNamespace });
 		}
 
 		return ParamsList;
@@ -163,7 +207,7 @@ namespace SpacetimeDB
 		Signature.HeaderSignature = ClassName + "* " + ReducerName + "Reducer(\n        UObject* WorldContextObject";
 		Signature.SourceSignature = ClassName + "* " + ClassName + "::" + ReducerName + "Reducer(UObject* WorldContextObject";
 
-		for (const auto& [Name, Type] : Params)
+		for (const auto& [Name, Type, SerializationType, SerializationNamespace] : Params)
 		{
 			Signature.HeaderSignature += FString::Printf(TEXT(",\n        const %s& %s"), *Type, *Name);
 			Signature.SourceSignature += FString::Printf(TEXT(",\n        const %s& %s"), *Type, *Name);

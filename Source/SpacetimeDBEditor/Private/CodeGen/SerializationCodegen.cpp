@@ -69,7 +69,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 	const auto FunctionSignature =
 			"void Serialize" + TypeName + "(\n"
 			"    const F" + TypeName + "& Value,\n"
-			"    const FJsonWriterRef& Writer,\n"
+			"    const SpacetimeDB::FJsonWriterRef& Writer,\n"
 			"    const TOptional<FString>& Key"; 
 
 	OutHeader += FunctionSignature + "= {});\n\n";
@@ -77,7 +77,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 	OutSource += FunctionSignature + ")\n"
 	"{\n"
 	"    // Sum:\n"
-	"    SumStart(Writer, Key);\n"
+	"    SpacetimeDB::SumStart(Writer, Key);\n"
 	"\n"
 	"    switch(Value.Tag)\n"
 	"    {\n";
@@ -103,7 +103,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 
 	OutSource +=
 	"    }\n"
-	"    SumEnd(Writer, Key);\n"
+	"    SpacetimeDB::SumEnd(Writer, Key);\n"
 	"}"
 	"\n"
 	"\n";
@@ -120,7 +120,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateProductSerializationCode(
 
 	const auto FunctionSignature = "void Serialize" + TypeNameClear + "(\n"
 		"    const " + TypeName + "& Value,\n"
-		"    const FJsonWriterRef& Writer,\n"
+		"    const SpacetimeDB::FJsonWriterRef& Writer,\n"
 		"    const TOptional<FString>& Key"; 
 
 	OutHeader += FunctionSignature + "= {});\n\n";
@@ -128,7 +128,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateProductSerializationCode(
 	OutSource += FunctionSignature + ")\n"
 	"{\n"
 	"\n"
-	"    ProductStart(Writer, Key);\n";
+	"    SpacetimeDB::ProductStart(Writer, Key);\n";
 
 	for (const auto& Element : Struct.DataMembers)
 	{
@@ -137,7 +137,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateProductSerializationCode(
 
 	OutSource +=
 	"\n"
-	"    ProductEnd(Writer, Key);\n"
+	"    SpacetimeDB::ProductEnd(Writer, Key);\n"
 	"\n"
 	"}"
 	"\n"
@@ -153,6 +153,7 @@ void SpacetimeDB::FSerializationCodegen::EmitFunctionCall(
 	const auto& Name = ToType.Name;
 	const auto& TypeString = ToType.Type;
 	FString FunctionName = "Serialize";
+	FString Namespace = "";
 	
 	const auto AlgebraicKind = ToType.Origin->Type;
 	if (IsBuiltIn(AlgebraicKind))
@@ -169,10 +170,12 @@ void SpacetimeDB::FSerializationCodegen::EmitFunctionCall(
 		if (HasNativeUnrealRepresentation(AlgebraicKind))
 		{
 			FunctionName += "NumberOrString";
+			Namespace = "SpacetimeDB::";
 		}
 		else if (IsBuiltInAdded(AlgebraicKind))
 		{
 			FunctionName += "BuiltIn_Added";
+			Namespace = "SpacetimeDB::";
 		}
 		else
 		{
@@ -188,7 +191,7 @@ void SpacetimeDB::FSerializationCodegen::EmitFunctionCall(
 	for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
 	OutSource += "// " + TypeToString(AlgebraicKind) + ":\n";
 	for (auto i = 0; i < Indent; ++i) OutSource += FSpacetimeConfig::TabString;
-	OutSource += FunctionName + "(Value" + "." + Name + ", Writer";
+	OutSource += Namespace + FunctionName + "(Value" + "." + Name + ", Writer";
 
 	if (Tag.IsSet()) OutSource += ", FString(\"" + Tag.GetValue() + "\")";
 

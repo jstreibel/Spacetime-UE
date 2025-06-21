@@ -73,7 +73,9 @@ namespace SpacetimeDB
 		}
 
 		// Equivalent to being top-level in 'typespace' (TODO: is it?)
-		// TODO: if this is equivalent to being top-level, then we can remove the bool and leave only the optional below
+		// Note: if this is equivalent to being top-level, then we can remove the bool and leave only the optional below
+		// Note (2): if we leave only the optional, perhaps we should hide this from the user, and expose via
+		// getters and setters?
 		bool bIsExportedType = false;
 		TOptional<uint8> TypespaceIndex;
 	};

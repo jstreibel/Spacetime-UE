@@ -275,14 +275,14 @@ namespace SpacetimeDB
         if (BuiltinName == "U32")          return bNative ? "uint32"  : "int32";    // Unreal does not reflect uint32
         if (BuiltinName == "I64")          return "int64";
         if (BuiltinName == "U64")          return bNative ? "uint64"  : "int64";    // Unreal does not reflect uint64
-        if (BuiltinName == "I128")         return bNative ? "int128"  : "int64";    // Unreal does not reflect int128
-        if (BuiltinName == "U128")         return bNative ? "uint128" : "FUInt256";    // These are hand-added USTRUCTs
+        if (BuiltinName == "I128")         return bNative ? "int128"  : "FInt256";  // Unreal already has an FInt128 type (unfortunately, useless for us), so we use FInt256 instead. Notice that overflows will be harder with this type than the 128bit one.
+        if (BuiltinName == "U128")         return bNative ? "uint128" : "FUInt128"; // These are hand-added USTRUCTs
         if (BuiltinName == "I256")         return bNative ? "int256"  : "FInt256";  // These are hand-added USTRUCTs
         if (BuiltinName == "U256")         return bNative ? "uint256" : "FUInt256"; // These are hand-added USTRUCTs
         if (BuiltinName == "F32")          return "float";
         if (BuiltinName == "F64")          return "double";
         if (BuiltinName == "String")       return "FString";
-        if (BuiltinName == "Array")        return "// TArray<...>";
+        if (BuiltinName == "Array")        return "// TArray<...>"; // TODO: Spacetime BuiltIn Arrays and Maps!!!
         if (BuiltinName == "Map")          return "// TMap<...>";
     
         return FString::Printf(TEXT("// unknown SATS BuiltIn '%s'"), *BuiltinName);
