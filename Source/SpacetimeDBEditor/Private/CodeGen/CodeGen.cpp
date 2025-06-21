@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 
+#include "ReducersCodegen.h"
 #include "SerializationCodegen.h"
 #include "TypesIRBuilder.h"
 #include "Containers/UnrealString.h"
@@ -86,9 +87,9 @@ namespace SpacetimeDB
         return false;
     }
 
-    bool FCodeGen::GenerateReducersCode(
+    bool FCodeGen::GenerateReducersCode_Deprecated(
         const FString& ModuleName,
-        const SpacetimeDB::FRawModuleDef& ModuleDef,
+        const FRawModuleDef& ModuleDef,
         FString& OutHeader,
         FString& OutSource,
         FString& OutError
@@ -96,12 +97,7 @@ namespace SpacetimeDB
     {
         const FString& HeaderName = FSpacetimeConfig::MakeReducerCodeFileName(ModuleName);
         const FString& ModuleNameNormalized = FCommon::ToPascalCase(ModuleName);
-    
-        TArray<SpacetimeDB::FExportedType> SortedRefs = ModuleDef.ExportedTypes;
-        Algo::Sort(SortedRefs, [](const SpacetimeDB::FExportedType& EntryA, const  SpacetimeDB::FExportedType& EntryB)
-        {
-            return EntryA.TypeRef < EntryB.TypeRef;
-        });
+        TArray<FExportedType> SortedRefs = ModuleDef.GetRefSortedExportedTypes();
     
         const FString ClassName = "U" + ModuleName +  "Reducers";
     
@@ -216,6 +212,19 @@ namespace SpacetimeDB
         return true;
     }
 
+    bool FCodeGen::GenerateReducersCode(
+        const FString& ModuleName,
+        const FRawModuleDef& ModuleDef,
+        const FTypesIR& ExportedTypesIR,
+        FString& OutHeader,
+        FString& OutSource,
+        FString& OutError)
+    {
+        FReducersCodegen::EmitCode(ModuleName, ModuleDef, ExportedTypesIR, OutHeader, OutSource);
+
+        return true;
+    }
+
     bool FCodeGen::GenerateTypesSerializationCode(
         const FTypesIR& ExportedTypesIR,
         const FTypesIR& InlineTypesIR,
@@ -224,7 +233,6 @@ namespace SpacetimeDB
         FString& OutHeader,
         FString& OutError)
     {
-        
         // return
         // FSerializationCodegen_deprecated::GenerateSerializationCode(
         //     ModuleDef, ModuleName, OutSource, OutHeader, OutError);
@@ -280,7 +288,7 @@ namespace SpacetimeDB
             if (TaggedUnion.OptionTags.Num() != 0)
             {
                 OutHeaderCode += TabString
-                + FString::Printf(TEXT("// %ls Tag = %ls::%s;\n"),
+                + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"),
                     *TagName, *TagName, *TaggedUnion.OptionTags[0].RightChop(1));
             }
             else
@@ -312,7 +320,9 @@ namespace SpacetimeDB
                 bIsReflected,
                 Specifiers,
                 MetadataSpecifiers,
-                Comment]
+                Comment,
+                bIsExportedType,
+                TypespaceIndex]
         = Struct;
     
         if (Comment.IsSet())

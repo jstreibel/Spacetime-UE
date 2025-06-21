@@ -1,5 +1,6 @@
 #pragma once
 
+/*
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CoreMinimal.h"
 #include "BlackholioExportedTypes.stdbgen.h"
@@ -21,3 +22,4 @@ public:
 	static UCallBlackholioCircleDecayReducer* CircleDecayReducer(
 		UObject* WorldContextObject, const FCircleDecayTimer& Timer);
 };
+*/

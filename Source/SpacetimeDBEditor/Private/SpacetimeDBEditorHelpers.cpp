@@ -10,6 +10,7 @@
 #include "Parser/ModuleDefParser.h"
 
 #include "Config.h"
+#include "CodeGen/ReducersCodegen.h"
 
 bool RawModuleDefFromCli(
 	const FString &DatabaseName,
@@ -257,8 +258,9 @@ bool USpacetimeDBEditorHelpers::GenerateCxxUnrealCodeFromSpacetimeDB(
 		
 		FString ReducersHeader, ReducersSource;
 		if (!SpacetimeDB::FCodeGen::GenerateReducersCode(
-			DatabaseNamePascal,
+			ModuleName,
 			RawModule,
+			ExportedTypesIR,
 			ReducersHeader,
 			ReducersSource,
 			OutError))

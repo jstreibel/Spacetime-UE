@@ -260,12 +260,16 @@ namespace SpacetimeDB
 	bool FTypespaceStructIRBuilder::BuildTypesIR(
 		const FString& ModuleName,
 		const FTypespace& Typespace,
-		const TArray<FExportedType>& ExportedTypes,
+		const TArray<FExportedType>& ExportedTypesIn,
 		FTypesIR &OutExported,
 		FTypesIR &OutInline,
 		FString& OutError)
 	{
 		// TODO: check if 'ExportedTypes' have properly matched Refs in 'Typespace'
+
+		// We want exported types to be in the same order as they appear in the JSON RawModuleDef file's
+		// 'typespace' section.
+		const auto ExportedTypes = SortExportedTypesByRef(ExportedTypesIn);
 	
 		const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 		const FString ExportedTypesHeaderName = FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName);
@@ -298,6 +302,8 @@ namespace SpacetimeDB
 			FStruct Struct =
 				GenerateNewStruct(ModuleName, ExportedTypes, StructName, AlgebraicType.Product, OutInline);
 			Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
+			Struct.bIsExportedType = true;
+			Struct.TypespaceIndex = Index;
 			
 			OutExported.AddStruct(Struct);
 		}

@@ -4,9 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include <type_traits>
 #include "SpacetimeRuntimeSDK.generated.h"
-
 
 // Sum base
 USTRUCT(BlueprintType)

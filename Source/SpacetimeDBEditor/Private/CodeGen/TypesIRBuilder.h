@@ -70,6 +70,11 @@ namespace SpacetimeDB
 			return Name		   == Struct.Name
 				&& DataMembers == Struct.DataMembers;
 		}
+
+		// Equivalent to being top-level in 'typespace' (TODO: is it?)
+		// TODO: if this is equivalent to being top-level, then we can remove the bool and leave only the optional below
+		bool bIsExportedType = false;
+		TOptional<uint8> TypespaceIndex;
 	};
 
 

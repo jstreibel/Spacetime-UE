@@ -445,6 +445,17 @@ namespace SpacetimeDB
         FString Using_Expr;
     };
 
+    inline TArray<FExportedType> SortExportedTypesByRef(const TArray<FExportedType>& ExportedTypes)
+    {
+        TArray<FExportedType> SortedRefs = ExportedTypes;
+        Algo::Sort(SortedRefs, [](const SpacetimeDB::FExportedType& EntryA, const  SpacetimeDB::FExportedType& EntryB)
+        {
+            return EntryA.TypeRef < EntryB.TypeRef;
+        });
+
+        return SortedRefs;
+    }
+    
     // Top‐level module definition
     struct FRawModuleDef {
         FTypespace Typespace;
@@ -453,5 +464,12 @@ namespace SpacetimeDB
         TArray<struct FExportedType>    ExportedTypes;
         TArray<struct FMiscExport>      MiscExports;
         TArray<struct FRlsPolicy>       RowLevelSecurity;
+                
+        TArray<FExportedType> GetRefSortedExportedTypes() const
+        {
+            return SortExportedTypesByRef(ExportedTypes);
+        }
     };
+
+    
 }

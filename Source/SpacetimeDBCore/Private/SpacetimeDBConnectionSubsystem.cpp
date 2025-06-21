@@ -7,7 +7,10 @@
 #include "Misc/App.h"
 
 
-void USpacetimeAsyncReducerBase::Setup(UObject* WorldContext, const FString& ReducerName, const FString& PayloadJson)
+void USpacetimeAsyncReducerBase::Setup(
+	UObject* WorldContext,
+	const FString& ReducerName,
+	const FString& PayloadJson)
 {
 	this->ContextObject = WorldContext;
 	this->ReducerName   = ReducerName;
@@ -60,6 +63,7 @@ void USpacetimeDBConnectionSubsystem::InitializeContext(const FString& ServerURI
 	SpacetimeDBModuleName   = ModuleName;
 	SpacetimeDBIdentityInfo = IdentityInfo;
 
+	// TODO: validate connection parameters
 	UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Initialized connection to %s with module '%s' and user id '%s'"),
 		*SpacetimeDBServerURI, *SpacetimeDBModuleName, *SpacetimeDBIdentityInfo.Id);
 }

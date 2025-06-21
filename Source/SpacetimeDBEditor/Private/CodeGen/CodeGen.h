@@ -33,13 +33,21 @@ namespace SpacetimeDB
 		 * @param OutSource  Generated Reducers.cpp code
 		 * @param OutError   Error message, in case of 'false' return value
 		 */
-		static bool GenerateReducersCode(
+		static bool GenerateReducersCode_Deprecated(
 			const FString& ModuleName,
 			const FRawModuleDef& ModuleDef,
 			FString& OutHeader,
 			FString& OutSource,
 			FString& OutError
 		);
+
+		static bool GenerateReducersCode(
+			const FString& ModuleName,
+			const FRawModuleDef& ModuleDef,
+			const FTypesIR& ExportedTypesIR,
+			FString& OutHeader,
+			FString& OutSource,
+			FString& OutError);
 
 		static bool GenerateTypesSerializationCode(
 			const FTypesIR& ExportedTypesIR,
@@ -50,7 +58,7 @@ namespace SpacetimeDB
 			FString& OutError);
 
 		/**
-		 * Generates headers for Typespace Products, which map to C/C++ structs.
+		 * Generates headers for Typespace Products and Sums (which map to C/C++ structs).
 		 * @param ExportedTypesIR
 		 * @param InlineTypesIR 
 		 * @param OutExportedTypesCode
