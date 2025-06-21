@@ -101,6 +101,7 @@ namespace SpacetimeDB
 
 			FDataMember DataMember(DataMemberAlgebraicType);
 			DataMember.Name = FCommon::ToPascalCase(RawName);
+			DataMember.OriginalName = RawName;
 		
 			if (AlgebraicKind == EType::Product)
 			{
@@ -190,12 +191,14 @@ namespace SpacetimeDB
 	
 		UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Generating Tagged Union: F%s"), *OutTaggedUnion.Name);
 		for (const auto& [VariantOptionalName, VariantAlgebraicType] : SumOrigin.Options)
-		{		
+		{
+			// TODO: what happens, Spacetime-wise, when VariantOptionalName is not set?
 			const auto RawName = GetDataMemberName(VariantOptionalName);
 			const auto Tag = VariantAlgebraicType->Type;
 
 			FDataMember DataMember(VariantAlgebraicType);
 			DataMember.Name = FCommon::ToPascalCase(RawName);
+			DataMember.OriginalName = RawName;
 			
 			if (Tag == EType::Product)
 			{

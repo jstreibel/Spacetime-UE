@@ -28,7 +28,8 @@ namespace SpacetimeDB
 		
 		static TArray<FReducerParam> BuildParamsList(
 			const FTypesIR& ExportedTypesIR,
-			const FReducerDef& Reducer);
+			const FReducerDef& Reducer,
+			const bool bNormalizeNames);
 
 		struct FReducerSignature { FString HeaderSignature; FString SourceSignature; };
 		static FReducerSignature GenerateSignature(

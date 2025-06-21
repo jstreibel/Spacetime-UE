@@ -36,7 +36,7 @@ namespace SpacetimeDB
 		
 		for (const auto& Reducer : ModuleDef.Reducers)
 		{
-			const auto ParamsList = BuildParamsList(TypesIR, Reducer);
+			const auto ParamsList = BuildParamsList(TypesIR, Reducer, true);
 			EmitReducer(Reducer, ParamsList, ModuleNameNormalized,OutHeader, OutSource);
 		}		
 	}
@@ -100,7 +100,8 @@ namespace SpacetimeDB
 
 	TArray<FReducersCodegen::FReducerParam> FReducersCodegen::BuildParamsList(
 		const FTypesIR& ExportedTypesIR,
-		const FReducerDef& Reducer)
+		const FReducerDef& Reducer,
+		const bool bNormalizeNames)
 	{
 		const auto& ExportedElements = ExportedTypesIR.GetAllElements();
 		const auto& ExportedProducts = ExportedTypesIR.GetStructs();
@@ -131,7 +132,11 @@ namespace SpacetimeDB
 				TypeString = Sum.Name;
 			}
 
-			const auto NameString = Name.IsSet() ? Name.GetValue() : "Value";
+			auto NameString = Name.IsSet() ? Name.GetValue() : "Value";
+			if (bNormalizeNames)
+			{
+				NameString = FCommon::ToPascalCase(NameString);
+			}
 
 			ParamsList.Add({ NameString, TypeString });
 		}

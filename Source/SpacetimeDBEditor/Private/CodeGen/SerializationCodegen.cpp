@@ -91,7 +91,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 			// const auto Name = Tag.IsSet() ? Tag.GetValue() : FString::FromInt(OptionNumber++);
 
 			const auto& TagValue = Variant.Name;
-			const FString Key = TypeName;
+			const FString Key = Variant.OriginalName;
 			
 			OutSource += "    case " + TagEnumName + "::" + TagValue + ":\n";
 			

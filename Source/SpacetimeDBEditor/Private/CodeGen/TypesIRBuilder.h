@@ -20,7 +20,8 @@ namespace SpacetimeDB
 		
 		FString Name;
 		FString Type;
-		FOptionalString DefaultValue;
+		FString OriginalName;
+		TOptional<FString> DefaultValue;
 		TOptional<FString> Comment;
 
 		auto operator == (const FDataMember& DataMember) const

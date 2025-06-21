@@ -360,6 +360,7 @@ namespace SpacetimeDB
             Origin,
             Name,
             Type,
+            OriginalName,
             DefaultValue,
             Comment]
             : Attributes)
