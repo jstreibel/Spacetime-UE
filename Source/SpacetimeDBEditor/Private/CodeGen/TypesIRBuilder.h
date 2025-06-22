@@ -222,7 +222,7 @@ namespace SpacetimeDB
 		static bool BuildTypesIR(
 			const FString& ModuleName,
 			const FTypespace& Typespace,
-			const TArray<FExportedType>& ExportedTypes,
+			const TArray<FExportedType>& ExportedTypesIn,
 			FTypesIR &OutExported,
 			FTypesIR &OutInline,
 			FString &OutError);

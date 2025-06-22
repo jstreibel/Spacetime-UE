@@ -1,7 +1,6 @@
 #include "TypesIRBuilder.h"
 
 #include "Config.h"
-#include "Compute/AgentMessage.h"
 #include "Parser/Common.h"
 
 
@@ -244,7 +243,7 @@ namespace SpacetimeDB
 
 		// We want exported types to be in the same order as they appear in the JSON RawModuleDef file's
 		// 'typespace' section.
-		const auto ExportedTypes = SortExportedTypesByRef(ExportedTypesIn);
+		const auto ExportedTypes_SortedByRef = SortExportedTypesByRef(ExportedTypesIn);
 	
 		const FString UnrealFormattedModuleName = FCommon::ToPascalCase(ModuleName);
 		const FString ExportedTypesHeaderName = FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName);
@@ -260,7 +259,7 @@ namespace SpacetimeDB
 		OutExported.Includes.Add({InlineTypesHeaderName + ".h", true});
 		OutExported.Includes.Add({ExportedTypesHeaderName + ".generated.h", true});
 
-		for (const auto& Type : ExportedTypes)
+		for (const auto& Type : ExportedTypes_SortedByRef)
 		{
 			const auto Index = Type.TypeRef;
 			const auto &AlgebraicType = Typespace.TypeEntries[Index];
@@ -275,7 +274,7 @@ namespace SpacetimeDB
 			FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
 			
 			FStruct Struct =
-				MakeStruct(ModuleName, ExportedTypes, StructName, AlgebraicType.Product, OutInline);
+				MakeStruct(ModuleName, ExportedTypes_SortedByRef, StructName, AlgebraicType.Product, OutInline);
 			Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 			Struct.bIsExportedType = true;
 			Struct.TypespaceIndex = Index;
