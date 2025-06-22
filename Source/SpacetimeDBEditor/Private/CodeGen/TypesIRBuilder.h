@@ -7,6 +7,17 @@ namespace SpacetimeDB
 {
 	struct FDataMember
 	{
+		TSharedRef<FAlgebraicType> Origin;
+		
+		FString Name;					 // the normalized datamember name
+		FString Type;					 // the normalized type name
+		
+		FString BaseName;				 // either the original name as appears in RawModuleDef, or a unique generated name if anonymous
+		
+		TOptional<FString> DefaultValue;
+		TOptional<FString> Comment;
+
+
 		FDataMember() = delete;
 		FDataMember(const FDataMember& Other) = default;
 		FDataMember(FDataMember&& Other) = default;
@@ -15,14 +26,6 @@ namespace SpacetimeDB
 		~FDataMember() = default;
 
 		explicit FDataMember(const TSharedRef<FAlgebraicType>& Origin) : Origin(Origin) {}
-		
-		TSharedRef<FAlgebraicType> Origin;
-		
-		FString Name;
-		FString Type;
-		FString OriginalName;
-		TOptional<FString> DefaultValue;
-		TOptional<FString> Comment;
 
 		auto operator == (const FDataMember& DataMember) const
 		{
@@ -139,7 +142,7 @@ namespace SpacetimeDB
 			FHeaderElement Element;
 			Element.Type = FHeaderElement::TaggedUnion;
 			Element.Index = TaggedUnions.Num();
-			Element.Name = "F" + TaggedUnion.Name;
+			Element.Name = TaggedUnion.Name;
 			for (const auto &Attribute : TaggedUnion.Variants)
 			{
 				Element.Depends.Add(Attribute.Type);
@@ -218,7 +221,9 @@ namespace SpacetimeDB
 
 	class FTypespaceStructIRBuilder
 	{
-	public:	
+		
+	public:
+		
 		static bool BuildTypesIR(
 			const FString& ModuleName,
 			const FTypespace& Typespace,
@@ -228,15 +233,9 @@ namespace SpacetimeDB
 			FString &OutError);
 
 	private:
-		static FTaggedUnion MakeTaggedUnion(
-			const FString& ModuleName,
-			const TArray<FExportedType>& ExportedTypes,
-			const FString& UnionName,
-			const FSumType& SumOrigin,
-			FTypesIR &OutInlineHeader);
 
 		static FDataMember MakeDataMemberFromField(
-			const TOptional<FString>& Name,
+			const TOptional<FString>& OriginalName,
 			const TSharedRef<FAlgebraicType>& AlgebraicType,
 			const TArray<FExportedType>& ExportedTypes,
 			const FString& ModuleName,
@@ -249,6 +248,12 @@ namespace SpacetimeDB
 			const FProductType& ProductOrigin,
 			FTypesIR &OutInlineHeader);
 
+		static FTaggedUnion MakeTaggedUnion(
+			const FString& ModuleName,
+			const TArray<FExportedType>& ExportedTypes,
+			const FString& UnionName,
+			const FSumType& SumOrigin,
+			FTypesIR &OutInlineHeader);
 	
 	};
 }

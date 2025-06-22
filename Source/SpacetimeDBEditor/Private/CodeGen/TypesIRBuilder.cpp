@@ -95,7 +95,7 @@ namespace SpacetimeDB
 
 		UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Generating Struct: %s"), *OutStruct.Name);
 		for (const auto& [Name, AlgebraicType] : ProductOrigin.Elements)
-		{
+		{			
 			FDataMember DataMember = MakeDataMemberFromField(
 				Name,
 				AlgebraicType,
@@ -118,7 +118,6 @@ namespace SpacetimeDB
 	{
 		FTaggedUnion OutTaggedUnion;
 		
-		// OutTaggedUnion.BaseName = UnionName.IsSet() ? UnionName.GetValue() : GenerateBaseNameForInlineTaggedUnion();
 		OutTaggedUnion.Name = UnionName;
 		OutTaggedUnion.SumOrigin = SumOrigin;
 
@@ -150,68 +149,66 @@ namespace SpacetimeDB
 	}
 	
 	FDataMember FTypespaceStructIRBuilder::MakeDataMemberFromField(
-		const TOptional<FString>& Name,
+		const TOptional<FString>& OriginalName,
 		const TSharedRef<FAlgebraicType>& AlgebraicType,
 		const TArray<FExportedType>& ExportedTypes,
 		const FString& ModuleName,
 		FTypesIR& OutInlineHeader)
-	{
-		const auto RawName = GetDataMemberName(Name);
+	{		
+		const auto OriginalNameOrAnon = OriginalName.IsSet() ? OriginalName.GetValue() : "<anonymous>"; 
+		const auto BaseName = GetDataMemberName(OriginalName);
 		const auto Kind = AlgebraicType->Type;
 
 		FDataMember DataMember(AlgebraicType);
-		DataMember.Name = FCommon::ToPascalCase(RawName);
-		DataMember.OriginalName = RawName;
+		DataMember.Name = FCommon::ToPascalCase(BaseName);
+		DataMember.BaseName = BaseName;
 	
 		if (Kind == EType::Product)
 		{
-			const auto DataMemberType = "F" + DataMember.Name;
-			const auto &ProductElement = AlgebraicType->Product;
+			DataMember.Type = FCommon::MakeStructName(DataMember.Name, ModuleName);
+			DataMember.Comment = OriginalNameOrAnon + ": Product";
 			
 			FStruct NewStruct =
 			MakeStruct(
 				ModuleName,
 				ExportedTypes,
-				DataMemberType,
-				ProductElement,
+				DataMember.Type,
+				AlgebraicType->Product,
 				OutInlineHeader);
 
 			OutInlineHeader.AddStruct(NewStruct);
-			
-			DataMember.Type = DataMemberType;
-			DataMember.Comment = RawName + ": Product";
 		}
 
 		else if (Kind == EType::Sum)
-		{							
+		{
+			DataMember.Type = FCommon::MakeStructName(DataMember.Name, ModuleName);
+			DataMember.Comment = OriginalNameOrAnon + ": Sum";
+			
 			auto NewTaggedUnion = MakeTaggedUnion(
 				ModuleName,
 				ExportedTypes,
-				DataMember.Name,
+				DataMember.Type,
 				AlgebraicType->Sum,
 				OutInlineHeader);
 
 			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
-			
-			DataMember.Type = "F" + DataMember.Name;
-			DataMember.Comment = RawName + ": Sum";
 		}
 
-		else if (Kind == SpacetimeDB::EType::Ref)
+		else if (Kind == EType::Ref)
 		{
 			const auto Index = AlgebraicType->Ref.Index;
 			const auto& Referenced = ExportedTypes[Index];
 			
 			DataMember.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
 			DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Kind);
-			DataMember.Comment = RawName + ": " + Referenced.Name.Name;
+			DataMember.Comment = OriginalNameOrAnon + ": " + Referenced.Name.Name;
 		}
 
 		else if (IsBuiltIn(Kind))
 		{
 			DataMember.Type = MapBuiltinToUnreal(TypeToString(Kind), MapToUnrealAvailableReflected);
 			DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Kind);
-			DataMember.Comment = RawName + ": " + TypeToString(Kind);
+			DataMember.Comment = OriginalNameOrAnon + ": " + TypeToString(Kind);
 			
 			WarnTypes(Kind);
 		}
@@ -259,22 +256,24 @@ namespace SpacetimeDB
 		OutExported.Includes.Add({InlineTypesHeaderName + ".h", true});
 		OutExported.Includes.Add({ExportedTypesHeaderName + ".generated.h", true});
 
+		
 		for (const auto& Type : ExportedTypes_SortedByRef)
 		{
 			const auto Index = Type.TypeRef;
 			const auto &AlgebraicType = Typespace.TypeEntries[Index];
 
-			if (AlgebraicType.Type != SpacetimeDB::EType::Product)
+			if (AlgebraicType.Type != EType::Product)
 			{
 				OutError = FString::Printf(TEXT("Header generation for types in 'typespace' other than C++ structs "
 					"(i.e. 'Product' Sats-Type) not implemented - problem occured with type '%i'"), Index);
 				return false;
 			}
-
+			
 			FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
 			
 			FStruct Struct =
 				MakeStruct(ModuleName, ExportedTypes_SortedByRef, StructName, AlgebraicType.Product, OutInline);
+				
 			Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 			Struct.bIsExportedType = true;
 			Struct.TypespaceIndex = Index;

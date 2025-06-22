@@ -65,10 +65,11 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 	FString& OutSource)
 {
 	const auto &TypeName = Sum.Name;
+	const auto &TypeNameClear = TypeName.RightChop(1); // remove the leading 'F'
 	
 	const auto FunctionSignature =
-			"void Serialize" + TypeName + "(\n"
-			"    const F" + TypeName + "& Value,\n"
+			"void Serialize" + TypeNameClear + "(\n"
+			"    const " + TypeName + "& Value,\n"
 			"    const SpacetimeDB::FJsonWriterRef& Writer,\n"
 			"    const TOptional<FString>& Key"; 
 
@@ -83,7 +84,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 	"    {\n";
 
 	{
-		const FString TagEnumName = "E" + TypeName + "_Tags";
+		const FString TagEnumName = "E" + TypeNameClear + "_Tags";
 		
 		for (const auto& Variant: Sum.Variants)
 		{
@@ -91,7 +92,7 @@ void SpacetimeDB::FSerializationCodegen::GenerateSumSerializationCode(
 			// const auto Name = Tag.IsSet() ? Tag.GetValue() : FString::FromInt(OptionNumber++);
 
 			const auto& TagValue = Variant.Name;
-			const FString Key = Variant.OriginalName;
+			const FString Key = Variant.Name;
 			
 			OutSource += "    case " + TagEnumName + "::" + TagValue + ":\n";
 			

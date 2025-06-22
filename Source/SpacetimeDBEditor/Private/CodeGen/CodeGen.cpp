@@ -125,63 +125,75 @@ namespace SpacetimeDB
         constexpr  bool bAdd_None_Tag = false;
         
         const auto TabString = FSpacetimeConfig::TabString;
-    
+
         const auto TaggedUnionTagProperty = TabString +
             FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\", meta=(SumTag=true))\n"),
                 *TaggedUnion.SubCategory);
         const auto TaggedUnionOptionProperty = TabString + 
             FString::Printf(TEXT("UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"SpacetimeDB|%ls\", meta=(SumPayload=true))\n"),
                 *TaggedUnion.SubCategory);
-        const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *TaggedUnion.Name);
-    
-        OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
-        OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
-        OutHeaderCode += FString::Printf(TEXT("{\n"));
-        if constexpr (bAdd_None_Tag)
-            OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
-        for (const auto& Option : TaggedUnion.Variants)
-        {
-            FString OptionName = Option.Type.RightChop(1);
-            OutHeaderCode += TabString
-            + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"),
-                *OptionName, *OptionName);
-        }
-        OutHeaderCode += FString::Printf(TEXT("};\n"));
-        OutHeaderCode += FString::Printf(TEXT("\n"));
-        OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"),
-            *TaggedUnion.SubCategory);
-        OutHeaderCode += FString::Printf(TEXT("struct %ls F%ls : public FSpacetimeSum\n"), *ApiMacroString, *TaggedUnion.Name);
-        OutHeaderCode += FString::Printf(TEXT("{\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n\n"));
-        OutHeaderCode += TabString + FString::Printf(TEXT("// The current active payload\n"));
-        OutHeaderCode += TaggedUnionTagProperty;
-        
-        if constexpr (bAdd_None_Tag)
-            OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
-        if constexpr (!bAdd_None_Tag)
-        {
-            if (TaggedUnion.Variants.Num() != 0)
-            {
-                OutHeaderCode += TabString
-                + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"),
-                    *TagName, *TagName, *TaggedUnion.Variants[0].Type.RightChop(1));
-            }
-            else
-            {
-                OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"), *TagName, *TagName, TEXT("<no tags available>"));
-            }
-        }
-        
 
-        for (const auto& Option : TaggedUnion.Variants)
+        const auto ClearName = TaggedUnion.Name.RightChop(1); // remove the leading 'F'
+        const auto TagName = FString::Printf(TEXT("E%ls_Tags"), *ClearName);
+
+        // ************************************************************************************
+        // The TaggedUnion's C/C++ enum
         {
-            OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-            OutHeaderCode += TaggedUnionOptionProperty;
-            OutHeaderCode += TabString + FString::Printf(TEXT("%ls %ls;\n"), *Option.Type, *Option.Name);
+            OutHeaderCode += FString::Printf(TEXT("UENUM(BlueprintType)\n"));
+            OutHeaderCode += FString::Printf(TEXT("enum class %ls : uint8\n"), *TagName);
+            OutHeaderCode += FString::Printf(TEXT("{\n"));
+            
+            if constexpr (bAdd_None_Tag) OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
+            
+            for (const auto& Option : TaggedUnion.Variants)
+            {
+                FString OptionName = Option.Name;
+                OutHeaderCode += TabString
+                + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"),
+                    *OptionName, *OptionName);
+            }
+            OutHeaderCode += FString::Printf(TEXT("};\n"));
         }
+        
+        OutHeaderCode += FString::Printf(TEXT("\n"));
+
+        // ************************************************************************************
+        // The TaggedUnion's C++ struct + enum)
+        {
+            OutHeaderCode += FString::Printf(TEXT("USTRUCT(BlueprintType, Category=\"SpacetimeDB|%ls\")\n"),
+                *TaggedUnion.SubCategory);
+            OutHeaderCode += FString::Printf(TEXT("struct %ls %ls : public FSpacetimeSum\n"), *ApiMacroString, *TaggedUnion.Name);
+            OutHeaderCode += FString::Printf(TEXT("{\n"));
+            OutHeaderCode += TabString + FString::Printf(TEXT("GENERATED_BODY()\n\n"));
+            OutHeaderCode += TabString + FString::Printf(TEXT("// The current active payload\n"));
+            OutHeaderCode += TaggedUnionTagProperty;
+        
+            if constexpr (bAdd_None_Tag)
+                OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
+            if constexpr (!bAdd_None_Tag)
+            {
+                if (TaggedUnion.Variants.Num() != 0)
+                {
+                    OutHeaderCode += TabString
+                    + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"),
+                        *TagName, *TagName, *TaggedUnion.Variants[0].Name);
+                }
+                else
+                {
+                    OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"), *TagName, *TagName, TEXT("<no tags available>"));
+                }
+            }
+
+            for (const auto& Option : TaggedUnion.Variants)
+            {
+                OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
+                OutHeaderCode += TaggedUnionOptionProperty;
+                OutHeaderCode += TabString + FString::Printf(TEXT("%ls %ls;\n"), *Option.Type, *Option.Name);
+            }
     
-        OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
-        OutHeaderCode += FString::Printf(TEXT("};\n\n\n"));
+            OutHeaderCode += TabString + FString::Printf(TEXT("\n"));
+            OutHeaderCode += FString::Printf(TEXT("};\n\n\n"));
+        }
     }
 
     void OutputProduct(const FStruct& Struct, const FString& ApiMacro, FString &OutHeaderCode)

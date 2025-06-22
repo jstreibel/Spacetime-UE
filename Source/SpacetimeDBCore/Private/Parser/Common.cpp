@@ -12,6 +12,8 @@ FString FCommon::MakeStructName(const FString& InName, const FString& ModuleName
 		OutName += "_" + FCommon::ToPascalCase(ModuleName);
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("Making struct name: '%s' --> '%s'"), *InName, *OutName);
+
 	return OutName;
 }
 
