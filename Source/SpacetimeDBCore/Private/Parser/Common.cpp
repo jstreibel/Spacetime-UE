@@ -1,7 +1,7 @@
 #include "Parser/Common.h"
 
 const TArray<FString> FCommon::ReservedNames = {
-	"Player"
+	"Player", "Name"
 };
 
 FString FCommon::MakeStructName(const FString& InName, const FString& ModuleName)

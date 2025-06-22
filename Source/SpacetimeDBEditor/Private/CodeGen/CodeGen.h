@@ -24,23 +24,7 @@ namespace SpacetimeDB
 			const FString& HeaderName,
 			FString& OutHeader,
 			FString& OutError);
-
-		/**
-		 * Emit a Blueprint function library header + source for all reducers.
-		 * @param ModuleName The module's name as present in the Spacetime server
-		 * @param ModuleDef  Parsed RawModuleDef
-		 * @param OutHeader  Generated Reducers.h code
-		 * @param OutSource  Generated Reducers.cpp code
-		 * @param OutError   Error message, in case of 'false' return value
-		 */
-		static bool GenerateReducersCode_Deprecated(
-			const FString& ModuleName,
-			const FRawModuleDef& ModuleDef,
-			FString& OutHeader,
-			FString& OutSource,
-			FString& OutError
-		);
-
+		
 		static bool GenerateReducersCode(
 			const FString& ModuleName,
 			const FRawModuleDef& ModuleDef,

@@ -58,16 +58,37 @@ bool FModuleDefParser::ParseTables(
         for (auto& V : *Tables) {
             const auto Obj = V->AsObject();
             SpacetimeDB::FTableDef T;
+
+            // "name": String
             T.Name = Obj->GetStringField(TEXT("name"));
+
+            // "product_type_ref": Integer
             T.ProductTypeRef = Obj->GetIntegerField(TEXT("product_type_ref"));
-            // primary_key
+            
+            // "primary_key": Array of String (TODO: I guess String)
             const TArray<TSharedPtr<FJsonValue>>* PrimaryKeyArray;
             if (Obj->TryGetArrayField(TEXT("primary_key"), PrimaryKeyArray)) {
                 for (auto& P : *PrimaryKeyArray) {
                     T.PrimaryKey.Add(P->AsString());
                 }
             }
+
+            // "indexes": [{}]
+            
+            // "constraints": [?]
+
+            // "sequences": [?]
+
+            // "schedule": {"none|some": [?]}
+
+            // "table_type": {"User|?": [?]}
+
+            // "table_access": {"Private|?": [?]}"
+
+            // Legend:
+            //   [type] -> json array of 'type'
             // TODO: parse indexes, constraints, sequences, schedule, access
+            
             TablesOutput.Add(MoveTemp(T));
         }
 
@@ -206,7 +227,13 @@ bool FModuleDefParser::ParseRawModuleDef(
         return false;   
     }
 
-    // TODO: continue parsing 'misc_exports', 'row_level_security', etc. similarly
+    // --- misc exports ---
+    // TODO: implement 'misc_exports' field parsing
+    UE_LOG(LogTemp, Warning, TEXT("[SpacetimeDB] TODO: RawModuleDef 'misc_exports' field parsing not yet implemented"));
+
+    // --- row level security ---
+    // TODO: implement 'row_level_security' field parsing
+    UE_LOG(LogTemp, Warning, TEXT("[SpacetimeDB] TODO: RawModuleDef 'row_level_security' field parsing not yet implemented"));
 
     return true;
 }

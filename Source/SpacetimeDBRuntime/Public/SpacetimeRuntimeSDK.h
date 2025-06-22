@@ -125,6 +125,7 @@ namespace SpacetimeDB
 	template<typename T>
 	void SerializeBuiltIn_Added(const T& Value, const FJsonWriterRef& Writer, TOptional<FString> Key = {})
 	{
+		// TODO: properly serialize added built-in types as they are currently being serialized as strings.
 		static_assert(std::is_base_of<FBuiltIn_Added, T>(), "This path must never be taken");
 	
 		SerializeNumberOrString(Value.Value, Writer, Key);

@@ -1,6 +1,7 @@
 #include "TypesIRBuilder.h"
 
 #include "Config.h"
+#include "Compute/AgentMessage.h"
 #include "Parser/Common.h"
 
 
@@ -75,7 +76,7 @@ namespace SpacetimeDB
 		}
 	}
 
-	FStruct FTypespaceStructIRBuilder::GenerateNewStruct(
+	FStruct FTypespaceStructIRBuilder::MakeStruct(
 		const FString& ModuleName,
 		const TArray<FExportedType>& ExportedTypes,
 		const FString& StructName,
@@ -94,82 +95,22 @@ namespace SpacetimeDB
 		OutStruct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 
 		UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Generating Struct: %s"), *OutStruct.Name);
-		for (const auto& [DataMemberOptionalName, DataMemberAlgebraicType] : ProductOrigin.Elements)
-		{		
-			const auto RawName = GetDataMemberName(DataMemberOptionalName);
-			const auto AlgebraicKind = DataMemberAlgebraicType->Type;
-
-			FDataMember DataMember(DataMemberAlgebraicType);
-			DataMember.Name = FCommon::ToPascalCase(RawName);
-			DataMember.OriginalName = RawName;
-		
-			if (AlgebraicKind == EType::Product)
-			{
-				
-				const auto DataMemberType = "F" + DataMember.Name;
+		for (const auto& [Name, AlgebraicType] : ProductOrigin.Elements)
+		{
+			FDataMember DataMember = MakeDataMemberFromField(
+				Name,
+				AlgebraicType,
+				ExportedTypes,
+				ModuleName,
+				OutInlineHeader);
 			
-				const auto &ProductElement = DataMemberAlgebraicType->Product;
-				
-				FStruct NewStruct =
-				GenerateNewStruct(ModuleName, ExportedTypes, DataMemberType, ProductElement, OutInlineHeader);
-				
-				DataMember.Type = DataMemberType;
-				DataMember.Comment = RawName + ": Product";
-				OutInlineHeader.AddStruct(NewStruct);
-			}
-
-			else if (AlgebraicKind == EType::Sum)
-			{			
-				const auto &SumElement = DataMemberAlgebraicType->Sum;
-				
-				FTaggedUnion NewTaggedUnion =
-				GenerateNewTaggedUnion(
-					ModuleName, ExportedTypes,
-					DataMember.Name,  SumElement,OutInlineHeader);
-				
-				DataMember.Type = "F" + DataMember.Name;
-				DataMember.Comment = RawName + ": Sum";
-				OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
-			}
-
-			else if (AlgebraicKind == SpacetimeDB::EType::Ref)
-			{
-				const auto Index = DataMemberAlgebraicType->Ref.Index;
-				const auto& Referenced = ExportedTypes[Index];
-				
-				DataMember.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
-				DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(AlgebraicKind);
-				DataMember.Comment = RawName + ": " + Referenced.Name.Name;
-			}
-
-			else if (IsBuiltIn(AlgebraicKind))
-			{
-				DataMember.Type = MapBuiltinToUnreal(SpacetimeDB::TypeToString(AlgebraicKind), MapToUnrealAvailableReflected);
-				DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(AlgebraicKind);
-				DataMember.Comment = RawName + ": " + TypeToString(AlgebraicKind);
-				
-				WarnTypes(AlgebraicKind);
-			}
-
-			else if (AlgebraicKind == EType::Invalid)
-			{
-				UE_LOG(LogTemp, Error, TEXT("Invalid SATS-JSON type found in Typespace codegen"));
-				DataMember.Type = "// <invalid type> ";
-			}
-
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Internal inconsistency found in Typespace codegen - unhandled SATS-JSON type"));
-				DataMember.Type = "// <unhandled type> ";
-			}
-
 			OutStruct.DataMembers.Add(DataMember);		
-		}
+		} 
 
 		return OutStruct;
 	}
 
-	FTaggedUnion FTypespaceStructIRBuilder::GenerateNewTaggedUnion(
+	FTaggedUnion FTypespaceStructIRBuilder::MakeTaggedUnion(
 		const FString& ModuleName,
 		const TArray<FExportedType>& ExportedTypes,
 		const FString& UnionName,
@@ -190,74 +131,105 @@ namespace SpacetimeDB
 		// const auto Anonymous = SATS::FOptionalString();
 	
 		UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Generating Tagged Union: F%s"), *OutTaggedUnion.Name);
-		for (const auto& [VariantOptionalName, VariantAlgebraicType] : SumOrigin.Options)
+		for (const auto& [Tag, AlgebraicType] : SumOrigin.Options)
 		{
 			// TODO: what happens, Spacetime-wise, when VariantOptionalName is not set?
-			const auto RawName = GetDataMemberName(VariantOptionalName);
-			const auto Tag = VariantAlgebraicType->Type;
+			// Should integer indexes be used?
 
-			FDataMember DataMember(VariantAlgebraicType);
-			DataMember.Name = FCommon::ToPascalCase(RawName);
-			DataMember.OriginalName = RawName;
+			auto DataMember = MakeDataMemberFromField(
+				Tag,
+				AlgebraicType,
+				ExportedTypes,
+				ModuleName,
+				OutInlineHeader);
 			
-			if (Tag == EType::Product)
-			{
-				const auto DataMemberType = "F" + DataMember.Name;
-				
-				FStruct NewStruct =
-					GenerateNewStruct(ModuleName, ExportedTypes, DataMemberType, VariantAlgebraicType->Product, OutInlineHeader);
-				OutInlineHeader.AddStruct(NewStruct);
-
-				DataMember.Type = DataMemberType;
-				OutTaggedUnion.OptionTags.Add(NewStruct.Name);
-			}
-
-			else if (Tag == EType::Sum)
-			{				
-				auto NewTaggedUnion =
-					GenerateNewTaggedUnion(ModuleName, ExportedTypes, DataMember.Name, VariantAlgebraicType->Sum, OutInlineHeader);
-				OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
-
-				DataMember.Type = "F" + DataMember.Name;
-				OutTaggedUnion.OptionTags.Add(DataMember.Name);
-			}
-
-			else if (Tag == EType::Ref)
-			{
-				const auto Index = VariantAlgebraicType->Ref.Index;
-				const auto& Referenced = ExportedTypes[Index];
-				const FString Type = Referenced.Name.Name;
-				
-				DataMember.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
-				DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Tag);
-				DataMember.Comment = RawName + ": " + Referenced.Name.Name;
-			}
-
-			else if (IsBuiltIn(Tag))
-			{
-				DataMember.Type = MapBuiltinToUnreal(TypeToString(Tag), MapToUnrealAvailableReflected);
-				DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Tag);
-				DataMember.Comment = RawName + ": " + TypeToString(Tag);
-				
-				WarnTypes(Tag);
-			}
-
-			else if (Tag == EType::Invalid)
-			{
-				UE_LOG(LogTemp, Error, TEXT("Invalid SATS-JSON type found in Typespace codegen"));
-				DataMember.Type = "// <invalid type> ";
-			}
-
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Internal inconsistency found in Typespace codegen - unhandled SATS-JSON type"));
-				DataMember.Type = "// <unhandled type> ";
-			}
 
 			OutTaggedUnion.Variants.Add(DataMember);		
 		}
 
 		return OutTaggedUnion;
+	}
+	
+	FDataMember FTypespaceStructIRBuilder::MakeDataMemberFromField(
+		const TOptional<FString>& Name,
+		const TSharedRef<FAlgebraicType>& AlgebraicType,
+		const TArray<FExportedType>& ExportedTypes,
+		const FString& ModuleName,
+		FTypesIR& OutInlineHeader)
+	{
+		const auto RawName = GetDataMemberName(Name);
+		const auto Kind = AlgebraicType->Type;
+
+		FDataMember DataMember(AlgebraicType);
+		DataMember.Name = FCommon::ToPascalCase(RawName);
+		DataMember.OriginalName = RawName;
+	
+		if (Kind == EType::Product)
+		{
+			const auto DataMemberType = "F" + DataMember.Name;
+			const auto &ProductElement = AlgebraicType->Product;
+			
+			FStruct NewStruct =
+			MakeStruct(
+				ModuleName,
+				ExportedTypes,
+				DataMemberType,
+				ProductElement,
+				OutInlineHeader);
+
+			OutInlineHeader.AddStruct(NewStruct);
+			
+			DataMember.Type = DataMemberType;
+			DataMember.Comment = RawName + ": Product";
+		}
+
+		else if (Kind == EType::Sum)
+		{							
+			auto NewTaggedUnion = MakeTaggedUnion(
+				ModuleName,
+				ExportedTypes,
+				DataMember.Name,
+				AlgebraicType->Sum,
+				OutInlineHeader);
+
+			OutInlineHeader.AddTaggedUnion(NewTaggedUnion);
+			
+			DataMember.Type = "F" + DataMember.Name;
+			DataMember.Comment = RawName + ": Sum";
+		}
+
+		else if (Kind == SpacetimeDB::EType::Ref)
+		{
+			const auto Index = AlgebraicType->Ref.Index;
+			const auto& Referenced = ExportedTypes[Index];
+			
+			DataMember.Type = FCommon::MakeStructName(Referenced.Name.Name, ModuleName);
+			DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Kind);
+			DataMember.Comment = RawName + ": " + Referenced.Name.Name;
+		}
+
+		else if (IsBuiltIn(Kind))
+		{
+			DataMember.Type = MapBuiltinToUnreal(TypeToString(Kind), MapToUnrealAvailableReflected);
+			DataMember.DefaultValue = FSpacetimeConfig::GetDefaultValueForType(Kind);
+			DataMember.Comment = RawName + ": " + TypeToString(Kind);
+			
+			WarnTypes(Kind);
+		}
+
+		else if (Kind == EType::Invalid)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Invalid SATS-JSON type found in Typespace codegen"));
+			DataMember.Type = "// <invalid type> ";
+		}
+
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Internal inconsistency found in Typespace codegen - unhandled SATS-JSON type"));
+			DataMember.Type = "// <unhandled type> ";
+		}
+
+		return DataMember;
 	}
 
 	bool FTypespaceStructIRBuilder::BuildTypesIR(
@@ -303,7 +275,7 @@ namespace SpacetimeDB
 			FString StructName = FCommon::MakeStructName(Type.Name.Name, ModuleName);
 			
 			FStruct Struct =
-				GenerateNewStruct(ModuleName, ExportedTypes, StructName, AlgebraicType.Product, OutInline);
+				MakeStruct(ModuleName, ExportedTypes, StructName, AlgebraicType.Product, OutInline);
 			Struct.MetadataSpecifiers.Add("Category", "\"SpacetimeDB|" + UnrealFormattedModuleName + "\"");
 			Struct.bIsExportedType = true;
 			Struct.TypespaceIndex = Index;

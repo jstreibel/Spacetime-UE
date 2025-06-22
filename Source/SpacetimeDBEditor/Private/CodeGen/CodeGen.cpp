@@ -87,131 +87,6 @@ namespace SpacetimeDB
         return false;
     }
 
-    bool FCodeGen::GenerateReducersCode_Deprecated(
-        const FString& ModuleName,
-        const FRawModuleDef& ModuleDef,
-        FString& OutHeader,
-        FString& OutSource,
-        FString& OutError
-    )
-    {
-        const FString& HeaderName = FSpacetimeConfig::MakeReducerCodeFileName(ModuleName);
-        const FString& ModuleNameNormalized = FCommon::ToPascalCase(ModuleName);
-        TArray<FExportedType> SortedRefs = ModuleDef.GetRefSortedExportedTypes();
-    
-        const FString ClassName = "U" + ModuleName +  "Reducers";
-    
-        // Header
-        FString HeaderText;
-        HeaderText += TEXT("#pragma once\n\n"
-                    "#include \"Kismet/BlueprintFunctionLibrary.h\"\n"
-                    "#include \"CoreMinimal.h\"\n"
-                    "#include \"" + FSpacetimeConfig::MakeExportedTypesCodeFileName(ModuleName) + ".h" + "\"\n"
-                    "#include \"" + HeaderName + ".generated.h" + "\"\n"
-                    "\n"
-                    "\n");
-        
-        HeaderText += TEXT("UCLASS()\n"
-                    "class " + FSpacetimeConfig::ApiMacroString + " " + ClassName + " : public UBlueprintFunctionLibrary\n"
-                    "{\n"
-                    "\n"
-                    "   GENERATED_BODY()\n"
-                    "\n"
-                    "public:\n"
-                    "\n");
-
-        // Source
-        FString Src;
-        const FString HeaderFileRelativePath = FSpacetimeConfig::GeneratedDirectory + "/" + HeaderName + ".h";
-        Src += "\n"
-               "#include \"" + HeaderFileRelativePath + "\"\n"
-               "\n"
-               "#include \"StdbGenerated/" + ModuleNameNormalized + "Serialization.stdbgen.h\"\n"
-               "\n";    
-
-        for (const auto& ReducerDef : ModuleDef.Reducers)
-        {
-            // Function signature
-            TArray<FString> FunctionArguments;
-            struct FArg {FString ArgName, ArgType;};
-            TArray<FArg> FunctionArgumentsTypes;
-            for (const auto& [ArgumentName, ArgumentAlgebraicTypes] : ReducerDef.Params)
-            {            
-                // FString UEType = MapBuiltinToUnreal(ModuleDef.Typespace.TypeEntries[Argument.TypeRef].Builtin);
-                FString ArgName = ArgumentName.IsSet() ? FCommon::ToPascalCase(*ArgumentName) : FCommon::MakeAnonymousDataMemberName();
-
-                FString UEType;
-            
-                if (HasNativeUnrealRepresentation(ArgumentAlgebraicTypes.Type))
-                {
-                    UEType = ResolveAlgebraicTypeToUnrealCxx(ArgumentAlgebraicTypes);
-                }
-                else if (ArgumentAlgebraicTypes.Type == SpacetimeDB::EType::Ref)
-                {
-                    const auto Index = ArgumentAlgebraicTypes.Ref.Index;
-                    const auto TypeName = SortedRefs[Index].Name.Name;
-
-                    UEType = FCommon::MakeStructName(TypeName, ModuleName);
-                }            
-                else
-                {
-                    UE_LOG(LogTemp, Error, TEXT("[SpacetimeDB] SpacetimeDB Reducer Unreal codegen currently supports only 'BuiltIn' and 'Ref' SATS-JSON Types"));
-                }
-            
-                const FString ParamArgString = FString::Printf(TEXT("const %s& %s"), *UEType, *ArgName);
-                FunctionArgumentsTypes.Add({ArgName, UEType});
-            
-                FunctionArguments.Add(ParamArgString);
-            }
-
-            FString Prefix = TEXT("    UFUNCTION(BlueprintCallable, Category=\"SpacetimeDB|" + ModuleName + "\")"); 
-            FString Sig = Prefix + FString::Printf(
-                TEXT("\n    static void %s(%s);\n\n"),
-                *FCommon::ToPascalCase(ReducerDef.Name), *FString::Join(FunctionArguments, TEXT(", "))
-            );
-            HeaderText += Sig;
-
-            // Implementation stub
-            FString ImplPrefix = FString::Printf(
-                TEXT("::%s(%s)\n{\n"),
-                *FCommon::ToPascalCase(ReducerDef.Name),
-                *FString::Join(FunctionArguments, TEXT(", "))
-            );
-
-            FString Implementation;
-            if (FunctionArgumentsTypes.Num() != 0)
-            {
-                Implementation +=
-                    "    FString OutJsonPayload;\n"
-                    "    const auto WriterRef = FWriterFactory::Create(&OutJsonPayload);\n"
-                    "\n";
-
-                for (const auto& Arg : FunctionArgumentsTypes)
-                {
-                    Implementation += FString::Printf(TEXT(
-                        "    %s::Serialize%s(%s, WriterRef);\n"
-                        "    WriterRef->Close();\n"), *ModuleNameNormalized, *Arg.ArgType.RightChop(1), *Arg.ArgName);
-                }
-            }
-                
-            FString ImplSuffix = FString::Printf(
-            TEXT("\n"
-                     "\n"
-                     "    // TODO: call SpacetimeDB client reducer '%s'\n"
-                     "}\n"
-                     "\n"),
-                *ReducerDef.Name);
-        
-            FString Impl = "void " + ClassName + ImplPrefix + Implementation + ImplSuffix;
-            Src += "\n" + Impl;
-        }
-        HeaderText += TEXT("};\n");
-
-        OutHeader = MoveTemp(HeaderText);
-        OutSource = MoveTemp(Src);
-        return true;
-    }
-
     bool FCodeGen::GenerateReducersCode(
         const FString& ModuleName,
         const FRawModuleDef& ModuleDef,
@@ -264,9 +139,9 @@ namespace SpacetimeDB
         OutHeaderCode += FString::Printf(TEXT("{\n"));
         if constexpr (bAdd_None_Tag)
             OutHeaderCode += TabString + FString::Printf(TEXT("None    UMETA(DisplayName=\"None\"),\n"));
-        for (const auto& Option : TaggedUnion.OptionTags)
+        for (const auto& Option : TaggedUnion.Variants)
         {
-            FString OptionName = Option.RightChop(1);
+            FString OptionName = Option.Type.RightChop(1);
             OutHeaderCode += TabString
             + FString::Printf(TEXT("%ls    UMETA(DisplayName=\"%ls\"),\n"),
                 *OptionName, *OptionName);
@@ -285,11 +160,11 @@ namespace SpacetimeDB
             OutHeaderCode += TabString + FString::Printf(TEXT("%ls Tag = %ls::None;\n"), *TagName, *TagName);
         if constexpr (!bAdd_None_Tag)
         {
-            if (TaggedUnion.OptionTags.Num() != 0)
+            if (TaggedUnion.Variants.Num() != 0)
             {
                 OutHeaderCode += TabString
                 + FString::Printf(TEXT("%ls Tag = %ls::%s;\n"),
-                    *TagName, *TagName, *TaggedUnion.OptionTags[0].RightChop(1));
+                    *TagName, *TagName, *TaggedUnion.Variants[0].Type.RightChop(1));
             }
             else
             {

@@ -35,8 +35,6 @@ namespace SpacetimeDB
 	struct FTaggedUnion
 	{
 		FSumType SumOrigin;
-	
-		TArray<FString> OptionTags;
 
 		FString Name={};
 		TArray<FDataMember> Variants={};
@@ -48,14 +46,13 @@ namespace SpacetimeDB
 		bool operator==(const FTaggedUnion& TaggedUnion) const
 		{
 			return Name   == TaggedUnion.Name
-				&& Variants   == TaggedUnion.Variants
-				&& OptionTags == TaggedUnion.OptionTags;
+				&& Variants   == TaggedUnion.Variants;
 		};
 	};
 
 
 	struct FStruct
-	{
+	{		
 		FProductType ProductOrigin;
 	
 		FString Name={};
@@ -231,14 +228,21 @@ namespace SpacetimeDB
 			FString &OutError);
 
 	private:
-		static FTaggedUnion GenerateNewTaggedUnion(
+		static FTaggedUnion MakeTaggedUnion(
 			const FString& ModuleName,
 			const TArray<FExportedType>& ExportedTypes,
 			const FString& UnionName,
 			const FSumType& SumOrigin,
 			FTypesIR &OutInlineHeader);
 
-		static FStruct GenerateNewStruct(
+		static FDataMember MakeDataMemberFromField(
+			const TOptional<FString>& Name,
+			const TSharedRef<FAlgebraicType>& AlgebraicType,
+			const TArray<FExportedType>& ExportedTypes,
+			const FString& ModuleName,
+			FTypesIR& OutInlineHeader);
+		
+		static FStruct MakeStruct(
 			const FString& ModuleName,
 			const TArray<FExportedType>& ExportedTypes,
 			const FString& StructName,
