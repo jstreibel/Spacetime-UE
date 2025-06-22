@@ -48,7 +48,7 @@ void USpacetimeAsyncReducerBase::Activate()
 
 		if (bWasSuccessful)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[SpacetimeDB] Reducer '%s' call error: %s"), *ReducerName, *Resp->GetContentAsString())
+			UE_LOG(LogTemp, Warning, TEXT("[SpacetimeDB] Reducer '%s' call with payload '%s' error: %s"), *ReducerName, *PayloadJson, *Resp->GetContentAsString())
 		}
 		else
 		{

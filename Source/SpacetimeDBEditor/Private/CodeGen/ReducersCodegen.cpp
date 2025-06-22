@@ -122,23 +122,20 @@ namespace SpacetimeDB
 		else
 		{
 			OutSource +=
-			"    FString JsonPayload = \"[\"; // Payload is a Json array of serialized Algebraic types.\n";
+			"    FString JsonPayload;\n"
+			"    const auto WriterRef = SpacetimeDB::FWriterFactory::Create(&JsonPayload);\n"
+			"    WriterRef->WriteArrayStart(); // Payload is a Json array of serialized Algebraic types\n"
+			"    {\n";
 
 			for (const auto& [Name, Type, SerializationType, SerializationNamespace] : ParamsList)
 			{			
-				OutSource += 
-				"    {\n"
-				"        FString JsonSerializedValue;\n"
-				"        const auto WriterRef = SpacetimeDB::FWriterFactory::Create(&JsonSerializedValue);\n"
-				"        " + SerializationNamespace + "::Serialize" + SerializationType + "(" + Name + ", WriterRef);\n"
-				"        WriterRef->Close();\n"
-				"        JsonPayload += JsonSerializedValue;\n"
-				"        JsonPayload += \",\";\n"
-				"    }\n";
+				OutSource +=
+				"        " + SerializationNamespace + "::Serialize" + SerializationType + "(" + Name + ", WriterRef);\n";
 			}
-
-			OutSource += "    JsonPayload = JsonPayload.LeftChop(1); // Remove last comma.\n";
-			OutSource += "    JsonPayload += \"]\";\n";
+			OutSource +=
+			"    }\n"
+			"    WriterRef->WriteArrayEnd();\n"
+			"    WriterRef->Close();\n";
 		}
 		OutSource +=
 		"\n"

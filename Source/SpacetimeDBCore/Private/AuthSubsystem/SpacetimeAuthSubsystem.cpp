@@ -26,7 +26,7 @@ bool USpacetimeAuthSubsystem::LoadIdentity(FIdentityInfo& Identity)
 			Identity.Id = StringCast<TCHAR>(Id.c_str());
 			Identity.AuthToken = StringCast<TCHAR>(Token.c_str());
 
-			UE_LOG(LogTemp, Log, TEXT("Parsed TOML → User id=\"%s\""), *Identity.Id);
+			UE_LOG(LogTemp, Log, TEXT("[SpacetimeDB] Parsed TOML → User id=\"%s\""), *Identity.Id);
 		}
 		catch (const toml::parse_error& Err)
 		{

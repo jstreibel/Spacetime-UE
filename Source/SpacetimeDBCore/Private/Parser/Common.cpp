@@ -6,13 +6,13 @@ const TArray<FString> FCommon::ReservedNames = {
 
 FString FCommon::MakeStructName(const FString& InName, const FString& ModuleName)
 {
+	if constexpr (false) return "F" + ToPascalCase(ModuleName) + "_" + ToPascalCase(InName);
+	
 	FString OutName = "F" + InName;
 	if (ReservedNames.Contains(InName))
 	{
 		OutName += "_" + FCommon::ToPascalCase(ModuleName);
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("Making struct name: '%s' --> '%s'"), *InName, *OutName);
 
 	return OutName;
 }
